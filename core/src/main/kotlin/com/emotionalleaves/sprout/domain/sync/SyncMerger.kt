@@ -50,6 +50,8 @@ class SyncMerger(
     private val resolver: CategoryResolver,
     /** Category ids where a pending amount may change when it posts (tips): Eating Out. */
     private val tipCategoryIds: Set<Long>,
+    /** Date posted transactions by when the purchase happened (transacted_at) when the bank provides it. */
+    private val usePurchaseDate: Boolean = false,
 ) {
 
     fun mergeAccount(
@@ -81,7 +83,7 @@ class SyncMerger(
         for (tx in ordered) {
             val id = Ids.transactionId(accountKey, tx.id)
             val merchantKey = MerchantNormalizer.normalize(tx.description)
-            val effectiveAt = effectiveTime(tx, syncTime)
+            val effectiveAt = effectiveTime(tx, syncTime, usePurchaseDate)
             val old = byId[id]
 
             if (old != null) {
@@ -174,8 +176,13 @@ class SyncMerger(
     companion object {
         val PENDING_MATCH_WINDOW: Duration = Duration.ofDays(7)
 
-        /** Posted: the posted time. Pending: transacted_at, else the sync time. */
-        fun effectiveTime(tx: SfTransaction, syncTime: Long): Long =
-            if (!tx.pending && tx.postedAt > 0) tx.postedAt else tx.transactedAt ?: syncTime
+        /**
+         * Posted: the posted time (or transacted_at with [usePurchaseDate], when present).
+         * Pending: transacted_at, else the sync time.
+         */
+        fun effectiveTime(tx: SfTransaction, syncTime: Long, usePurchaseDate: Boolean = false): Long = when {
+            !tx.pending && tx.postedAt > 0 -> if (usePurchaseDate) tx.transactedAt ?: tx.postedAt else tx.postedAt
+            else -> tx.transactedAt ?: syncTime
+        }
     }
 }

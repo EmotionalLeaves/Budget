@@ -33,6 +33,8 @@ data class Settings(
     val hideInRecents: Boolean = false,
     /** Epoch seconds until which syncing pauses after a SimpleFIN rate-limit warning. */
     val rateLimitedUntil: Long? = null,
+    /** Date transactions by purchase date (transacted_at) when the bank sends it. */
+    val usePurchaseDate: Boolean = false,
 )
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -57,6 +59,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
             appLock = p[APP_LOCK] ?: false,
             hideInRecents = p[HIDE_RECENTS] ?: false,
             rateLimitedUntil = p[RATE_LIMITED_UNTIL],
+            usePurchaseDate = p[PURCHASE_DATE] ?: false,
         )
     }
 
@@ -75,6 +78,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
     suspend fun setNotificationsAsked() = dataStore.edit { it[NOTIFY_ASKED] = true }
     suspend fun setAppLock(on: Boolean) = dataStore.edit { it[APP_LOCK] = on }
     suspend fun setHideInRecents(on: Boolean) = dataStore.edit { it[HIDE_RECENTS] = on }
+    suspend fun setUsePurchaseDate(on: Boolean) = dataStore.edit { it[PURCHASE_DATE] = on }
     suspend fun setRateLimitedUntil(at: Long?) = dataStore.edit { if (at == null) it.remove(RATE_LIMITED_UNTIL) else it[RATE_LIMITED_UNTIL] = at }
 
     /** A new token: start fresh sync bookkeeping (first-sync window) but keep all other settings. */
@@ -101,5 +105,6 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         val APP_LOCK = booleanPreferencesKey("app_lock")
         val HIDE_RECENTS = booleanPreferencesKey("hide_in_recents")
         val RATE_LIMITED_UNTIL = longPreferencesKey("rate_limited_until")
+        val PURCHASE_DATE = booleanPreferencesKey("use_purchase_date")
     }
 }

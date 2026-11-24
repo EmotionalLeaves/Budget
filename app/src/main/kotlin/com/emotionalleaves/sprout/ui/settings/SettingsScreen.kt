@@ -105,6 +105,10 @@ class SettingsViewModel(private val c: AppContainer) : ViewModel() {
     fun deleteAll() = viewModelScope.launch { c.dataManager.deleteAll() }
     fun setAppLock(on: Boolean) = viewModelScope.launch { c.settings.setAppLock(on) }
     fun setHideInRecents(on: Boolean) = viewModelScope.launch { c.settings.setHideInRecents(on) }
+    fun setUsePurchaseDate(on: Boolean) = viewModelScope.launch {
+        c.settings.setUsePurchaseDate(on)
+        c.db.transactions().redatePosted(on)
+    }
     fun setNotifyBudget(on: Boolean) = viewModelScope.launch { c.settings.setNotifyBudget(on) }
     fun setNotifyUnusual(on: Boolean) = viewModelScope.launch { c.settings.setNotifyUnusual(on) }
     fun setNotifySync(on: Boolean) = viewModelScope.launch { c.settings.setNotifySyncProblems(on) }
@@ -206,6 +210,7 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                 )
                 Button(onClick = { vm.syncNow() }, modifier = Modifier.padding(vertical = 8.dp).heightIn(min = 48.dp)) { Text("Sync now") }
+                ToggleRow("Date transactions by purchase day (when the bank sends it)", state.settings.usePurchaseDate) { vm.setUsePurchaseDate(it) }
                 Text("History to fetch on first sync", style = MaterialTheme.typography.labelLarge)
                 SyncPolicy.ALLOWED_FIRST_SYNC_DAYS.forEach { days ->
                     Row(

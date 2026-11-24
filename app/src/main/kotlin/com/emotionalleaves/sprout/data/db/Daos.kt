@@ -107,6 +107,15 @@ interface TransactionDao {
     @Query("UPDATE transactions SET categoryId = :categoryId, categorySource = :source, updatedAt = :now WHERE id = :id")
     suspend fun setCategory(id: String, categoryId: Long, source: CategorySource, now: Long)
 
+    /** Re-dates posted transactions after the "purchase date" option changes. Pending rows keep their date. */
+    @Query(
+        """
+        UPDATE transactions SET occurredAt = CASE WHEN :purchase = 1 AND transactedAt IS NOT NULL THEN transactedAt ELSE postedAt END
+        WHERE pending = 0 AND postedAt > 0 AND id NOT LIKE '%:csv:%'
+        """,
+    )
+    suspend fun redatePosted(purchase: Boolean): Int
+
     @Query("UPDATE transactions SET note = :note, updatedAt = :now WHERE id = :id")
     suspend fun setNote(id: String, note: String?, now: Long)
 

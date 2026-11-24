@@ -22,12 +22,12 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [x] (0.2.0/0.6.0) Per-connection problems on Home with a "Fix in Bridge" link — *why: quicker diagnosis*
 - [x] (1.3.0) Detect SimpleFIN rate-limit warnings in "errors" and slow down automatically — *why: the Bridge disables tokens past the warning level*
 - [x] (1.3.0) Flag accounts missing from syncs for 3+ days as possibly closed (no schema change) — *why: totals stay right*
-- [ ] Use transacted_at for posted transactions' display date when the bank provides it (setting) — *why: dates match receipts*
+- [x] (1.9.0) Purchase-date option (transacted_at) for posted transactions — *why: dates match receipts*
 
 ## 4. Test coverage
 - [ ] Compose UI tests (Robolectric) for the detail sheet, review flow and budget edit dialog — *why: guard the main correction paths*
 - [ ] SyncWorker tests with work-testing (retry, Retry-After chain, revoked cancel) — *why: work package coverage is low*
-- [ ] 10k-transaction generated SyncMerger fixture — *why: merge performance regression guard*
+- [x] (1.9.0) 10k-transaction generated SyncMerger test — *why: merge performance regression guard*
 - [x] (1.7.0) First migration (1→2) with MigrationTest seeding realistic v1 data — *why: the first migration must be easy and safe*
 
 ## 5. UX polish and accessibility

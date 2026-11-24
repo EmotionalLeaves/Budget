@@ -2,6 +2,14 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [1.9.0] - 2026-11-24
+
+### Added
+- Settings → Sync → "Date transactions by purchase day": show each transaction on the day you made the purchase instead of the day the bank posted it (when your bank sends that date). Switching it re-dates your existing transactions; off by default.
+
+### Tests
+- Merging 10,000 transactions is now covered by a test (no duplicates, no extra work on repeat syncs).
+
 ## [1.8.0] - 2026-11-24
 
 ### Added

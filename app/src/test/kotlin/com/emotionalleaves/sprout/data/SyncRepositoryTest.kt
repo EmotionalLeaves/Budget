@@ -204,4 +204,19 @@ class SyncRepositoryTest {
         assertEquals(SyncRunResult.Skipped(SkipReason.RATE_LIMITED), env.repo().sync(SyncTrigger.MANUAL))
         assertEquals(1, env.server.requestCount)
     }
+
+    @Test fun purchaseDateOptionRedatesAndSyncs() = runBlocking {
+        ok("v2_basic.json")
+        env.repo().sync(SyncTrigger.MANUAL)
+        val id = "sf:CON-111:ACT-CHK-1:TX-1001" // posted 1763500000, transacted 1763490000
+        assertEquals(1_763_500_000L, env.db.transactions().getById(id)!!.occurredAt)
+        env.settings.setUsePurchaseDate(true)
+        env.db.transactions().redatePosted(true)
+        assertEquals(1_763_490_000L, env.db.transactions().getById(id)!!.occurredAt)
+        ok("v2_basic.json")
+        env.repo().sync(SyncTrigger.MANUAL)
+        assertEquals(1_763_490_000L, env.db.transactions().getById(id)!!.occurredAt)
+        env.db.transactions().redatePosted(false)
+        assertEquals(1_763_500_000L, env.db.transactions().getById(id)!!.occurredAt)
+    }
 }

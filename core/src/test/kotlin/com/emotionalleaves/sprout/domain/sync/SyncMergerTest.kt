@@ -171,6 +171,24 @@ class SyncMergerTest {
         assertTrue(second.upserts.isEmpty())
     }
 
+    @Test fun purchaseDateOptionUsesTransactedAt() {
+        val tx = SfTransaction("T", 1_763_600_000, -500, "X", 1_763_400_000, false)
+        assertEquals(1_763_600_000L, SyncMerger.effectiveTime(tx, 0))
+        assertEquals(1_763_400_000L, SyncMerger.effectiveTime(tx, 0, usePurchaseDate = true))
+        assertEquals(1_763_600_000L, SyncMerger.effectiveTime(tx.copy(transactedAt = null), 0, usePurchaseDate = true))
+    }
+
+    @Test fun tenThousandTransactionsMergeOnceWithoutDuplicates() {
+        val m = merger()
+        val incoming = (0 until 10_000).map { SfTransaction("T$it", 1_763_000_000L + it * 60, -100L - it % 50, "STORE ${it % 200}", null, it % 97 == 0) }
+        val first = m.mergeAccount("sf:C:A", incoming, emptyList(), window, 1_763_900_000, true)
+        assertEquals(10_000, first.newCount)
+        val again = m.mergeAccount("sf:C:A", incoming, first.upserts, window, 1_763_900_100, true)
+        assertEquals(0, again.newCount)
+        assertEquals(0, again.updatedCount)
+        assertTrue(again.deleteIds.isEmpty())
+    }
+
     private fun stored(
         id: String, pending: Boolean = false, amount: Long = -1000, merchant: String = "X",
         effectiveAt: Long = 1_763_500_000, source: CategorySource = CategorySource.NONE, category: Long = 1,

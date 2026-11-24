@@ -229,7 +229,7 @@ class SyncRepository(
             val idByKey = categories.mapNotNull { c -> c.key?.let { it to c.id } }.toMap()
             val rules = db.merchantRules().getAll().map { UserRule(it.id, it.matchType, it.pattern, it.categoryId) }
             val tipIds = setOfNotNull(idByKey[DefaultCategories.EATING_OUT])
-            val merger = SyncMerger(CategoryResolver(rules, idByKey), tipIds)
+            val merger = SyncMerger(CategoryResolver(rules, idByKey), tipIds, settings.current().usePurchaseDate)
             val fallbackCategory = idByKey[DefaultCategories.UNCATEGORIZED]
                 ?: categories.firstOrNull { it.kind == CategoryKind.EXPENSE }?.id
                 ?: error("No categories")
