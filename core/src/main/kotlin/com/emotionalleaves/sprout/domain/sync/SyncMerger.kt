@@ -26,6 +26,7 @@ data class StoredTx(
     val note: String?,
     val alertedAt: Long?,
     val createdAt: Long,
+    val excludedFromBudget: Boolean = false,
 )
 
 data class MergeResult(
@@ -126,6 +127,7 @@ class SyncMerger(
                         note = match.note,
                         alertedAt = match.alertedAt,
                         createdAt = match.createdAt,
+                        excludedFromBudget = match.excludedFromBudget,
                     )
                 }
             }

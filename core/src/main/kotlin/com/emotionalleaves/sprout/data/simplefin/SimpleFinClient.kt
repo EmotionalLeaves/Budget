@@ -38,6 +38,8 @@ data class AccountsQuery(
     val endDate: Long,
     val pending: Boolean = true,
     val balancesOnly: Boolean = false,
+    /** v2 only: limit the response to these account ids (the "account" parameter, repeated). */
+    val accountIds: List<String> = emptyList(),
 )
 
 /**
@@ -120,6 +122,7 @@ class SimpleFinClient(
             addQueryParameter("end-date", q.endDate.toString())
             if (q.pending) addQueryParameter("pending", "1")
             if (q.balancesOnly) addQueryParameter("balances-only", "1")
+            if (version == 2) q.accountIds.forEach { addQueryParameter("account", it) }
             if (version != null) addQueryParameter("version", version.toString())
         }.build()
         val request = Request.Builder()

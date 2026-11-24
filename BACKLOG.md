@@ -3,7 +3,7 @@
 Prioritized. Phase 1 milestones come first (see PROGRESS.md); items below are grouped by the 7 priority tiers.
 
 ## Phase 1 milestones
-- [ ] M2 (0.2.0) – Reliable sync: per-connection "needs attention" UI polish, offline state, full error matrix in UI, sync log trimming check — *why: sync is the app's lifeline*
+- [x] M2 (0.2.0) – Reliable sync: backfill for new connections, Retry-After, offline state, partial-sync note — *why: sync is the app's lifeline*
 - [ ] M3 (0.3.0) – Categorization: detail sheet, one-tap recategorize + "Always use" rules, uncategorized review, category/rule management — *why: correct categories make budgets meaningful*
 - [ ] M4 (0.4.0) – Budgets and safe to spend — *why: the core value of the app*
 - [ ] M5 (0.5.0) – Full dashboard — *why: one glance answers "am I OK?"*
@@ -14,15 +14,15 @@ Prioritized. Phase 1 milestones come first (see PROGRESS.md); items below are gr
 - [ ] M10 (0.10.0 → 1.0.0) – Hardening and v1.0 checklist
 
 ## 1. Bugs and crashes
-- [ ] Carry `excludedFromBudget` over from a pending row to its posted row — *why: the flag is lost when a pending charge posts*
+- [x] Carry `excludedFromBudget` over from a pending row to its posted row (0.2.0)
 
 ## 2. Security and data safety
 - [ ] Disconnect: delete access URL + Keystore key, keep data, offer to delete data — *why: user control over the connection*
 - [ ] Add Kover coverage report to CI (target ≥80% on domain/data) — *why: spec requirement; finds untested paths*
 
 ## 3. Sync reliability
-- [ ] Backfill a connection added later in Bridge with the first-sync window (account= filter) — *why: new banks only get ~10 days of history today*
-- [ ] Respect Retry-After when scheduling the WorkManager retry — *why: be gentle with the server*
+- [x] Backfill a connection added later in Bridge with the first-sync window (0.2.0)
+- [x] Respect Retry-After when scheduling the WorkManager retry (0.2.0)
 - [ ] Show per-connection problems in the sync status line chip — *why: quicker diagnosis*
 
 ## 4. Test coverage

@@ -26,21 +26,51 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val container = (applicationContext as SproutApp).container
         val trigger = inputData.getString(KEY_TRIGGER)?.let { name -> SyncTrigger.entries.firstOrNull { it.name == name } }
             ?: SyncTrigger.PERIODIC
-        return when (val r = container.syncRepository.sync(trigger)) {
-            is SyncRunResult.Done -> Result.success()
-            is SyncRunResult.Skipped -> {
-                if (r.reason == SkipReason.REVOKED || r.reason == SkipReason.NEEDS_RECONNECT) {
-                    SyncScheduler.cancelPeriodic(applicationContext)
-                }
+        val chain = inputData.getInt(KEY_CHAIN, 0)
+        val result = container.syncRepository.sync(trigger)
+        if (result is SyncRunResult.Skipped &&
+            (result.reason == SkipReason.REVOKED || result.reason == SkipReason.NEEDS_RECONNECT)
+        ) {
+            // Stop periodic attempts until a new setup token is saved.
+            SyncScheduler.cancelPeriodic(applicationContext)
+        }
+        return when (val d = decide(result, runAttemptCount, chain)) {
+            WorkDecision.Success -> Result.success()
+            WorkDecision.Retry -> Result.retry()
+            WorkDecision.GiveUp -> Result.failure()
+            is WorkDecision.RetryAt -> {
+                SyncScheduler.retryAfter(applicationContext, trigger, d.delaySeconds, chain + 1)
                 Result.success()
             }
-            is SyncRunResult.RetryLater -> if (runAttemptCount < MAX_RETRIES) Result.retry() else Result.failure()
         }
+    }
+
+    sealed interface WorkDecision {
+        data object Success : WorkDecision
+        /** WorkManager's exponential backoff (15 min, 30 min, 60 min). */
+        data object Retry : WorkDecision
+        data object GiveUp : WorkDecision
+        /** The server sent Retry-After: schedule exactly then (at least 15 minutes). */
+        data class RetryAt(val delaySeconds: Long) : WorkDecision
     }
 
     companion object {
         const val KEY_TRIGGER = "trigger"
+        const val KEY_CHAIN = "retry_chain"
+        /** At most 3 retries per run, whichever way they are scheduled. Never loop. */
         const val MAX_RETRIES = 3
+        private const val MIN_RETRY_SECONDS = 15 * 60L
+        private const val MAX_RETRY_SECONDS = 6 * 3600L
+
+        fun decide(result: SyncRunResult, runAttemptCount: Int, chain: Int): WorkDecision = when (result) {
+            is SyncRunResult.Done, is SyncRunResult.Skipped -> WorkDecision.Success
+            is SyncRunResult.RetryLater -> when {
+                runAttemptCount + chain >= MAX_RETRIES -> WorkDecision.GiveUp
+                result.retryAfterSeconds != null ->
+                    WorkDecision.RetryAt(result.retryAfterSeconds.coerceIn(MIN_RETRY_SECONDS, MAX_RETRY_SECONDS))
+                else -> WorkDecision.Retry
+            }
+        }
     }
 }
 
@@ -65,6 +95,18 @@ object SyncScheduler {
             .setInputData(workDataOf(SyncWorker.KEY_TRIGGER to SyncTrigger.PERIODIC.name))
             .build()
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(PERIODIC_WORK, ExistingPeriodicWorkPolicy.KEEP, request)
+    }
+
+    const val RETRY_WORK = "sprout-sync-retry"
+
+    /** A single delayed retry honoring the server's Retry-After. */
+    fun retryAfter(context: Context, trigger: SyncTrigger, delaySeconds: Long, chain: Int) {
+        val request = OneTimeWorkRequestBuilder<SyncWorker>()
+            .setConstraints(constraints)
+            .setInitialDelay(delaySeconds, TimeUnit.SECONDS)
+            .setInputData(workDataOf(SyncWorker.KEY_TRIGGER to trigger.name, SyncWorker.KEY_CHAIN to chain))
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(RETRY_WORK, ExistingWorkPolicy.KEEP, request)
     }
 
     fun cancelPeriodic(context: Context) {

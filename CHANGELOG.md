@@ -2,6 +2,19 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [0.2.0] - 2026-11-24
+
+More reliable syncing.
+
+### Added
+- Banks you add later in SimpleFIN Bridge now get their full history (up to 90 days) on their first sync, not just the last 10 days.
+- Home shows "Offline – showing data from …" when your phone has no internet.
+- A note on Home when the last sync was only partly complete, with SimpleFIN's own message.
+
+### Fixed
+- When SimpleFIN asks Sprout to wait ("Retry-After"), Sprout now waits that long before trying again (between 15 minutes and 6 hours).
+- "Exclude from budget" now stays on when a pending charge posts.
+
 ## [0.1.0] - 2026-11-24
 
 First working version: connect your bank and see your transactions.

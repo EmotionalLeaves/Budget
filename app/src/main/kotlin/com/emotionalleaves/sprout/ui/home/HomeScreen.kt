@@ -62,6 +62,10 @@ fun HomeScreen(
     PullToRefreshBox(isRefreshing = syncing, onRefresh = vm::syncNow, modifier = Modifier.fillMaxSize()) {
         LazyColumn(Modifier.fillMaxSize()) {
             item { SyncStatusLine(state, vm.now()) }
+            val partial = state.lastLog?.takeIf { it.result == SyncResult.PARTIAL }
+            if (partial != null) {
+                item { Banner(partial.message, warning = false) }
+            }
 
             if (state.settings.accessRevoked) {
                 item {
@@ -123,8 +127,10 @@ private fun SyncStatusLine(state: HomeState, now: Long) {
     val last = state.settings.lastSuccessfulSyncAt
     val text = when {
         !state.connected -> "No bank connected"
+        !state.online && last != null -> "Offline – showing data from ${Format.ago(last, now)}"
+        !state.online -> "Offline – will sync when you're back online"
         last == null && log == null -> "Not synced yet"
-        log != null && log.result == SyncResult.FAILED && last != null -> "Offline or sync problem – showing data from ${Format.ago(last, now)}"
+        log != null && log.result == SyncResult.FAILED && last != null -> "Sync problem – showing data from ${Format.ago(last, now)}"
         log != null && log.result == SyncResult.FAILED -> "Last sync failed: ${log.message}"
         last != null -> "Updated ${Format.ago(last, now)}" + if (log?.result == SyncResult.PARTIAL) " (some data incomplete)" else ""
         else -> ""

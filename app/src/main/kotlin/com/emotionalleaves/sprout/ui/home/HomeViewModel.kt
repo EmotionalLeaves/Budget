@@ -32,6 +32,7 @@ data class HomeState(
     val lastLog: SyncLogEntity? = null,
     val settings: Settings = Settings(),
     val connected: Boolean = false,
+    val online: Boolean = true,
     val loaded: Boolean = false,
 ) {
     val totals: Totals get() = computeTotals(accounts)
@@ -59,7 +60,9 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
         HomeState(accounts, connections, recent, log, settings, loaded = true)
     }
 
-    val state: StateFlow<HomeState> = combine(base, c.secureStore.hasAccessUrl) { s, connected -> s.copy(connected = connected) }
+    val state: StateFlow<HomeState> = combine(base, c.secureStore.hasAccessUrl, c.network.online) { s, connected, online ->
+        s.copy(connected = connected, online = online)
+    }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeState())
 
     val syncing: StateFlow<Boolean> = WorkManager.getInstance(c.appContext)

@@ -168,4 +168,29 @@ class SyncRepositoryTest {
         assertTrue(logs.isNotEmpty())
         logs.forEach { assertFalse(it.message, it.message.contains("demo:demo") || it.message.contains("https://")) }
     }
+
+    @Test fun newAccountsLaterGetFullHistoryBackfill() = runBlocking {
+        ok("v2_basic.json")
+        env.repo().sync(SyncTrigger.MANUAL)
+        env.server.takeRequest()
+        // A bank added later in Bridge: its accounts are new, so one extra account-filtered request fetches 90 days.
+        ok("v2_multi_connection.json"); ok("v2_multi_connection.json")
+        val r = env.repo().sync(SyncTrigger.PERIODIC) as SyncRunResult.Done
+        assertEquals(SyncResult.SUCCESS, r.result)
+        val main = env.server.takeRequest().requestUrl!!
+        val backfill = env.server.takeRequest().requestUrl!!
+        assertTrue(main.queryParameterValues("account").isEmpty())
+        assertEquals(listOf("1"), backfill.queryParameterValues("account"))
+        val now = env.clock.instant().epochSecond
+        assertEquals((now - 90 * 86_400).toString(), backfill.queryParameter("start-date"))
+        assertEquals(8, txCount())
+        assertEquals(3, env.db.syncLog().requestsSince(0))
+    }
+
+    @Test fun knownAccountsDontTriggerBackfill() = runBlocking {
+        ok("v2_basic.json"); ok("v2_basic.json")
+        env.repo().sync(SyncTrigger.MANUAL)
+        env.repo().sync(SyncTrigger.PERIODIC)
+        assertEquals(2, env.server.requestCount)
+    }
 }

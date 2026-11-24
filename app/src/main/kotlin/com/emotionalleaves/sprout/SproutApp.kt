@@ -2,6 +2,7 @@ package com.emotionalleaves.sprout
 
 import android.app.Application
 import android.content.Context
+import com.emotionalleaves.sprout.data.NetworkMonitor
 import com.emotionalleaves.sprout.data.db.SproutDatabase
 import com.emotionalleaves.sprout.data.secure.SecureStore
 import com.emotionalleaves.sprout.data.settings.SettingsStore
@@ -26,6 +27,7 @@ class AppContainer(context: Context) {
     val syncRepository = SyncRepository(db, secureStore, settings, client, clock)
     val connectRepository = ConnectRepository(client, secureStore, settings)
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    val network = NetworkMonitor(appContext)
 }
 
 class SproutApp : Application() {

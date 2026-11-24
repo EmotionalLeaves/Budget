@@ -18,6 +18,7 @@ import com.emotionalleaves.sprout.data.simplefin.AccessUrl
 import com.emotionalleaves.sprout.data.simplefin.AccountSet
 import com.emotionalleaves.sprout.data.simplefin.AccountsQuery
 import com.emotionalleaves.sprout.data.simplefin.FetchResult
+import com.emotionalleaves.sprout.data.simplefin.ProtocolMode
 import com.emotionalleaves.sprout.data.simplefin.SimpleFinClient
 import com.emotionalleaves.sprout.domain.accounts.AccountTypes
 import com.emotionalleaves.sprout.domain.categorize.CategoryKind
@@ -107,7 +108,12 @@ class SyncRepository(
         val fetch = client.fetchAccounts(access, AccountsQuery(window.startDate, window.endDate, pending = true))
 
         return when (fetch) {
-            is FetchResult.Success -> store(fetch.accountSet, window, now, trigger, fetch.requestCount)
+            is FetchResult.Success -> {
+                val backfill = backfillNewAccounts(access, fetch.accountSet, s.lastSuccessfulSyncAt, s.firstSyncDays, used + fetch.requestCount)
+                val merged = backfill?.let { mergeBackfill(fetch.accountSet, it.set) } ?: fetch.accountSet
+                val windows = backfill?.let { b -> b.set.accounts.associate { Ids.accountKey(it.connId, it.id) to b.window } }.orEmpty()
+                store(merged, { key -> windows[key] ?: window }, now, trigger, fetch.requestCount + (backfill?.requests ?: 0))
+            }
             is FetchResult.AuthFailed -> {
                 db.connections().setAllStatus(ConnectionStatus.REVOKED, "http.403",
                     "Your SimpleFIN access was turned off. Paste a new setup token to reconnect.", now)
@@ -145,7 +151,43 @@ class SyncRepository(
         }
     }
 
-    private suspend fun store(set: AccountSet, window: SyncWindow, now: Long, trigger: SyncTrigger, requests: Int): SyncRunResult {
+    private class Backfill(val set: AccountSet, val window: SyncWindow, val requests: Int)
+
+    /**
+     * Accounts we've never stored (for example a bank added later in SimpleFIN Bridge) only got the short
+     * incremental window. Fetch their full first-sync history with one extra, account-filtered request (v2 only),
+     * if the daily request budget allows. Failures here are ignored: the next sync tries again.
+     */
+    private suspend fun backfillNewAccounts(
+        access: AccessUrl, set: AccountSet, lastSuccess: Long?, firstSyncDays: Int, usedRequests: Int,
+    ): Backfill? {
+        if (lastSuccess == null || set.mode != ProtocolMode.V2 || set.accounts.isEmpty()) return null
+        val keys = set.accounts.map { Ids.accountKey(it.connId, it.id) }
+        val known = keys.chunked(500).flatMap { db.accounts().getByIds(it) }.filter { it.firstSyncCompleted }.map { it.id }.toSet()
+        val fresh = set.accounts.filter { Ids.accountKey(it.connId, it.id) !in known }
+        if (fresh.isEmpty() || usedRequests + 1 > SyncPolicy.DAILY_REQUEST_BUDGET) return null
+        val window = SyncPolicy.window(clock, null, firstSyncDays)
+        val r = client.fetchAccounts(access, AccountsQuery(window.startDate, window.endDate, pending = true, accountIds = fresh.map { it.id }.distinct()))
+        return when (r) {
+            is FetchResult.Success -> {
+                val wanted = fresh.map { Ids.accountKey(it.connId, it.id) }.toSet()
+                Backfill(r.accountSet.copy(accounts = r.accountSet.accounts.filter { Ids.accountKey(it.connId, it.id) in wanted }), window, r.requestCount)
+            }
+            else -> null
+        }
+    }
+
+    /** Uses the backfill's longer transaction history for the accounts it covers; keeps everything else. */
+    private fun mergeBackfill(main: AccountSet, backfill: AccountSet): AccountSet {
+        val byKey = backfill.accounts.associateBy { Ids.accountKey(it.connId, it.id) }
+        val accounts = main.accounts.map { a ->
+            val b = byKey[Ids.accountKey(a.connId, a.id)] ?: return@map a
+            a.copy(transactions = (b.transactions + a.transactions).distinctBy { it.id })
+        }
+        return main.copy(accounts = accounts, errors = main.errors + backfill.errors.filter { it !in main.errors })
+    }
+
+    private suspend fun store(set: AccountSet, windowFor: (String) -> SyncWindow, now: Long, trigger: SyncTrigger, requests: Int): SyncRunResult {
         val plan = SyncErrors.plan(set)
         var newCount = 0
         var updatedCount = 0
@@ -215,7 +257,7 @@ class SyncRepository(
                     accountKey = key,
                     incoming = a.transactions,
                     existing = existing.map { it.toStored() },
-                    window = window,
+                    window = windowFor(key),
                     syncTime = now,
                     allowPendingCleanup = plan.accountError(a.connId, a.id) == null,
                 )
@@ -274,13 +316,13 @@ internal fun TransactionEntity.toStored() = StoredTx(
     id = id, accountKey = accountId, remoteId = remoteId, amountMinor = amountMinor, description = description,
     merchantKey = merchantKey, postedAt = postedAt, transactedAt = transactedAt, pending = pending,
     effectiveAt = occurredAt, categoryId = categoryId, categorySource = categorySource, note = note,
-    alertedAt = alertedAt, createdAt = importedAt,
+    alertedAt = alertedAt, createdAt = importedAt, excludedFromBudget = excludedFromBudget,
 )
 
 internal fun StoredTx.toEntity(currency: String, fallbackCategory: Long, old: TransactionEntity?, now: Long) = TransactionEntity(
     id = id, accountId = accountKey, remoteId = remoteId, postedAt = postedAt, transactedAt = transactedAt,
     occurredAt = effectiveAt, amountMinor = amountMinor, currency = currency, description = description,
     merchantKey = merchantKey, pending = pending, categoryId = categoryId ?: fallbackCategory,
-    categorySource = categorySource, note = note, excludedFromBudget = old?.excludedFromBudget ?: false,
+    categorySource = categorySource, note = note, excludedFromBudget = old?.excludedFromBudget ?: excludedFromBudget,
     recurringChargeId = old?.recurringChargeId, alertedAt = alertedAt, importedAt = createdAt, updatedAt = now,
 )

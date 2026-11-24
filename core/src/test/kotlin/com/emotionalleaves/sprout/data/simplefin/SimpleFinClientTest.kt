@@ -157,4 +157,11 @@ class SimpleFinClientTest {
         assertTrue(result is FetchResult.NetworkError)
         assertFalse((result as FetchResult.NetworkError).message.contains("demo"))
     }
+
+    @Test fun accountFilterIsRepeatedForV2() {
+        server.enqueue(MockResponse().setBody(Fixtures.simplefin("empty_accounts.json")))
+        client.fetchAccounts(access, AccountsQuery(1, 2, accountIds = listOf("A1", "B 2")))
+        val url = server.takeRequest().requestUrl!!
+        assertEquals(listOf("A1", "B 2"), url.queryParameterValues("account"))
+    }
 }

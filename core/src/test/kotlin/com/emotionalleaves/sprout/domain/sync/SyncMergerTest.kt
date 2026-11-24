@@ -68,7 +68,7 @@ class SyncMergerTest {
         val db = Db()
         syncFixture(db, "pending_then_posted_1.json", 1_763_750_000)
         val pendingCasey = db.rows.getValue("sf:C:CHK:P-2")
-        db.rows[pendingCasey.id] = pendingCasey.copy(categoryId = gifts, categorySource = CategorySource.USER, note = "road trip", alertedAt = 99)
+        db.rows[pendingCasey.id] = pendingCasey.copy(categoryId = gifts, categorySource = CategorySource.USER, note = "road trip", alertedAt = 99, excludedFromBudget = true)
 
         syncFixture(db, "pending_then_posted_2.json", 1_763_900_000)
 
@@ -78,6 +78,7 @@ class SyncMergerTest {
         assertEquals(CategorySource.USER, posted.categorySource)
         assertEquals("road trip", posted.note)
         assertEquals(99L, posted.alertedAt)
+        assertTrue(posted.excludedFromBudget)
         assertFalse(posted.pending)
     }
 
