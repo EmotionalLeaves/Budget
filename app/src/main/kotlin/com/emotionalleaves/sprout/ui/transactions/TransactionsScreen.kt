@@ -11,7 +11,21 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import com.emotionalleaves.sprout.domain.categorize.DefaultCategories
+import com.emotionalleaves.sprout.ui.common.Banner
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -47,14 +61,27 @@ import java.time.ZoneId
 class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
+    private val _uncategorizedOnly = MutableStateFlow(false)
+    val uncategorizedOnly: StateFlow<Boolean> = _uncategorizedOnly.asStateFlow()
+
+    private val uncategorizedId = flow { emit(c.db.categories().getByKey(DefaultCategories.UNCATEGORIZED)?.id) }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val uncategorizedCount: StateFlow<Int> = uncategorizedId
+        .flatMapLatest { id -> if (id == null) flowOf(0) else c.db.transactions().observeCountInCategory(id) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
     @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
-    val rows: StateFlow<List<TransactionRow>?> = _query
-        .debounce(200)
-        .flatMapLatest { q -> c.db.transactions().observeRows(q.trim().take(80), MAX_ROWS) }
+    val rows: StateFlow<List<TransactionRow>?> = combine(_query.debounce(200), _uncategorizedOnly, uncategorizedId) { q, only, uncat ->
+        Triple(q, only, uncat)
+    }
+        .flatMapLatest { (q, only, uncat) ->
+            c.db.transactions().observeRows(q.trim().take(80), MAX_ROWS, if (only) uncat ?: -1 else null)
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     fun setQuery(q: String) { _query.value = q }
+    fun setUncategorizedOnly(on: Boolean) { _uncategorizedOnly.value = on }
     fun today(): LocalDate = LocalDate.now(c.clock.withZone(ZoneId.systemDefault()))
 
     companion object {
@@ -65,11 +92,19 @@ class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun TransactionsScreen() {
+fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit) {
     val vm = sproutViewModel { TransactionsViewModel(it) }
     val query by vm.query.collectAsStateWithLifecycle()
     val rows by vm.rows.collectAsStateWithLifecycle()
+    val uncategorized by vm.uncategorizedCount.collectAsStateWithLifecycle()
+    val onlyUncategorized by vm.uncategorizedOnly.collectAsStateWithLifecycle()
     val today = vm.today()
+    var openId by rememberSaveable { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+
+    openId?.let { id ->
+        TransactionDetailSheet(id, onDismiss = { openId = null }, onMessage = { msg -> scope.launch { snackbar.showSnackbar(msg) } })
+    }
 
     Column(Modifier.fillMaxSize()) {
         OutlinedTextField(
@@ -85,6 +120,22 @@ fun TransactionsScreen() {
             singleLine = true,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
         )
+        if (uncategorized > 0) {
+            Banner(
+                "$uncategorized uncategorized transaction${if (uncategorized == 1) "" else "s"}",
+                actionLabel = "Review",
+                onAction = onReview,
+                warning = false,
+            )
+        }
+        Row(Modifier.padding(horizontal = 16.dp)) {
+            FilterChip(
+                selected = onlyUncategorized,
+                onClick = { vm.setUncategorizedOnly(!onlyUncategorized) },
+                label = { Text("Uncategorized only") },
+                modifier = Modifier.heightIn(min = 48.dp),
+            )
+        }
         val list = rows
         when {
             list == null -> Unit
@@ -108,7 +159,7 @@ fun TransactionsScreen() {
                             )
                         }
                         items(dayRows, key = { it.id }) { row ->
-                            TransactionItem(row)
+                            TransactionItem(row) { openId = row.id }
                             HorizontalDivider(Modifier.padding(start = 16.dp))
                         }
                     }

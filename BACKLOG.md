@@ -4,7 +4,7 @@ Prioritized. Phase 1 milestones come first (see PROGRESS.md); items below are gr
 
 ## Phase 1 milestones
 - [x] M2 (0.2.0) – Reliable sync: backfill for new connections, Retry-After, offline state, partial-sync note — *why: sync is the app's lifeline*
-- [ ] M3 (0.3.0) – Categorization: detail sheet, one-tap recategorize + "Always use" rules, uncategorized review, category/rule management — *why: correct categories make budgets meaningful*
+- [x] M3 (0.3.0) – Categorization: detail sheet, one-tap recategorize + "Always use" rules, uncategorized review, category/rule management
 - [ ] M4 (0.4.0) – Budgets and safe to spend — *why: the core value of the app*
 - [ ] M5 (0.5.0) – Full dashboard — *why: one glance answers "am I OK?"*
 - [ ] M6 (0.6.0) – Notifications — *why: warn before overspending*
@@ -26,10 +26,13 @@ Prioritized. Phase 1 milestones come first (see PROGRESS.md); items below are gr
 - [ ] Show per-connection problems in the sync status line chip — *why: quicker diagnosis*
 
 ## 4. Test coverage
+- [ ] Compose UI tests for the detail sheet and review flow (Robolectric) — *why: guard the main correction path*
 - [ ] ViewModel tests for connect flow error messages — *why: copy is part of the spec*
 - [ ] 10k-transaction generated fixture through SyncMerger — *why: performance regression guard*
 
 ## 5. UX polish and accessibility
+- [ ] Undo snackbar after recategorizing with "Always use" — *why: easy to fix a mis-tap that moved many transactions*
+- [ ] Category icons (iconKey) shown in chips and grid — *why: faster scanning*
 - [ ] Paged transaction list (Room Paging) instead of the 3,000-row cap — *why: smooth with 20,000 transactions*
 - [ ] Filter chips on Transactions (account, category, month, pending, uncategorized) — *why: find things fast*
 - [ ] TalkBack pass on all screens — *why: accessibility*

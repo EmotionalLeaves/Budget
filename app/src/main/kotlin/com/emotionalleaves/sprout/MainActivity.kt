@@ -33,6 +33,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.emotionalleaves.sprout.data.settings.Settings
+import com.emotionalleaves.sprout.ui.categories.CategoriesScreen
+import com.emotionalleaves.sprout.ui.categories.ReviewScreen
+import com.emotionalleaves.sprout.ui.categories.RulesScreen
 import com.emotionalleaves.sprout.ui.common.EmptyState
 import com.emotionalleaves.sprout.ui.common.appContainer
 import com.emotionalleaves.sprout.ui.home.HomeScreen
@@ -117,14 +120,24 @@ private fun MainScaffold() {
             composable(Tab.HOME.route) {
                 HomeScreen(snackbar, onConnect = { nav.navigate("connect") }, onSeeAllTransactions = { goTab(Tab.TRANSACTIONS) })
             }
-            composable(Tab.TRANSACTIONS.route) { TransactionsScreen() }
+            composable(Tab.TRANSACTIONS.route) { TransactionsScreen(snackbar, onReview = { nav.navigate("review") }) }
+            composable("review") { ReviewScreen(onBack = { nav.popBackStack() }) }
+            composable("categories") { CategoriesScreen(onBack = { nav.popBackStack() }) }
+            composable("rules") { RulesScreen(onBack = { nav.popBackStack() }) }
             composable(Tab.BUDGETS.route) {
                 EmptyState("Budgets are coming soon", "Monthly budgets and a \"safe to spend\" number arrive in version 0.4.")
             }
             composable(Tab.BILLS.route) {
                 EmptyState("Bills are coming soon", "Sprout will spot subscriptions and upcoming bills in version 0.7.")
             }
-            composable(Tab.SETTINGS.route) { SettingsScreen(snackbar, onReplaceToken = { nav.navigate("connect") }) }
+            composable(Tab.SETTINGS.route) {
+                SettingsScreen(
+                    snackbar,
+                    onReplaceToken = { nav.navigate("connect") },
+                    onCategories = { nav.navigate("categories") },
+                    onRules = { nav.navigate("rules") },
+                )
+            }
             composable("connect") {
                 ConnectScreen(
                     startAtToken = true,

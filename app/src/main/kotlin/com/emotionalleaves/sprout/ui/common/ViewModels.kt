@@ -14,7 +14,7 @@ fun appContainer(): AppContainer = (LocalContext.current.applicationContext as S
 
 /** Creates a ViewModel that gets the app container (manual DI). */
 @Composable
-inline fun <reified VM : ViewModel> sproutViewModel(crossinline create: (AppContainer) -> VM): VM {
+inline fun <reified VM : ViewModel> sproutViewModel(key: String? = null, crossinline create: (AppContainer) -> VM): VM {
     val container = appContainer()
-    return viewModel(factory = viewModelFactory { initializer { create(container) } })
+    return viewModel(key = key, factory = viewModelFactory { initializer { create(container) } })
 }

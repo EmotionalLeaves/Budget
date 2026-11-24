@@ -85,7 +85,7 @@ class SettingsViewModel(private val c: AppContainer) : ViewModel() {
 }
 
 @Composable
-fun SettingsScreen(snackbar: SnackbarHostState, onReplaceToken: () -> Unit) {
+fun SettingsScreen(snackbar: SnackbarHostState, onReplaceToken: () -> Unit, onCategories: () -> Unit, onRules: () -> Unit) {
     val vm = sproutViewModel { SettingsViewModel(it) }
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -115,6 +115,11 @@ fun SettingsScreen(snackbar: SnackbarHostState, onReplaceToken: () -> Unit) {
                 }
             }
         }
+
+        item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
+        item { SectionTitle("Categories") }
+        item { NavRow("Categories", "Add, rename, recolor or archive", onCategories) }
+        item { NavRow("Category rules", "What Sprout learned from your changes, plus keyword rules", onRules) }
 
         item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
         item { SectionTitle("Sync") }
@@ -181,6 +186,14 @@ fun SettingsScreen(snackbar: SnackbarHostState, onReplaceToken: () -> Unit) {
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun NavRow(title: String, subtitle: String, onClick: () -> Unit) {
+    Column(Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 8.dp)) {
+        Text(title, style = MaterialTheme.typography.bodyLarge)
+        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

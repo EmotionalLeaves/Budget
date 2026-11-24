@@ -24,6 +24,12 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import com.emotionalleaves.sprout.ui.transactions.TransactionDetailSheet
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -56,8 +62,13 @@ fun HomeScreen(
     val state by vm.state.collectAsStateWithLifecycle()
     val syncing by vm.syncing.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    var openId by rememberSaveable { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(vm) { vm.messages.collect { snackbar.showSnackbar(it) } }
+    openId?.let { id ->
+        TransactionDetailSheet(id, onDismiss = { openId = null }, onMessage = { msg -> scope.launch { snackbar.showSnackbar(msg) } })
+    }
 
     PullToRefreshBox(isRefreshing = syncing, onRefresh = vm::syncNow, modifier = Modifier.fillMaxSize()) {
         LazyColumn(Modifier.fillMaxSize()) {
@@ -114,7 +125,7 @@ fun HomeScreen(
                 }
             }
             items(state.recent, key = { "tx-" + it.id }) { row ->
-                TransactionItem(row)
+                TransactionItem(row) { openId = row.id }
                 HorizontalDivider(Modifier.padding(start = 16.dp))
             }
         }

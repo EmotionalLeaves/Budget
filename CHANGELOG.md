@@ -2,6 +2,18 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [0.3.0] - 2026-11-24
+
+Categories that learn from you.
+
+### Added
+- Tap any transaction to see its details, change its category, add a note, or exclude it from your budget.
+- "Always use this for {merchant}" (on by default): Sprout remembers your choice, moves that merchant's other transactions, and uses it for future ones.
+- Review uncategorized: a banner on Transactions shows how many need a category; tap Review to sort them one tap at a time.
+- "Uncategorized only" filter on Transactions.
+- Settings → Categories: add, rename, recolor or archive categories.
+- Settings → Category rules: see what Sprout learned, change or delete rules, and add keyword rules ("contains").
+
 ## [0.2.0] - 2026-11-24
 
 More reliable syncing.
