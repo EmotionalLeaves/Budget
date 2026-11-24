@@ -108,6 +108,8 @@ Decisions made while building, one per line:
 - App lock and "hide in recents" are off by default, to keep everyday use simple.
 - Rate-limit warnings are recognized by their wording (e.g. "exceeded", "too many requests", "rate limit"), since the Bridge sends them as plain text; Sprout then pauses all syncing for 12 hours.
 - "Closed" accounts are only flagged (missing from successful syncs for 3+ days), never changed automatically, so no database migration is needed.
+- The cash forecast uses checking, savings and cash accounts counted in totals; everyday spending is the budget left when budgets exist (bills then only from unbudgeted categories, like safe to spend), otherwise the last 30 days' pace excluding bills.
+- Paychecks are found with the same rules as bills, applied to inflows in Income categories.
 - Signing-key secrets are deliberately not mapped in CI: the committed key is always used.
 
 ---

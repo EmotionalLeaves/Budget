@@ -2,6 +2,15 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [1.6.0] - 2026-11-24
+
+"Will I make it to the end of the month?"
+
+### Added
+- Home: a cash forecast for the end of the month: your checking and savings now, plus expected paychecks, minus bills still due and everyday spending. It warns if you could dip below zero before payday, and shows your next paycheck. Tap it to see the math.
+- Home: how much you've spent so far this month compared with the same days last month.
+- Sprout now recognizes regular paychecks (weekly, every 2 weeks, monthly) the same way it finds bills.
+
 ## [1.5.0] - 2026-11-24
 
 ### Added

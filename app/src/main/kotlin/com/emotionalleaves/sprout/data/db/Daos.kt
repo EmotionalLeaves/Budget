@@ -359,6 +359,28 @@ interface RecurringDao {
     )
     suspend fun outflowsSince(from: Long): List<ChargeRow>
 
+    /** Posted inflows in INCOME categories, for paycheck detection. */
+    @Query(
+        """
+        SELECT t.merchantKey AS merchantKey, t.amountMinor AS amountMinor, t.occurredAt AS occurredAt,
+               t.categoryId AS categoryId, t.accountId AS accountId
+        FROM transactions t JOIN categories c ON c.id = t.categoryId
+        WHERE t.amountMinor > 0 AND t.pending = 0 AND t.occurredAt >= :from AND c.kind = 'INCOME'
+        """,
+    )
+    suspend fun inflowsSince(from: Long): List<ChargeRow>
+
+    /** Everyday spending (EXPENSE, not part of a bill, not excluded, visible accounts) since [from], positive cents. */
+    @Query(
+        """
+        SELECT COALESCE(-SUM(t.amountMinor), 0) FROM transactions t
+        JOIN categories c ON c.id = t.categoryId JOIN accounts a ON a.id = t.accountId
+        WHERE t.occurredAt >= :from AND t.occurredAt < :to AND c.kind = 'EXPENSE' AND t.recurringChargeId IS NULL
+          AND t.excludedFromBudget = 0 AND a.hidden = 0
+        """,
+    )
+    suspend fun everydaySpending(from: Long, to: Long): Long
+
     @Query("SELECT * FROM recurring_charges") suspend fun getAll(): List<RecurringChargeEntity>
     @Query("SELECT * FROM recurring_charges WHERE id = :id") suspend fun getById(id: Long): RecurringChargeEntity?
     @Insert suspend fun insert(item: RecurringChargeEntity): Long

@@ -78,6 +78,7 @@ fun HomeScreen(
     val budget by vm.budget.collectAsStateWithLifecycle()
     val bills by vm.bills.collectAsStateWithLifecycle()
     val crash by vm.crash.collectAsStateWithLifecycle()
+    val outlook by vm.outlook.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var openId by rememberSaveable { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
@@ -153,6 +154,8 @@ fun HomeScreen(
             budget?.let { m ->
                 if (m.totalBudgetMinor > 0) item { SpentThisMonth(m) }
                 item { SafeToSpendCard(m, onSetBudget = onSetBudgets) }
+                outlook?.trend?.let { t -> item { TrendLine(t) } }
+                outlook?.forecast?.let { f -> item { ForecastCard(f) } }
                 val top = (m.budgeted + m.unbudgetedWithSpending).filter { it.spentMinor > 0 }.sortedByDescending { it.spentMinor }.take(5)
                 if (top.isNotEmpty()) {
                     item {
@@ -199,6 +202,63 @@ fun HomeScreen(
                 HorizontalDivider(Modifier.padding(start = 16.dp))
             }
         }
+    }
+}
+
+@Composable
+private fun TrendLine(t: com.emotionalleaves.sprout.domain.forecast.CashFlow.Trend) {
+    val p = t.percent
+    val text = when {
+        p == null -> "Spent ${Money.format(t.thisMonthMinor)} so far this month"
+        p > 0 -> "Spent ${Money.format(t.thisMonthMinor)} so far — $p% more than this time last month"
+        p < 0 -> "Spent ${Money.format(t.thisMonthMinor)} so far — ${-p}% less than this time last month"
+        else -> "Spent ${Money.format(t.thisMonthMinor)} so far — same as this time last month"
+    }
+    Text(text, Modifier.padding(horizontal = 16.dp, vertical = 4.dp), style = MaterialTheme.typography.bodyMedium,
+        color = if ((p ?: 0) > 10) LocalSproutColors.current.warning else MaterialTheme.colorScheme.onSurfaceVariant)
+}
+
+@Composable
+private fun ForecastCard(f: com.emotionalleaves.sprout.domain.forecast.Forecast) {
+    var details by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    val monthEnd = java.time.format.DateTimeFormatter.ofPattern("MMM d", java.util.Locale.US)
+    val end = java.time.LocalDate.now().let { it.withDayOfMonth(it.lengthOfMonth()) }
+    Card(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+        Column(
+            Modifier.fillMaxWidth().clickable(onClickLabel = "Show forecast details") { details = true }.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text("Cash by ${end.format(monthEnd)}", style = MaterialTheme.typography.labelLarge)
+            Text(
+                "≈ ${Money.format(f.endMinor)}",
+                style = MaterialTheme.typography.headlineSmall,
+                color = if (f.endMinor < 0) LocalSproutColors.current.danger else MaterialTheme.colorScheme.onSurface,
+            )
+            if (f.lowMinor < 0 && f.lowMinor < f.endMinor) {
+                Text("Could dip to ${Money.format(f.lowMinor)} around ${f.lowDate.format(monthEnd)} before payday",
+                    style = MaterialTheme.typography.bodySmall, color = LocalSproutColors.current.warning)
+            }
+            f.nextIncome?.let { Text("Next paycheck: ${it.date.format(monthEnd)} · ${Money.format(it.amountMinor)}", style = MaterialTheme.typography.bodySmall) }
+        }
+    }
+    if (details) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { details = false },
+            title = { Text("How it's worked out") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Cash now: ${Money.format(f.startMinor)}")
+                    Text("+ expected paychecks: ${Money.format(f.incomeMinor)}")
+                    Text("− bills still due: ${Money.format(f.billsMinor)}")
+                    Text("− everyday spending: ${Money.format(f.spendingMinor)}" +
+                        if (f.spendingFromBudgets) " (budget left)" else " (your last 30 days' pace)")
+                    Text("= ≈ ${Money.format(f.endMinor)} at month end", style = MaterialTheme.typography.titleSmall)
+                    Text("Cash means checking, savings and cash accounts counted in your total. It's an estimate.",
+                        style = MaterialTheme.typography.bodySmall)
+                }
+            },
+            confirmButton = { TextButton(onClick = { details = false }) { Text("OK") } },
+        )
     }
 }
 

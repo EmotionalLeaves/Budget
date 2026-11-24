@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.launch
 
 data class Totals(val totalMinor: Long, val cashMinor: Long, val creditMinor: Long, val excludedNonUsd: Int)
@@ -81,6 +82,15 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
     val bills: StateFlow<List<UpcomingBill>> = c.budgetRepository.todayFlow()
         .flatMapLatest { c.recurringRepository.observeUpcoming(30) }.map { it.take(3) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val outlook: StateFlow<com.emotionalleaves.sprout.data.forecast.HomeOutlook?> = combine(
+        c.budgetRepository.todayFlow(),
+        c.db.transactions().observeCount(),
+        c.db.accounts().observeAll(),
+    ) { _, _, _ -> Unit }
+        .mapLatest { runCatching { c.forecastRepository.outlook() }.getOrNull() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     val syncing: StateFlow<Boolean> = WorkManager.getInstance(c.appContext)
         .getWorkInfosForUniqueWorkFlow(SyncScheduler.ONE_TIME_WORK)

@@ -46,9 +46,9 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [ ] Debounce budget/recurring recomputation after bulk recategorization — *why: smooth on big histories*
 
 ## 7. New budgeting features
-- [ ] Spending trends chart on Home (this month vs last 3 months) — *why: see direction at a glance*
+- [x] (1.6.0) Spending trend on Home (this month vs same days last month) — *why: see direction at a glance*
 - [ ] Savings goals with progress — *why: popular in budgeting apps, motivating*
-- [ ] Cash-flow forecast to month end (balance − upcoming bills + expected income) — *why: "will I make it to payday?"*
+- [x] (1.6.0) Cash-flow forecast to month end (balance − upcoming bills + expected income) — *why: "will I make it to payday?"*
 - [ ] Bill calendar view — *why: see bills by date*
 - [ ] Budget rollover (unused amount carries to next month, opt-in per category) — *why: flexible budgets*
 - [ ] Split a transaction across categories — *why: a Target run is groceries + household*

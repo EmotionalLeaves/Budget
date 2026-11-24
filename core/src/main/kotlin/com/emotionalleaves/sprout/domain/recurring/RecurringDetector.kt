@@ -53,6 +53,12 @@ object RecurringDetector {
     const val AMOUNT_TOLERANCE_MINOR = 300L
     private const val MIN_FIT_PERCENT = 75
 
+    /**
+     * Regular income (paychecks): the same rules applied to inflows. Returned amounts are positive, like bills.
+     */
+    fun detectIncome(inflows: List<ChargeTx>, now: Long, zone: ZoneId): List<DetectedRecurring> =
+        detect(inflows.filter { it.amountMinor > 0 }.map { it.copy(amountMinor = -it.amountMinor) }, now, zone)
+
     fun detect(outflows: List<ChargeTx>, now: Long, zone: ZoneId): List<DetectedRecurring> {
         val from = now - LOOKBACK_DAYS * 86_400
         return outflows
