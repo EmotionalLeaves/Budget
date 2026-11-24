@@ -2,6 +2,19 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [1.7.0] - 2026-11-24
+
+Savings goals.
+
+### Added
+- Budgets → Goals: save toward anything. Give it a target and, if you like, a date; Sprout shows your progress and how much to set aside each month.
+- Track a goal with an account's balance (like a savings account) or with amounts you add yourself.
+- Home shows your first two goals.
+- Goals are included in backups.
+
+### Notes
+- This update adds a new table to Sprout's database. Your existing data is kept as-is (tested before release).
+
 ## [1.6.0] - 2026-11-24
 
 "Will I make it to the end of the month?"

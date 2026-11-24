@@ -73,7 +73,7 @@ class BudgetsViewModel(private val c: AppContainer) : ViewModel() {
 private val monthFormat = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.US)
 
 @Composable
-fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit) {
+fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit, onGoals: () -> Unit) {
     val vm = sproutViewModel { BudgetsViewModel(it) }
     val month by vm.month.collectAsStateWithLifecycle()
     val data by vm.data.collectAsStateWithLifecycle()
@@ -97,6 +97,7 @@ fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit) {
             item {
                 Row(Modifier.fillMaxWidth().padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     SectionTitle("Budgets", Modifier.weight(1f))
+                    TextButton(onClick = onGoals, modifier = Modifier.heightIn(min = 48.dp)) { Text("Goals") }
                     TextButton(onClick = onQuickSetup, modifier = Modifier.heightIn(min = 48.dp)) { Text("Quick setup") }
                 }
             }

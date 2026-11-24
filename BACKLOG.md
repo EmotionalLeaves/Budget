@@ -28,7 +28,7 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [ ] Compose UI tests (Robolectric) for the detail sheet, review flow and budget edit dialog — *why: guard the main correction paths*
 - [ ] SyncWorker tests with work-testing (retry, Retry-After chain, revoked cancel) — *why: work package coverage is low*
 - [ ] 10k-transaction generated SyncMerger fixture — *why: merge performance regression guard*
-- [ ] Migration test template ready for schema version 2 — *why: the first migration must be easy and safe*
+- [x] (1.7.0) First migration (1→2) with MigrationTest seeding realistic v1 data — *why: the first migration must be easy and safe*
 
 ## 5. UX polish and accessibility
 - [x] (1.4.0) Transaction detail: link to its recurring charge — *why: jump from a charge to its bill*
@@ -47,7 +47,7 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 
 ## 7. New budgeting features
 - [x] (1.6.0) Spending trend on Home (this month vs same days last month) — *why: see direction at a glance*
-- [ ] Savings goals with progress — *why: popular in budgeting apps, motivating*
+- [x] (1.7.0) Savings goals with progress — *why: popular in budgeting apps, motivating*
 - [x] (1.6.0) Cash-flow forecast to month end (balance − upcoming bills + expected income) — *why: "will I make it to payday?"*
 - [ ] Bill calendar view — *why: see bills by date*
 - [ ] Budget rollover (unused amount carries to next month, opt-in per category) — *why: flexible budgets*

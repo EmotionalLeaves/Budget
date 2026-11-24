@@ -76,15 +76,17 @@ class BackupRepository(private val db: SproutDatabase, private val clock: Clock)
         val alerts = arr(backup, "budgetAlerts").map { o -> BudgetAlertEntity(o.long("categoryId"), o.str("yearMonth"), o.int("threshold"), o.long("firedAt")) }
         val rules = arr(backup, "merchantRules").map(::rule)
         val recurring = arr(backup, "recurringCharges").map(::recurringCharge)
+        // Added in schema 2; older backups simply have none.
+        val goals = arr(backup, "savingsGoals").map(::goal)
         if (cats.isEmpty()) throw BackupException("This backup file is damaged.")
         val b = db.backup()
         db.withTransaction {
             b.wipeTransactions(); b.wipeBudgetAlerts(); b.wipeBudgetOverrides(); b.wipeCategoryBudgets()
-            b.wipeMerchantRules(); b.wipeRecurring(); b.wipeAccounts(); b.wipeConnections(); b.wipeCategories()
+            b.wipeMerchantRules(); b.wipeRecurring(); db.goals().wipe(); b.wipeAccounts(); b.wipeConnections(); b.wipeCategories()
             b.putCategories(cats); b.putConnections(conns); b.putAccounts(accounts)
             txs.chunked(500).forEach { b.putTransactions(it) }
             b.putCategoryBudgets(budgets); b.putBudgetOverrides(overrides); b.putBudgetAlerts(alerts)
-            b.putMerchantRules(rules); b.putRecurring(recurring)
+            b.putMerchantRules(rules); b.putRecurring(recurring); db.goals().putAll(goals)
         }
         RestoreSummary(txs.size, accounts.size, budgets.size, rules.size, recurring.size)
     }
@@ -152,6 +154,13 @@ class BackupRepository(private val db: SproutDatabase, private val clock: Clock)
                     put("userEdited", r.userEdited); put("confidence", r.confidence); put("occurrences", r.occurrences); put("updatedAt", r.updatedAt)
                 })
             } })
+            put("savingsGoals", buildJsonArray { db.goals().getAll().forEach { g ->
+                add(buildJsonObject {
+                    put("id", g.id); put("name", g.name); put("targetMinor", g.targetMinor); put("targetDate", g.targetDate)
+                    put("accountId", g.accountId); put("savedMinor", g.savedMinor); put("archived", g.archived)
+                    put("createdAt", g.createdAt); put("updatedAt", g.updatedAt)
+                })
+            } })
         }.toString()
     }
 
@@ -202,6 +211,12 @@ class BackupRepository(private val db: SproutDatabase, private val clock: Clock)
     private fun rule(o: JsonObject) = MerchantRuleEntity(
         id = o.long("id"), matchType = o.enum("matchType", RuleType.EXACT), pattern = o.str("pattern"), categoryId = o.long("categoryId"),
         origin = o.enum("origin", RuleOrigin.USER_CREATED), hitCount = o.int("hitCount"), createdAt = o.long("createdAt"), updatedAt = o.long("updatedAt"),
+    )
+
+    private fun goal(o: JsonObject) = com.emotionalleaves.sprout.data.db.SavingsGoalEntity(
+        id = o.long("id"), name = o.str("name"), targetMinor = o.long("targetMinor"), targetDate = o.strOrNull("targetDate"),
+        accountId = o.strOrNull("accountId"), savedMinor = o.long("savedMinor"), archived = o.bool("archived"),
+        createdAt = o.long("createdAt"), updatedAt = o.long("updatedAt"),
     )
 
     private fun recurringCharge(o: JsonObject) = RecurringChargeEntity(

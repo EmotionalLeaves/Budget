@@ -450,3 +450,14 @@ interface BackupDao {
     @Query("DELETE FROM connections") suspend fun wipeConnections()
     @Query("DELETE FROM categories") suspend fun wipeCategories()
 }
+
+@Dao
+interface GoalDao {
+    @Query("SELECT * FROM savings_goals WHERE archived = 0 ORDER BY createdAt") fun observeActive(): Flow<List<SavingsGoalEntity>>
+    @Query("SELECT * FROM savings_goals") suspend fun getAll(): List<SavingsGoalEntity>
+    @Insert suspend fun insert(goal: SavingsGoalEntity): Long
+    @Update suspend fun update(goal: SavingsGoalEntity)
+    @Query("DELETE FROM savings_goals WHERE id = :id") suspend fun delete(id: Long)
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putAll(items: List<SavingsGoalEntity>)
+    @Query("DELETE FROM savings_goals") suspend fun wipe()
+}

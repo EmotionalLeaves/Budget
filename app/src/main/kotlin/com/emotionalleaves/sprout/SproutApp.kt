@@ -17,6 +17,7 @@ import com.emotionalleaves.sprout.data.secure.SecureStore
 import com.emotionalleaves.sprout.data.settings.SettingsStore
 import com.emotionalleaves.sprout.data.simplefin.SimpleFinClient
 import com.emotionalleaves.sprout.data.forecast.ForecastRepository
+import com.emotionalleaves.sprout.data.goals.GoalRepository
 import com.emotionalleaves.sprout.data.recurring.RecurringRepository
 import com.emotionalleaves.sprout.data.sync.AlertSink
 import com.emotionalleaves.sprout.data.sync.ConnectRepository
@@ -43,6 +44,7 @@ class AppContainer(context: Context) {
     val budgetRepository = BudgetRepository(db, clock, expectedCharges = recurringRepository::expectedCharges)
     val alertRepository = AlertRepository(db, settings, budgetRepository, notifier, clock)
     val forecastRepository = ForecastRepository(db, budgetRepository, recurringRepository, clock)
+    val goalRepository = GoalRepository(db, clock)
 
     /** After every sync: refresh recurring charges first (they feed safe to spend), then alerts. */
     private val postSync = object : AlertSink {

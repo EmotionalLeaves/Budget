@@ -110,6 +110,7 @@ Decisions made while building, one per line:
 - "Closed" accounts are only flagged (missing from successful syncs for 3+ days), never changed automatically, so no database migration is needed.
 - The cash forecast uses checking, savings and cash accounts counted in totals; everyday spending is the budget left when budgets exist (bills then only from unbudgeted categories, like safe to spend), otherwise the last 30 days' pace excluding bills.
 - Paychecks are found with the same rules as bills, applied to inflows in Income categories.
+- Database version 2 (1.7.0) adds the savings_goals table via an explicit migration; goals have no foreign key to accounts, so a removed account just falls back to the amount entered by hand.
 - Signing-key secrets are deliberately not mapped in CI: the committed key is always used.
 
 ---

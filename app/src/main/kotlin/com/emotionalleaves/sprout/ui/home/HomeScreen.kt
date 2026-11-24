@@ -71,6 +71,7 @@ fun HomeScreen(
     onSeeBudgets: () -> Unit,
     onSeeBills: () -> Unit,
     onImport: () -> Unit,
+    onGoals: () -> Unit,
 ) {
     val vm = sproutViewModel { HomeViewModel(it) }
     val state by vm.state.collectAsStateWithLifecycle()
@@ -79,6 +80,7 @@ fun HomeScreen(
     val bills by vm.bills.collectAsStateWithLifecycle()
     val crash by vm.crash.collectAsStateWithLifecycle()
     val outlook by vm.outlook.collectAsStateWithLifecycle()
+    val goals by vm.goals.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var openId by rememberSaveable { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
@@ -166,6 +168,16 @@ fun HomeScreen(
                     }
                     items(top, key = { "top-" + it.category.id }) { line -> TopCategoryRow(line) { onCategory(line.category.id) } }
                 }
+            }
+
+            if (goals.isNotEmpty()) {
+                item {
+                    Row(Modifier.fillMaxWidth().padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        SectionTitle("Savings goals", Modifier.weight(1f))
+                        TextButton(onClick = onGoals, modifier = Modifier.heightIn(min = 48.dp)) { Text("All goals") }
+                    }
+                }
+                items(goals, key = { "goal-" + it.goal.id }) { g -> com.emotionalleaves.sprout.ui.goals.GoalProgressRow(g, onGoals) }
             }
 
             if (bills.isNotEmpty()) {

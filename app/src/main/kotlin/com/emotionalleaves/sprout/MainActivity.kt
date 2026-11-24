@@ -53,6 +53,7 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.emotionalleaves.sprout.ui.bills.BillsScreen
 import com.emotionalleaves.sprout.ui.importcsv.ImportScreen
+import com.emotionalleaves.sprout.ui.goals.GoalsScreen
 import com.emotionalleaves.sprout.ui.budgets.BudgetsScreen
 import com.emotionalleaves.sprout.ui.budgets.CategoryDetailScreen
 import com.emotionalleaves.sprout.ui.budgets.QuickSetupScreen
@@ -261,6 +262,7 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
                     onSeeBudgets = { goTab(Tab.BUDGETS) },
                     onSeeBills = { goTab(Tab.BILLS) },
                     onImport = { nav.navigate("import") },
+                    onGoals = { nav.navigate("goals") },
                 )
             }
             composable(Tab.TRANSACTIONS.route) { TransactionsScreen(snackbar, onReview = { nav.navigate("review") }) }
@@ -268,9 +270,14 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
             composable("categories") { CategoriesScreen(onBack = { nav.popBackStack() }) }
             composable("rules") { RulesScreen(onBack = { nav.popBackStack() }) }
             composable(Tab.BUDGETS.route) {
-                BudgetsScreen(onQuickSetup = { nav.navigate("quick-setup") }, onCategory = { nav.navigate("category/$it") })
+                BudgetsScreen(
+                    onQuickSetup = { nav.navigate("quick-setup") },
+                    onCategory = { nav.navigate("category/$it") },
+                    onGoals = { nav.navigate("goals") },
+                )
             }
             composable("import") { ImportScreen(onBack = { nav.popBackStack() }, onDone = { nav.popBackStack() }) }
+            composable("goals") { GoalsScreen(onBack = { nav.popBackStack() }) }
             composable("quick-setup") { QuickSetupScreen(onBack = { nav.popBackStack() }) }
             composable(
                 "category/{id}",

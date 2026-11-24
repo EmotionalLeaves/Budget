@@ -98,6 +98,6 @@ class BackupRepositoryTest {
         }
         try { repo.restore(broken); fail() } catch (e: Exception) { /* expected */ }
         assertEquals(before, snapshot())
-        assertEquals(JsonPrimitive(1), obj["schema"])
+        assertEquals(JsonPrimitive(com.emotionalleaves.sprout.data.db.SproutDatabase.VERSION), obj["schema"])
     }
 }

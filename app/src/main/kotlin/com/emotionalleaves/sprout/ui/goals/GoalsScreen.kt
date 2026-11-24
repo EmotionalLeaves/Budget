@@ -1,0 +1,247 @@
+package com.emotionalleaves.sprout.ui.goals
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewModelScope
+import com.emotionalleaves.sprout.AppContainer
+import com.emotionalleaves.sprout.data.db.AccountEntity
+import com.emotionalleaves.sprout.data.goals.GoalView
+import com.emotionalleaves.sprout.domain.budget.ProgressLevel
+import com.emotionalleaves.sprout.domain.money.Money
+import com.emotionalleaves.sprout.ui.budgets.BudgetProgress
+import com.emotionalleaves.sprout.ui.common.EmptyState
+import com.emotionalleaves.sprout.ui.common.sproutViewModel
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+
+class GoalsViewModel(private val c: AppContainer) : ViewModel() {
+    val goals: StateFlow<List<GoalView>?> = c.goalRepository.observe().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    val accounts: StateFlow<List<AccountEntity>> = c.db.accounts().observeVisible().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun save(id: Long?, name: String, target: Long, date: LocalDate?, accountId: String?, saved: Long) =
+        viewModelScope.launch { c.goalRepository.save(id, name, target, date, accountId, saved) }
+    fun addMoney(id: Long, amount: Long) = viewModelScope.launch { c.goalRepository.addMoney(id, amount) }
+    fun delete(id: Long) = viewModelScope.launch { c.goalRepository.delete(id) }
+}
+
+private val dateFmt = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.US)
+
+@Composable
+fun GoalProgressRow(v: GoalView, onClick: (() -> Unit)? = null) {
+    val p = v.progress
+    val desc = "${v.goal.name}: ${Money.format(p.savedMinor)} of ${Money.format(p.targetMinor)}, ${p.percent} percent"
+    Column(
+        Modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = 16.dp, vertical = 10.dp).semantics(mergeDescendants = true) { contentDescription = desc },
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(v.goal.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+            Text(if (p.reached) "Reached!" else "${p.percent}%", style = MaterialTheme.typography.labelLarge)
+        }
+        BudgetProgress(p.savedMinor, p.targetMinor, ProgressLevel.GREEN)
+        Text("${Money.format(p.savedMinor)} of ${Money.format(p.targetMinor)}" + (v.account?.let { " · from ${it.label}" } ?: ""),
+            style = MaterialTheme.typography.labelSmall)
+        when {
+            p.overdue -> Text("Target date passed — ${Money.format(p.remainingMinor)} to go", style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.error)
+            p.perMonthMinor != null -> Text("Save ${Money.format(p.perMonthMinor ?: 0)}/month to reach it by " +
+                (v.goal.targetDate?.let { LocalDate.parse(it).format(dateFmt) } ?: ""), style = MaterialTheme.typography.labelSmall)
+        }
+    }
+}
+
+@Composable
+fun GoalsScreen(onBack: () -> Unit) {
+    val vm = sproutViewModel { GoalsViewModel(it) }
+    val goals by vm.goals.collectAsStateWithLifecycle()
+    val accounts by vm.accounts.collectAsStateWithLifecycle()
+    var editing by remember { mutableStateOf<GoalView?>(null) }
+    var adding by remember { mutableStateOf(false) }
+    var adjusting by remember { mutableStateOf<GoalView?>(null) }
+
+    Box(Modifier.fillMaxSize()) {
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 96.dp)) {
+            item {
+                Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+                    Text("Savings goals", style = MaterialTheme.typography.titleLarge)
+                }
+            }
+            val list = goals
+            if (list != null && list.isEmpty()) {
+                item { EmptyState("No goals yet", "Saving for something? Add a goal and Sprout shows how much to put aside each month.") }
+            }
+            items(list.orEmpty(), key = { it.goal.id }) { v ->
+                Card(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
+                    GoalProgressRow(v) { editing = v }
+                    if (v.account == null) {
+                        TextButton(onClick = { adjusting = v }, modifier = Modifier.padding(start = 8.dp).heightIn(min = 48.dp)) { Text("Add money") }
+                    }
+                }
+            }
+        }
+        ExtendedFloatingActionButton(
+            onClick = { adding = true },
+            icon = { Icon(Icons.Filled.Add, contentDescription = null) },
+            text = { Text("Add goal") },
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+        )
+    }
+
+    if (adding || editing != null) {
+        val g = editing?.goal
+        GoalDialog(
+            initialName = g?.name ?: "",
+            initialTarget = g?.targetMinor,
+            initialDate = g?.targetDate?.let(LocalDate::parse),
+            initialAccount = g?.accountId,
+            initialSaved = g?.savedMinor ?: 0,
+            accounts = accounts,
+            onDismiss = { adding = false; editing = null },
+            onSave = { name, target, date, account, saved -> vm.save(g?.id, name, target, date, account, saved); adding = false; editing = null },
+            onDelete = g?.let { { vm.delete(it.id); editing = null } },
+        )
+    }
+    adjusting?.let { v ->
+        var text by remember { mutableStateOf("") }
+        val amount = Money.parseUserInput(text.removePrefix("-"))?.let { if (text.startsWith("-")) -it else it }
+        AlertDialog(
+            onDismissRequest = { adjusting = null },
+            title = { Text("Add money to ${v.goal.name}") },
+            text = {
+                OutlinedTextField(value = text, onValueChange = { text = it.take(10) }, prefix = { Text("$") }, singleLine = true,
+                    label = { Text("Amount (use - to take out)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text))
+            },
+            confirmButton = { TextButton(onClick = { amount?.let { vm.addMoney(v.goal.id, it) }; adjusting = null }, enabled = amount != null) { Text("Save") } },
+            dismissButton = { TextButton(onClick = { adjusting = null }) { Text("Cancel") } },
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun GoalDialog(
+    initialName: String, initialTarget: Long?, initialDate: LocalDate?, initialAccount: String?, initialSaved: Long,
+    accounts: List<AccountEntity>,
+    onDismiss: () -> Unit,
+    onSave: (String, Long, LocalDate?, String?, Long) -> Unit,
+    onDelete: (() -> Unit)?,
+) {
+    var name by remember { mutableStateOf(initialName) }
+    var targetText by remember { mutableStateOf(initialTarget?.let { (it / 100).toString() } ?: "") }
+    var date by remember { mutableStateOf(initialDate) }
+    var account by remember { mutableStateOf(initialAccount) }
+    var savedText by remember { mutableStateOf(if (initialSaved > 0) (initialSaved / 100).toString() else "") }
+    var picking by remember { mutableStateOf(false) }
+    val target = Money.parseUserInput(targetText)?.takeIf { it > 0 }
+    val saved = if (savedText.isBlank()) 0L else Money.parseUserInput(savedText)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (onDelete == null) "New goal" else "Edit goal") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(value = name, onValueChange = { name = it.take(60) }, label = { Text("Name") }, singleLine = true)
+                OutlinedTextField(value = targetText, onValueChange = { targetText = it.take(10) }, label = { Text("Target amount") },
+                    prefix = { Text("$") }, singleLine = true, isError = targetText.isNotBlank() && target == null,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedButton(onClick = { picking = true }, modifier = Modifier.heightIn(min = 48.dp)) {
+                        Text(date?.let { "By ${it.format(dateFmt)}" } ?: "Add a target date (optional)")
+                    }
+                    if (date != null) TextButton(onClick = { date = null }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Clear") }
+                }
+                Text("Track progress with", style = MaterialTheme.typography.labelLarge)
+                Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).selectable(account == null, role = Role.RadioButton) { account = null },
+                    verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(selected = account == null, onClick = null)
+                    Text("Amounts I add myself", Modifier.padding(start = 8.dp))
+                }
+                accounts.forEach { a ->
+                    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).selectable(account == a.id, role = Role.RadioButton) { account = a.id },
+                        verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selected = account == a.id, onClick = null)
+                        Text("${a.label}'s balance", Modifier.padding(start = 8.dp))
+                    }
+                }
+                if (account == null) {
+                    OutlinedTextField(value = savedText, onValueChange = { savedText = it.take(10) }, label = { Text("Saved so far") },
+                        prefix = { Text("$") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                }
+                if (onDelete != null) TextButton(onClick = onDelete, modifier = Modifier.heightIn(min = 48.dp)) { Text("Delete goal") }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { if (target != null && saved != null) onSave(name, target, date, account, saved) },
+                enabled = name.isNotBlank() && target != null && saved != null) { Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+    if (picking) {
+        val state = rememberDatePickerState(initialSelectedDateMillis = (date ?: LocalDate.now().plusMonths(6)).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
+        DatePickerDialog(
+            onDismissRequest = { picking = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    state.selectedDateMillis?.let { date = Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate() }
+                    picking = false
+                }) { Text("OK") }
+            },
+            dismissButton = { TextButton(onClick = { picking = false }) { Text("Cancel") } },
+        ) { DatePicker(state) }
+    }
+}

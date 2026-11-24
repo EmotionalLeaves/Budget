@@ -219,3 +219,20 @@ data class SyncLogEntity(
     /** HTTP requests this sync made to SimpleFIN; used to stay under the Bridge's daily limit. */
     @ColumnInfo(defaultValue = "0") val requestCount: Int = 0,
 )
+
+/** A savings goal (added in database version 2). Progress is the linked account's balance, or [savedMinor]. */
+@Entity(tableName = "savings_goals", indices = [Index("accountId")])
+data class SavingsGoalEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val targetMinor: Long,
+    /** "YYYY-MM-DD", optional. */
+    val targetDate: String?,
+    /** When set, the goal follows this account's balance. */
+    val accountId: String?,
+    /** Amount saved so far, entered by the user (used when no account is linked). */
+    val savedMinor: Long,
+    val archived: Boolean,
+    val createdAt: Long,
+    val updatedAt: Long,
+)

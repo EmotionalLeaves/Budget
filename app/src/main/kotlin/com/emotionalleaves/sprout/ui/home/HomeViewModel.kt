@@ -92,6 +92,9 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
         .mapLatest { runCatching { c.forecastRepository.outlook() }.getOrNull() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
+    val goals: StateFlow<List<com.emotionalleaves.sprout.data.goals.GoalView>> = c.goalRepository.observe().map { it.take(2) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     val syncing: StateFlow<Boolean> = WorkManager.getInstance(c.appContext)
         .getWorkInfosForUniqueWorkFlow(SyncScheduler.ONE_TIME_WORK)
         .map { list -> list.any { it.state == WorkInfo.State.RUNNING } }
