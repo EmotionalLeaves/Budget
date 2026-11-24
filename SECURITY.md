@@ -20,6 +20,9 @@ one POST to claim a setup token (once), and GETs to read your accounts.
 - The access URL and setup token are never logged, shown, exported, put in notifications or sent anywhere but the SimpleFIN host. `AccessUrl.toString()` prints `AccessUrl(***)`, and every network error message goes through a redactor.
 - Credentials are sent in an `Authorization: Basic` header; they are removed from the request URL. Redirects are never followed.
 
+## Backups
+Backups are files you create and place yourself. Each is encrypted with AES-256-GCM using a key derived from your password (PBKDF2-HMAC-SHA256, 600,000 iterations, random salt); the header is authenticated, so any change to the file is detected. Backups never include the SimpleFIN access URL. Restores happen in one database transaction.
+
 ## Optional protections
 - **App lock**: asks for your phone's screen lock on open and after a minute in the background.
 - **Hide in screenshots and recent apps** (FLAG_SECURE).

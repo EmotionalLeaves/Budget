@@ -41,6 +41,7 @@ abstract class SproutDatabase : RoomDatabase() {
     abstract fun budgets(): BudgetDao
     abstract fun alerts(): AlertDao
     abstract fun recurring(): RecurringDao
+    abstract fun backup(): BackupDao
 
     companion object {
         const val VERSION = 1

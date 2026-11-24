@@ -15,7 +15,7 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 ## 2. Security and data safety
 - [x] (1.1.0) Optional app lock with fingerprint/PIN (BiometricPrompt) — *why: banking data on a shared or lost phone*
 - [x] (1.1.0) FLAG_SECURE option to hide Sprout from screenshots and the recent-apps preview — *why: amounts visible in the app switcher*
-- [ ] Local encrypted backup and restore to a user-chosen file (password-protected) — *why: survive a phone change without cloud backup*
+- [x] (1.2.0) Local encrypted backup and restore to a user-chosen file (password-protected) — *why: survive a phone change without cloud backup*
 - [ ] Pin the SimpleFIN Bridge certificate chain (with a safe fallback) — *why: defense against a compromised CA*
 
 ## 3. Sync reliability

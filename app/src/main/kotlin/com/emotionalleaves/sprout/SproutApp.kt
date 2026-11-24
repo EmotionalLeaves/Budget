@@ -6,6 +6,7 @@ import com.emotionalleaves.sprout.data.CrashLog
 import com.emotionalleaves.sprout.data.NetworkMonitor
 import com.emotionalleaves.sprout.data.alerts.AlertRepository
 import com.emotionalleaves.sprout.data.alerts.AndroidNotifier
+import com.emotionalleaves.sprout.data.backup.BackupRepository
 import com.emotionalleaves.sprout.data.budget.BudgetRepository
 import com.emotionalleaves.sprout.data.categories.CategoryRepository
 import com.emotionalleaves.sprout.data.csv.ExportRepository
@@ -52,6 +53,7 @@ class AppContainer(context: Context) {
     val connectRepository = ConnectRepository(client, secureStore, settings)
     val categoryRepository = CategoryRepository(db, clock)
     val exportRepository = ExportRepository(db)
+    val backupRepository = BackupRepository(db, clock)
     val dataManager = DataManager(appContext, db, settings, secureStore, syncRepository)
     val importRepository = ImportRepository(db, clock, afterImport = {
         recurringRepository.detect()

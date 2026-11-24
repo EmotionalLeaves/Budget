@@ -43,6 +43,14 @@ Each setup token works only once.
 
 Importing the same file again is safe: nothing is added twice.
 
+## Moving to a new phone
+
+1. On the old phone: **Settings → Backup and restore → Back up to a file**. Pick a password and save the file (for example to Google Drive).
+2. On the new phone: install Sprout, then **Settings → Backup and restore → Restore from a backup**.
+3. Connect SimpleFIN again with a new setup token.
+
+Sprout can't recover a forgotten backup password.
+
 ## Privacy
 
 - Read-only: Sprout can never move money.

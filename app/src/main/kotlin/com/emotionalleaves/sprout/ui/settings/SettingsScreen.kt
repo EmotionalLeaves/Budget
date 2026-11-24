@@ -119,6 +119,7 @@ fun SettingsScreen(
     onRules: () -> Unit,
     onImport: () -> Unit,
     onExport: () -> Unit,
+    onBackup: () -> Unit,
 ) {
     val vm = sproutViewModel { SettingsViewModel(it) }
     val state by vm.state.collectAsStateWithLifecycle()
@@ -166,6 +167,7 @@ fun SettingsScreen(
         item { SectionTitle("Your data") }
         item { NavRow("Import CSV", "Add transactions from a bank's CSV export", onImport) }
         item { NavRow("Export CSV", "Transactions, accounts, categories, budgets, rules or bills", onExport) }
+        item { NavRow("Backup and restore", "A password-protected file with all your data, for a new phone", onBackup) }
         item { NavRow("Delete all data", "Erase everything Sprout stored on this phone", { deleteStep = 1 }) }
 
         item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }

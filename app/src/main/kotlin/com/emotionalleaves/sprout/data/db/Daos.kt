@@ -393,3 +393,33 @@ data class ExportRow(
     val note: String?,
     val merchantKey: String,
 )
+
+/** Full-table reads and writes for backup and restore. */
+@Dao
+interface BackupDao {
+    @Query("SELECT * FROM transactions") suspend fun transactions(): List<TransactionEntity>
+    @Query("SELECT * FROM category_budgets") suspend fun categoryBudgets(): List<CategoryBudgetEntity>
+    @Query("SELECT * FROM budget_overrides") suspend fun budgetOverrides(): List<BudgetOverrideEntity>
+    @Query("SELECT * FROM budget_alerts") suspend fun budgetAlerts(): List<BudgetAlertEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putConnections(items: List<ConnectionEntity>)
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putAccounts(items: List<AccountEntity>)
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putCategories(items: List<CategoryEntity>)
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putTransactions(items: List<TransactionEntity>)
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putCategoryBudgets(items: List<CategoryBudgetEntity>)
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putBudgetOverrides(items: List<BudgetOverrideEntity>)
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putBudgetAlerts(items: List<BudgetAlertEntity>)
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putMerchantRules(items: List<MerchantRuleEntity>)
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putRecurring(items: List<RecurringChargeEntity>)
+
+    // Children first, so foreign keys never block the wipe.
+    @Query("DELETE FROM transactions") suspend fun wipeTransactions()
+    @Query("DELETE FROM budget_alerts") suspend fun wipeBudgetAlerts()
+    @Query("DELETE FROM budget_overrides") suspend fun wipeBudgetOverrides()
+    @Query("DELETE FROM category_budgets") suspend fun wipeCategoryBudgets()
+    @Query("DELETE FROM merchant_rules") suspend fun wipeMerchantRules()
+    @Query("DELETE FROM recurring_charges") suspend fun wipeRecurring()
+    @Query("DELETE FROM accounts") suspend fun wipeAccounts()
+    @Query("DELETE FROM connections") suspend fun wipeConnections()
+    @Query("DELETE FROM categories") suspend fun wipeCategories()
+}

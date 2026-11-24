@@ -2,6 +2,15 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [1.2.0] - 2026-11-24
+
+Backup and restore.
+
+### Added
+- Settings → Backup and restore: save everything (transactions, accounts, categories, budgets, rules and bills) to one password-protected file wherever you like, and restore it on this or a new phone.
+- The file is encrypted with your password and can't be read or changed without it. It never contains your bank connection; reconnect SimpleFIN after restoring on a new phone.
+- Restoring is all-or-nothing: if anything is wrong with the file, your current data stays exactly as it was.
+
 ## [1.1.0] - 2026-11-24
 
 Privacy options.
