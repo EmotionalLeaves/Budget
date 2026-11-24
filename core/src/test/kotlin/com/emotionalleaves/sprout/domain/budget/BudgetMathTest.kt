@@ -195,4 +195,9 @@ class BudgetMathTest {
         assertEquals(1_000L, BudgetMath.roundUpToTenDollars(1_000))
         assertEquals(2_000L, BudgetMath.roundUpToTenDollars(1_001))
     }
+
+    @Test fun allLinesListEveryExpenseCategory() {
+        val m = compute(emptyList(), defaults = emptyMap())
+        assertEquals(listOf(groceries, eating, subs), m.allLines.map { it.category })
+    }
 }

@@ -120,4 +120,23 @@ class CategoryRepositoryTest {
         repo.recategorize("sf:C:A:1", id, alwaysForMerchant = true)
         assertEquals(id, get("1").categoryId)
     }
+
+    @Test fun undoPutsEverythingBack() = runBlocking {
+        sync(tx("1", "CASEYS #3021 LINCOLN NE", "-40.00"), tx("2", "CASEYS #2280 LINCOLN NE", "-12.00"))
+        val before = listOf(get("1"), get("2")).map { it.categoryId to it.categorySource }
+        val change = repo.recategorizeWithUndo("sf:C:A:1", cat(DefaultCategories.EATING_OUT), alwaysForMerchant = true)
+        assertEquals(1, change.others)
+        change.undo()
+        assertEquals(before, listOf(get("1"), get("2")).map { it.categoryId to it.categorySource })
+        assertTrue(env.db.merchantRules().getAll().isEmpty())
+    }
+
+    @Test fun undoRestoresAnEarlierRule() = runBlocking {
+        sync(tx("1", "CASEYS #3021 LINCOLN NE", "-40.00"))
+        repo.recategorize("sf:C:A:1", cat(DefaultCategories.GIFTS), alwaysForMerchant = true)
+        val change = repo.recategorizeWithUndo("sf:C:A:1", cat(DefaultCategories.EATING_OUT), alwaysForMerchant = true)
+        change.undo()
+        assertEquals(cat(DefaultCategories.GIFTS), env.db.merchantRules().getAll().single().categoryId)
+        assertEquals(cat(DefaultCategories.GIFTS), get("1").categoryId)
+    }
 }

@@ -7,7 +7,7 @@
 Phase 2 – improve forever. v1.0.0 published.
 
 ## Current task
-Phase 2 tier 3/4: transacted_at display option; SyncWorker tests; migration template.
+Phase 2: remaining UX items (category detail month switcher, icons, onboarding quick setup), then features (trends, forecast).
 
 ## v1.0 checklist (verified 2026-11-24)
 - [x] F1–F9 acceptance criteria pass, with unit tests where specified (core: token/URL/parser/client, 60+ categorization tests, budget math, alerts, recurring, CSV 6 formats + round trip; app: sync, categories, budgets, alerts, recurring, import, export, connect, 20k-row data).
@@ -22,21 +22,21 @@ Phase 2 tier 3/4: transacted_at display option; SyncWorker tests; migration temp
 - [x] GitHub Release v1.0.0 published with the APK and marked latest (this push).
 
 ## Recent changes
-1. 2026-11-24 – v1.3.0: 12-hour pause after SimpleFIN rate-limit warnings (SyncErrors.isRateLimitWarning + SyncRepository test); stale/possibly-closed account flag on Home (AccountTypes.isStale).
-2. 2026-11-24 – v1.2.0: password-encrypted backup/restore (BackupCrypto PBKDF2+AES-GCM with authenticated header, 9 tests; BackupRepository JSON codec, all-or-nothing restore, 5 tests).
-3. 2026-11-24 – v1.1.0: optional app lock (KeyguardManager confirm, 60 s grace, AppLockPolicy tests) and FLAG_SECURE toggle.
-4. 2026-11-24 – v1.0.1: local crash log (message-free, user-shared only, 3 tests); Home budget/bills and Transactions day labels roll over at midnight (todayFlow).
-5. 2026-11-24 – v1.0.0 released (CI green).
-6. 2026-11-24 – v1.0.0: v1.0 checklist verified and ticked; release notes; Phase 2 begins.
-7. 2026-11-24 – v0.10.0 released; CI green including coverage and manifest check.
-8. 2026-11-24 – v0.10.0: removed exported diagnostic receivers, manifest check script in CI, Kover coverage in CI (core 97.4%, app data layer 79.4% lines), ConnectRepositoryTest (5), backlog rewritten with 35 Phase 2 items.
-9. 2026-11-24 – v0.9.0: CsvExport (round-trip + formula-injection tests), ExportRepository for 6 datasets via SAF, DataManager disconnect/delete-all, account rename/type, licenses; DataManagementTest (5 tests).
-10. 2026-11-24 – v0.8.0: RFC 4180 parser + delimiter/header/date-format detection, amount parsing, deterministic dedup ids (19 tests, 6 fixture formats incl. malformed), ImportRepository (4 tests), import UI with mapping, preview, manual accounts and summary.
-11. 2026-11-24 – v0.7.0: RecurringDetector (18 tests: cadences, irregular/drift rejection, Jan 31→Feb 28/29, price increase, stopped subs), RecurringRepository (never resurrects dismissed, keeps user edits), Bills tab, manual bills, Home next 3 bills, recurring charges feed safe to spend.
-12. 2026-11-24 – v0.6.0: notification channels, budget 80/100% alerts (BudgetAlerts, budget_alerts table), large/unusual alerts (UnusualDetector, alertedAt), sync-problem alerts, private lock-screen visibility, deep links, permission explainer, settings toggles + threshold; 20 core + 7 Robolectric tests.
-13. 2026-11-24 – v0.5.0: Home dashboard (spent vs budget, safe to spend, top 5 categories), paged transaction list with floating day header and pending filter, LargeDataTest (20k rows, index usage via EXPLAIN QUERY PLAN).
-14. 2026-11-24 – v0.4.0: pure BudgetMath (25 tests incl. refunds, bills, last day, local midnight, DST), BudgetRepository, Budgets tab, safe-to-spend card with breakdown, quick setup, category detail with Canvas 6-month chart.
-15. 2026-11-24 – CI fix: v0.3.0 run failed because Robolectric downloaded its Android jar at test time (IOException). Now resolved via a Gradle configuration (cached/retried) and Robolectric runs offline; mavenLocal allowed for that one module.
+1. 2026-11-24 – v1.4.0: undoable recategorization (snapshot + rule restore, 2 tests), account/category filter chips, budgets show-all (BudgetMonth.allLines), bill link in transaction detail.
+2. 2026-11-24 – v1.3.0: 12-hour pause after SimpleFIN rate-limit warnings (SyncErrors.isRateLimitWarning + SyncRepository test); stale/possibly-closed account flag on Home (AccountTypes.isStale).
+3. 2026-11-24 – v1.2.0: password-encrypted backup/restore (BackupCrypto PBKDF2+AES-GCM with authenticated header, 9 tests; BackupRepository JSON codec, all-or-nothing restore, 5 tests).
+4. 2026-11-24 – v1.1.0: optional app lock (KeyguardManager confirm, 60 s grace, AppLockPolicy tests) and FLAG_SECURE toggle.
+5. 2026-11-24 – v1.0.1: local crash log (message-free, user-shared only, 3 tests); Home budget/bills and Transactions day labels roll over at midnight (todayFlow).
+6. 2026-11-24 – v1.0.0 released (CI green).
+7. 2026-11-24 – v1.0.0: v1.0 checklist verified and ticked; release notes; Phase 2 begins.
+8. 2026-11-24 – v0.10.0 released; CI green including coverage and manifest check.
+9. 2026-11-24 – v0.10.0: removed exported diagnostic receivers, manifest check script in CI, Kover coverage in CI (core 97.4%, app data layer 79.4% lines), ConnectRepositoryTest (5), backlog rewritten with 35 Phase 2 items.
+10. 2026-11-24 – v0.9.0: CsvExport (round-trip + formula-injection tests), ExportRepository for 6 datasets via SAF, DataManager disconnect/delete-all, account rename/type, licenses; DataManagementTest (5 tests).
+11. 2026-11-24 – v0.8.0: RFC 4180 parser + delimiter/header/date-format detection, amount parsing, deterministic dedup ids (19 tests, 6 fixture formats incl. malformed), ImportRepository (4 tests), import UI with mapping, preview, manual accounts and summary.
+12. 2026-11-24 – v0.7.0: RecurringDetector (18 tests: cadences, irregular/drift rejection, Jan 31→Feb 28/29, price increase, stopped subs), RecurringRepository (never resurrects dismissed, keeps user edits), Bills tab, manual bills, Home next 3 bills, recurring charges feed safe to spend.
+13. 2026-11-24 – v0.6.0: notification channels, budget 80/100% alerts (BudgetAlerts, budget_alerts table), large/unusual alerts (UnusualDetector, alertedAt), sync-problem alerts, private lock-screen visibility, deep links, permission explainer, settings toggles + threshold; 20 core + 7 Robolectric tests.
+14. 2026-11-24 – v0.5.0: Home dashboard (spent vs budget, safe to spend, top 5 categories), paged transaction list with floating day header and pending filter, LargeDataTest (20k rows, index usage via EXPLAIN QUERY PLAN).
+15. 2026-11-24 – v0.4.0: pure BudgetMath (25 tests incl. refunds, bills, last day, local midnight, DST), BudgetRepository, Budgets tab, safe-to-spend card with breakdown, quick setup, category detail with Canvas 6-month chart.
 
 ## Known issues
 - The repo is private, so GitHub Actions minutes are limited (2,000/month free). Keep pushes meaningful.

@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.transactions
 
+import com.emotionalleaves.sprout.ui.common.showUndoable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -70,7 +71,13 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
 
-data class TxFilter(val query: String = "", val uncategorizedOnly: Boolean = false, val pendingOnly: Boolean = false)
+data class TxFilter(
+    val query: String = "",
+    val uncategorizedOnly: Boolean = false,
+    val pendingOnly: Boolean = false,
+    val accountId: String? = null,
+    val categoryId: Long? = null,
+)
 
 class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
     private val _filter = MutableStateFlow(TxFilter())
@@ -91,8 +98,9 @@ class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
             Pager(PagingConfig(pageSize = 60, prefetchDistance = 60, enablePlaceholders = false)) {
                 c.db.transactions().pagingRows(
                     query = f.query.trim().take(80),
-                    categoryId = if (f.uncategorizedOnly) uncat ?: -1 else null,
+                    categoryId = if (f.uncategorizedOnly) uncat ?: -1 else f.categoryId,
                     pendingOnly = f.pendingOnly,
+                    accountId = f.accountId,
                 )
             }.flow
         }
@@ -101,6 +109,13 @@ class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
     fun setQuery(q: String) { _filter.value = _filter.value.copy(query = q) }
     fun toggleUncategorized() { _filter.value = _filter.value.copy(uncategorizedOnly = !_filter.value.uncategorizedOnly) }
     fun togglePending() { _filter.value = _filter.value.copy(pendingOnly = !_filter.value.pendingOnly) }
+    fun setAccount(id: String?) { _filter.value = _filter.value.copy(accountId = id) }
+    fun setCategory(id: Long?) { _filter.value = _filter.value.copy(categoryId = id, uncategorizedOnly = false) }
+
+    val accounts: StateFlow<List<com.emotionalleaves.sprout.data.db.AccountEntity>> = c.db.accounts().observeVisible()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val categories: StateFlow<List<com.emotionalleaves.sprout.data.db.CategoryEntity>> = c.db.categories().observeActive()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     /** Rolls over at midnight so "Today"/"Yesterday" headers stay right while the app is open. */
     val today: StateFlow<LocalDate> = c.budgetRepository.todayFlow()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LocalDate.now(c.clock.withZone(ZoneId.systemDefault())))
@@ -112,6 +127,8 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit) {
     val filter by vm.filter.collectAsStateWithLifecycle()
     val uncategorized by vm.uncategorizedCount.collectAsStateWithLifecycle()
     val total by vm.total.collectAsStateWithLifecycle()
+    val accounts by vm.accounts.collectAsStateWithLifecycle()
+    val categories by vm.categories.collectAsStateWithLifecycle()
     val items = vm.pages.collectAsLazyPagingItems()
     val today by vm.today.collectAsStateWithLifecycle()
     var openId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -119,7 +136,7 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit) {
     val listState = rememberLazyListState()
 
     openId?.let { id ->
-        TransactionDetailSheet(id, onDismiss = { openId = null }, onMessage = { msg -> scope.launch { snackbar.showSnackbar(msg) } })
+        TransactionDetailSheet(id, onDismiss = { openId = null }, onMessage = { msg, undo -> scope.showUndoable(snackbar, msg, undo) })
     }
 
     Column(Modifier.fillMaxSize()) {
@@ -150,6 +167,20 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit) {
         ) {
             FilterChip(filter.uncategorizedOnly, vm::toggleUncategorized, label = { Text("Uncategorized") }, modifier = Modifier.heightIn(min = 48.dp))
             FilterChip(filter.pendingOnly, vm::togglePending, label = { Text("Pending only") }, modifier = Modifier.heightIn(min = 48.dp))
+            if (accounts.size > 1) {
+                PickerChip(
+                    label = accounts.firstOrNull { it.id == filter.accountId }?.label ?: "Any account",
+                    selected = filter.accountId != null,
+                    options = listOf<Pair<String?, String>>(null to "Any account") + accounts.map { it.id to it.label },
+                    onPick = vm::setAccount,
+                )
+            }
+            PickerChip(
+                label = categories.firstOrNull { it.id == filter.categoryId }?.name ?: "Any category",
+                selected = filter.categoryId != null,
+                options = listOf<Pair<Long?, String>>(null to "Any category") + categories.map { it.id to it.name },
+                onPick = vm::setCategory,
+            )
         }
 
         if (items.itemCount == 0) {
@@ -183,6 +214,19 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit) {
             val d = floatingDate
             if (d != null && (listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0)) {
                 DayHeader(Format.dayHeader(d, today))
+            }
+        }
+    }
+}
+
+@Composable
+private fun <T> PickerChip(label: String, selected: Boolean, options: List<Pair<T, String>>, onPick: (T) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        FilterChip(selected, onClick = { open = true }, label = { Text(label) }, modifier = Modifier.heightIn(min = 48.dp))
+        androidx.compose.material3.DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            options.forEach { (value, text) ->
+                androidx.compose.material3.DropdownMenuItem(text = { Text(text) }, onClick = { onPick(value); open = false })
             }
         }
     }

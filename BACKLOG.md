@@ -31,10 +31,11 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [ ] Migration test template ready for schema version 2 — *why: the first migration must be easy and safe*
 
 ## 5. UX polish and accessibility
-- [ ] Transaction detail: link to its recurring charge — *why: jump from a charge to its bill*
-- [ ] Undo snackbar after "Always use this" recategorization — *why: easy fix for a mis-tap that moved many transactions*
-- [ ] Filter chips on Transactions for account, category and month — *why: find things fast*
-- [ ] Budgets: "Show all" to budget categories with no spending yet; category detail month switcher — *why: plan ahead and look back*
+- [x] (1.4.0) Transaction detail: link to its recurring charge — *why: jump from a charge to its bill*
+- [x] (1.4.0) Undo snackbar after "Always use this" recategorization — *why: easy fix for a mis-tap that moved many transactions*
+- [x] (1.4.0) Filter chips on Transactions for account and category (month: open) — *why: find things fast*
+- [x] (1.4.0) Budgets: "Show all" categories
+- [ ] Category detail month switcher — *why: plan ahead and look back*
 - [ ] Category icons (iconKey) in chips and grids — *why: faster scanning*
 - [ ] TalkBack and 200% font pass on every screen with screenshot tests (Roborazzi) — *why: accessibility regressions are easy to miss*
 - [ ] Onboarding: offer Quick budget setup right after the first sync — *why: spec flow; faster to value*

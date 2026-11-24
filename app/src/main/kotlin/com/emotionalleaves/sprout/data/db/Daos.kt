@@ -74,6 +74,7 @@ data class TransactionDetail(
     val categoryColor: Int,
     val categorySource: CategorySource,
     val accountName: String,
+    val recurringChargeId: Long? = null,
 )
 
 /** The few columns needed to re-run category rules. */
@@ -96,7 +97,7 @@ interface TransactionDao {
         """
         SELECT t.id, t.accountId, t.description, t.merchantKey, t.amountMinor, t.occurredAt, t.postedAt, t.transactedAt,
                t.pending, t.note, t.excludedFromBudget, t.categoryId, c.name AS categoryName, c.colorArgb AS categoryColor,
-               t.categorySource, COALESCE(a.displayName, a.name) AS accountName
+               t.categorySource, COALESCE(a.displayName, a.name) AS accountName, t.recurringChargeId
         FROM transactions t JOIN categories c ON c.id = t.categoryId JOIN accounts a ON a.id = t.accountId
         WHERE t.id = :id
         """,
@@ -120,6 +121,9 @@ interface TransactionDao {
         """,
     )
     suspend fun applyMerchantRule(merchantKey: String, categoryId: Long, now: Long): Int
+
+    @Query("SELECT id, description, merchantKey, amountMinor, categoryId, categorySource FROM transactions WHERE merchantKey = :merchantKey")
+    suspend fun ruleInputsForMerchant(merchantKey: String): List<RuleInput>
 
     @Query("SELECT id, description, merchantKey, amountMinor, categoryId, categorySource FROM transactions WHERE categorySource NOT IN ('USER', 'IMPORT')")
     suspend fun ruleInputs(): List<RuleInput>
@@ -189,10 +193,11 @@ interface TransactionDao {
                OR t.note LIKE '%' || :query || '%')
           AND (:categoryId IS NULL OR t.categoryId = :categoryId)
           AND (:pendingOnly = 0 OR t.pending = 1)
+          AND (:accountId IS NULL OR t.accountId = :accountId)
         ORDER BY t.occurredAt DESC, t.id DESC
         """,
     )
-    fun pagingRows(query: String, categoryId: Long?, pendingOnly: Boolean): PagingSource<Int, TransactionRow>
+    fun pagingRows(query: String, categoryId: Long?, pendingOnly: Boolean, accountId: String? = null): PagingSource<Int, TransactionRow>
 }
 
 @Dao

@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout
 
+import com.emotionalleaves.sprout.ui.common.showUndoable
 import android.content.Intent
 import android.view.WindowManager
 import androidx.activity.result.contract.ActivityResultContracts
@@ -229,7 +230,7 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
         onDeepLinkHandled()
     }
     openTx?.let { id ->
-        TransactionDetailSheet(id, onDismiss = { openTx = null }, onMessage = { msg -> scope.launch { snackbar.showSnackbar(msg) } })
+        TransactionDetailSheet(id, onDismiss = { openTx = null }, onMessage = { msg, undo -> scope.showUndoable(snackbar, msg, undo) })
     }
 
     Scaffold(

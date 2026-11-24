@@ -89,6 +89,8 @@ data class BudgetMonth(
     val totalSpentMinor: Long,
     /** Null when no budgets exist: show "Set a budget to see what's safe to spend". */
     val safeToSpend: SafeToSpend?,
+    /** Every non-archived EXPENSE category, for "Show all" (budgeted or not, spending or not). */
+    val allLines: List<CategoryLine> = emptyList(),
 )
 
 /**
@@ -162,6 +164,7 @@ object BudgetMath {
             totalSpentBudgetedMinor = budgeted.sumOf { it.spentMinor },
             totalSpentMinor = lines.sumOf { it.spentMinor },
             safeToSpend = safe,
+            allLines = lines.filter { !it.category.archived },
         )
     }
 

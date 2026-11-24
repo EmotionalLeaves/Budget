@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.budgets
 
+import com.emotionalleaves.sprout.ui.common.showUndoable
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -104,7 +105,7 @@ fun CategoryDetailScreen(categoryId: Long, snackbar: SnackbarHostState, onBack: 
     var openId by rememberSaveable { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
-    openId?.let { id -> TransactionDetailSheet(id, { openId = null }) { msg -> scope.launch { snackbar.showSnackbar(msg) } } }
+    openId?.let { id -> TransactionDetailSheet(id, { openId = null }) { msg, undo -> scope.showUndoable(snackbar, msg, undo) } }
 
     LazyColumn(Modifier.fillMaxSize()) {
         item {

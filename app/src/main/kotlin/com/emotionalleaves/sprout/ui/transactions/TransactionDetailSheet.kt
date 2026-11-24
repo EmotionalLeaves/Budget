@@ -52,16 +52,27 @@ class TransactionDetailViewModel(private val c: AppContainer, private val id: St
     val categories: StateFlow<List<CategoryEntity>> =
         c.db.categories().observeActive().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 1)
-    val messages: SharedFlow<String> = _messages
+    private val _messages = MutableSharedFlow<Pair<String, (suspend () -> Unit)?>>(extraBufferCapacity = 1)
+    val messages: SharedFlow<Pair<String, (suspend () -> Unit)?>> = _messages
 
     fun pick(category: CategoryEntity, always: Boolean, merchant: String) = viewModelScope.launch {
-        val others = c.categoryRepository.recategorize(id, category.id, always)
+        val change = c.categoryRepository.recategorizeWithUndo(id, category.id, always)
         c.alertRepository.evaluateBudgets()
-        if (always && others > 0) _messages.tryEmit("Moved $others more from $merchant to ${category.name}")
+        val undo: suspend () -> Unit = {
+            change.undo()
+            c.alertRepository.evaluateBudgets()
+        }
+        val msg = if (always && change.others > 0) "Moved ${change.others + 1} from $merchant to ${category.name}" else "Moved to ${category.name}"
+        _messages.tryEmit(msg to undo)
     }
 
     fun saveNote(note: String) = viewModelScope.launch { c.categoryRepository.setNote(id, note) }
+
+    /** "Part of a bill" text, when this charge belongs to a recurring charge. */
+    suspend fun billText(recurringId: Long?): String? = recurringId?.let { rid ->
+        c.db.recurring().getById(rid)?.takeIf { it.status != com.emotionalleaves.sprout.data.db.RecurringStatus.DISMISSED }
+            ?.let { "Part of a bill: ${it.displayName} (${com.emotionalleaves.sprout.ui.bills.cadenceLabel(it.cadence).lowercase()}) — see the Bills tab" }
+    }
     fun setExcluded(excluded: Boolean) = viewModelScope.launch {
         c.categoryRepository.setExcluded(id, excluded)
         c.alertRepository.evaluateBudgets()
@@ -70,12 +81,12 @@ class TransactionDetailViewModel(private val c: AppContainer, private val id: St
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TransactionDetailSheet(transactionId: String, onDismiss: () -> Unit, onMessage: (String) -> Unit) {
+fun TransactionDetailSheet(transactionId: String, onDismiss: () -> Unit, onMessage: (String, (suspend () -> Unit)?) -> Unit) {
     val vm = sproutViewModel(key = "tx-$transactionId") { TransactionDetailViewModel(it, transactionId) }
     val detail by vm.detail.collectAsStateWithLifecycle()
     val categories by vm.categories.collectAsStateWithLifecycle()
     val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    LaunchedEffect(vm) { vm.messages.collect(onMessage) }
+    LaunchedEffect(vm) { vm.messages.collect { (msg, undo) -> onMessage(msg, undo) } }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheet) {
         val d = detail ?: return@ModalBottomSheet
@@ -107,6 +118,9 @@ fun TransactionDetailSheet(transactionId: String, onDismiss: () -> Unit, onMessa
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
+            var bill by remember(d.recurringChargeId) { mutableStateOf<String?>(null) }
+            LaunchedEffect(d.recurringChargeId) { bill = vm.billText(d.recurringChargeId) }
+            bill?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary) }
             Text("Category: ${d.categoryName}", style = MaterialTheme.typography.titleMedium)
             SwitchRow("Always use this for $merchant", always) { always = it }
             CategoryGrid(categories, d.categoryId) { vm.pick(it, always, merchant) }

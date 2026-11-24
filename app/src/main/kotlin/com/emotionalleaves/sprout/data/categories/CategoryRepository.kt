@@ -30,9 +30,31 @@ class CategoryRepository(private val db: SproutDatabase, private val clock: Cloc
      * merchant that the user hasn't set by hand moves to the same category.
      * Returns how many other transactions changed.
      */
-    suspend fun recategorize(transactionId: String, categoryId: Long, alwaysForMerchant: Boolean): Int = withContext(Dispatchers.IO) {
+    suspend fun recategorize(transactionId: String, categoryId: Long, alwaysForMerchant: Boolean): Int =
+        recategorizeWithUndo(transactionId, categoryId, alwaysForMerchant).others
+
+    /** Result of a recategorization, with a way to put everything back exactly as it was. */
+    class Change(val others: Int, val undo: suspend () -> Unit)
+
+    suspend fun recategorizeWithUndo(transactionId: String, categoryId: Long, alwaysForMerchant: Boolean): Change = withContext(Dispatchers.IO) {
         db.withTransaction {
-            val tx = db.transactions().getById(transactionId) ?: return@withTransaction 0
+            val tx = db.transactions().getById(transactionId) ?: return@withTransaction Change(0) {}
+            // Snapshot what this change can touch: the merchant's transactions and its EXACT rule.
+            val before = db.transactions().ruleInputsForMerchant(tx.merchantKey)
+            val ruleBefore = db.merchantRules().find(RuleType.EXACT, tx.merchantKey)
+            val undo: suspend () -> Unit = {
+                withContext(Dispatchers.IO) {
+                    db.withTransaction {
+                        val now = now()
+                        before.forEach { db.transactions().setCategory(it.id, it.categoryId, it.categorySource, now) }
+                        val ruleNow = db.merchantRules().find(RuleType.EXACT, tx.merchantKey)
+                        when {
+                            ruleBefore == null && ruleNow != null -> db.merchantRules().delete(ruleNow.id)
+                            ruleBefore != null -> db.merchantRules().update(ruleBefore)
+                        }
+                    }
+                }
+            }
             val now = now()
             var others = 0
             if (alwaysForMerchant) {
@@ -42,7 +64,7 @@ class CategoryRepository(private val db: SproutDatabase, private val clock: Cloc
                 others = updated - if (tx.categorySource != CategorySource.USER) 1 else 0
             }
             db.transactions().setCategory(transactionId, categoryId, CategorySource.USER, now)
-            others
+            Change(others, undo)
         }
     }
 

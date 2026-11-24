@@ -78,6 +78,7 @@ fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit) {
     val month by vm.month.collectAsStateWithLifecycle()
     val data by vm.data.collectAsStateWithLifecycle()
     var editing by remember { mutableStateOf<CategoryLine?>(null) }
+    var showAll by remember { mutableStateOf(false) }
 
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -130,6 +131,25 @@ fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit) {
                                 modifier = Modifier.padding(start = 12.dp))
                         }
                         TextButton(onClick = { editing = line }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Add budget") }
+                    }
+                }
+            }
+            val idle = m.allLines.filter { it.budgetMinor == null && it.spentMinor == 0L }
+            if (idle.isNotEmpty()) {
+                item {
+                    TextButton(onClick = { showAll = !showAll }, modifier = Modifier.padding(horizontal = 8.dp).heightIn(min = 48.dp)) {
+                        Text(if (showAll) "Hide categories without spending" else "Show all categories (${idle.size} more)")
+                    }
+                }
+                if (showAll) {
+                    items(idle, key = { "i-" + it.category.id }) { line ->
+                        Row(
+                            Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(start = 16.dp, end = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(line.category.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                            TextButton(onClick = { editing = line }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Add budget") }
+                        }
                     }
                 }
             }

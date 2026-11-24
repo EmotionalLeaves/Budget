@@ -2,6 +2,16 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [1.4.0] - 2026-11-24
+
+Easier everyday use.
+
+### Added
+- Undo: after changing a category, tap Undo to put everything back, including other transactions moved by "Always use this" and any rule it created.
+- Transactions: filter by account and by category.
+- Budgets: "Show all categories" lets you add a budget to a category before you've spent anything in it.
+- A transaction that's part of a bill now says so in its details.
+
 ## [1.3.0] - 2026-11-24
 
 Gentler, smarter syncing.

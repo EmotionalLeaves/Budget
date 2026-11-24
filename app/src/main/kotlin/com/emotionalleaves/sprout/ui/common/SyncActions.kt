@@ -4,6 +4,7 @@ import com.emotionalleaves.sprout.AppContainer
 import com.emotionalleaves.sprout.data.db.SyncTrigger
 import com.emotionalleaves.sprout.domain.sync.SyncPolicy
 import com.emotionalleaves.sprout.work.SyncScheduler
+import kotlinx.coroutines.launch
 
 object SyncActions {
     /**
@@ -25,4 +26,18 @@ object SyncActions {
         SyncScheduler.syncNow(c.appContext, SyncTrigger.MANUAL)
         return null
     }
+}
+
+/** A snackbar message with an optional "Undo" action. */
+fun kotlinx.coroutines.CoroutineScope.showUndoable(
+    snackbar: androidx.compose.material3.SnackbarHostState,
+    message: String,
+    undo: (suspend () -> Unit)?,
+) = launch {
+    val result = snackbar.showSnackbar(
+        message,
+        actionLabel = if (undo != null) "Undo" else null,
+        duration = if (undo != null) androidx.compose.material3.SnackbarDuration.Long else androidx.compose.material3.SnackbarDuration.Short,
+    )
+    if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) undo?.invoke()
 }

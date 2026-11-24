@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.home
 
+import com.emotionalleaves.sprout.ui.common.showUndoable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -83,7 +84,7 @@ fun HomeScreen(
 
     LaunchedEffect(vm) { vm.messages.collect { snackbar.showSnackbar(it) } }
     openId?.let { id ->
-        TransactionDetailSheet(id, onDismiss = { openId = null }, onMessage = { msg -> scope.launch { snackbar.showSnackbar(msg) } })
+        TransactionDetailSheet(id, onDismiss = { openId = null }, onMessage = { msg, undo -> scope.showUndoable(snackbar, msg, undo) })
     }
 
     PullToRefreshBox(isRefreshing = syncing, onRefresh = vm::syncNow, modifier = Modifier.fillMaxSize()) {
