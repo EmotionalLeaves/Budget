@@ -2,6 +2,22 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [1.0.0] - 2026-11-24
+
+Sprout 1.0: everything from the 0.x releases, checked and ready for everyday use.
+
+### What Sprout does
+- Connects read-only to your US bank accounts through SimpleFIN Bridge and syncs about every 6 hours.
+- Categorizes transactions automatically and learns from your corrections.
+- Monthly budgets per category with a clear "safe to spend" number.
+- Alerts for budgets, large or unusual charges, and connection problems.
+- Finds subscriptions and bills and shows what's coming up.
+- CSV import and export. Works with no bank connection at all.
+- Everything stays on your phone: no servers, no analytics, no ads.
+
+### Install or update
+Download the .apk below and install it over your current Sprout. Never uninstall first.
+
 ## [0.10.0] - 2026-11-24
 
 Hardening before 1.0.
