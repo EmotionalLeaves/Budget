@@ -102,6 +102,20 @@ kotlin {
     compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
 }
 
+// Robolectric normally downloads its Android jar from Maven Central while tests run, which can flake in CI.
+// Resolve it through Gradle instead (cached by setup-gradle, retried) and run Robolectric offline.
+val robolectricRuntime: Configuration by configurations.creating { isTransitive = false }
+
+tasks.withType<Test>().configureEach {
+    val jars = robolectricRuntime
+    inputs.files(jars).withPropertyName("robolectricJars").withNormalizer(ClasspathNormalizer::class.java)
+    doFirst {
+        val dir = jars.singleFile.parentFile
+        systemProperty("robolectric.offline", "true")
+        systemProperty("robolectric.dependency.dir", dir.absolutePath)
+    }
+}
+
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
     arg("room.generateKotlin", "true")
@@ -133,6 +147,7 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
+    robolectricRuntime(libs.robolectric.android.all)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.room.testing)
     testImplementation(libs.coroutines.test)
