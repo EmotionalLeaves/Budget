@@ -1,6 +1,13 @@
 package com.emotionalleaves.sprout
 
 import android.content.Intent
+import android.view.WindowManager
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.lifecycleScope
+import com.emotionalleaves.sprout.ui.lock.AppLockPolicy
+import com.emotionalleaves.sprout.ui.lock.DeviceLock
+import com.emotionalleaves.sprout.ui.lock.LockScreen
+import kotlinx.coroutines.runBlocking
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -71,15 +78,82 @@ sealed interface DeepLink {
 class MainActivity : ComponentActivity() {
     private val deepLink = mutableStateOf<DeepLink?>(null)
 
+    // App lock state. "unlocked" survives configuration changes within this process.
+    private val locked = mutableStateOf(false)
+    private var lockEnabled = false
+    private var confirming = false
+    private var backgroundedAt: Long? = null
+
+    private val confirmCredential = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        confirming = false
+        if (result.resultCode == RESULT_OK) {
+            unlockedThisProcess = true
+            locked.value = false
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null) deepLink.value = parse(intent)
-        setContent {
-            SproutTheme {
-                Surface(Modifier.fillMaxSize()) { SproutRoot(deepLink.value) { deepLink.value = null } }
+        val settings = (application as SproutApp).container.settings
+        // One small read so the lock and FLAG_SECURE apply before anything is drawn.
+        val initial = runBlocking { settings.current() }
+        lockEnabled = initial.appLock
+        applySecureFlag(initial.hideInRecents)
+        lifecycleScope.launch {
+            settings.settings.collect { s ->
+                lockEnabled = s.appLock
+                if (!s.appLock) locked.value = false
+                applySecureFlag(s.hideInRecents)
             }
         }
+        setContent {
+            SproutTheme {
+                Surface(Modifier.fillMaxSize()) {
+                    if (locked.value) {
+                        LockScreen(onUnlock = ::requestUnlock)
+                    } else {
+                        SproutRoot(deepLink.value) { deepLink.value = null }
+                    }
+                }
+            }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (confirming) return
+        val now = System.currentTimeMillis() / 1000
+        if (AppLockPolicy.shouldLock(lockEnabled, DeviceLock.isSecure(this), unlockedThisProcess, backgroundedAt, now)) {
+            locked.value = true
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (!isChangingConfigurations && !confirming) backgroundedAt = System.currentTimeMillis() / 1000
+    }
+
+    private fun requestUnlock() {
+        if (confirming) return
+        val intent = DeviceLock.confirmIntent(this)
+        if (intent == null) {
+            // The screen lock was removed: nothing to confirm against.
+            locked.value = false
+            return
+        }
+        confirming = true
+        confirmCredential.launch(intent)
+    }
+
+    private fun applySecureFlag(on: Boolean) {
+        if (on) window.addFlags(WindowManager.LayoutParams.FLAG_SECURE) else window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+    }
+
+    companion object {
+        /** Process-wide: a new process (after Android kills Sprout) always asks again. */
+        private var unlockedThisProcess = false
     }
 
     override fun onNewIntent(intent: Intent) {

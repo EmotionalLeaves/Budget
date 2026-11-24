@@ -27,6 +27,10 @@ data class Settings(
     val paymentRequired: Boolean = false,
     /** The notification explainer has been shown (Android 13+). */
     val notificationsAsked: Boolean = false,
+    /** Ask for the phone's screen lock when opening Sprout. */
+    val appLock: Boolean = false,
+    /** FLAG_SECURE: hide Sprout from screenshots and the recent-apps preview. */
+    val hideInRecents: Boolean = false,
 )
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -48,6 +52,8 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
             accessRevoked = p[REVOKED] ?: false,
             paymentRequired = p[PAYMENT] ?: false,
             notificationsAsked = p[NOTIFY_ASKED] ?: false,
+            appLock = p[APP_LOCK] ?: false,
+            hideInRecents = p[HIDE_RECENTS] ?: false,
         )
     }
 
@@ -64,6 +70,8 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
     suspend fun setNotifySyncProblems(on: Boolean) = dataStore.edit { it[NOTIFY_SYNC] = on }
     suspend fun setLargeTxThreshold(minor: Long) = dataStore.edit { it[LARGE_TX] = minor.coerceAtLeast(100) }
     suspend fun setNotificationsAsked() = dataStore.edit { it[NOTIFY_ASKED] = true }
+    suspend fun setAppLock(on: Boolean) = dataStore.edit { it[APP_LOCK] = on }
+    suspend fun setHideInRecents(on: Boolean) = dataStore.edit { it[HIDE_RECENTS] = on }
 
     /** A new token: start fresh sync bookkeeping (first-sync window) but keep all other settings. */
     suspend fun onNewConnection() = dataStore.edit {
@@ -86,5 +94,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         val REVOKED = booleanPreferencesKey("access_revoked")
         val PAYMENT = booleanPreferencesKey("payment_required")
         val NOTIFY_ASKED = booleanPreferencesKey("notifications_asked")
+        val APP_LOCK = booleanPreferencesKey("app_lock")
+        val HIDE_RECENTS = booleanPreferencesKey("hide_in_recents")
     }
 }

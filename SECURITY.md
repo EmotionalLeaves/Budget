@@ -20,6 +20,10 @@ one POST to claim a setup token (once), and GETs to read your accounts.
 - The access URL and setup token are never logged, shown, exported, put in notifications or sent anywhere but the SimpleFIN host. `AccessUrl.toString()` prints `AccessUrl(***)`, and every network error message goes through a redactor.
 - Credentials are sent in an `Authorization: Basic` header; they are removed from the request URL. Redirects are never followed.
 
+## Optional protections
+- **App lock**: asks for your phone's screen lock on open and after a minute in the background.
+- **Hide in screenshots and recent apps** (FLAG_SECURE).
+
 ## Crash reports
 If Sprout crashes, a short report is saved in the app's private storage: exception class names and code locations only, never exception messages (which could contain transaction text). It is shown to you on the next start and leaves the phone only if you tap Share and choose where to send it.
 

@@ -103,6 +103,8 @@ class SettingsViewModel(private val c: AppContainer) : ViewModel() {
         _messages.tryEmit(if (deleteData) "Disconnected and bank data deleted" else "Disconnected. Your data is kept.")
     }
     fun deleteAll() = viewModelScope.launch { c.dataManager.deleteAll() }
+    fun setAppLock(on: Boolean) = viewModelScope.launch { c.settings.setAppLock(on) }
+    fun setHideInRecents(on: Boolean) = viewModelScope.launch { c.settings.setHideInRecents(on) }
     fun setNotifyBudget(on: Boolean) = viewModelScope.launch { c.settings.setNotifyBudget(on) }
     fun setNotifyUnusual(on: Boolean) = viewModelScope.launch { c.settings.setNotifyUnusual(on) }
     fun setNotifySync(on: Boolean) = viewModelScope.launch { c.settings.setNotifySyncProblems(on) }
@@ -247,11 +249,21 @@ fun SettingsScreen(
         item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
         item { SectionTitle("Privacy") }
         item {
-            Text(
-                "No analytics. No servers. Data never leaves this phone except to talk to SimpleFIN. " +
-                    "Sprout is read-only: it can never move money.",
-                Modifier.padding(horizontal = 16.dp),
-            )
+            Column(Modifier.padding(horizontal = 16.dp)) {
+                Text(
+                    "No analytics. No servers. Data never leaves this phone except to talk to SimpleFIN. " +
+                        "Sprout is read-only: it can never move money.",
+                )
+                val secure = com.emotionalleaves.sprout.ui.lock.DeviceLock.isSecure(context)
+                ToggleRow("Lock Sprout with your screen lock", state.settings.appLock && secure) {
+                    if (secure) vm.setAppLock(it)
+                }
+                if (!secure) {
+                    Text("Set up a screen lock (PIN, pattern or fingerprint) in your phone's settings to use this.",
+                        style = MaterialTheme.typography.bodySmall)
+                }
+                ToggleRow("Hide in screenshots and recent apps", state.settings.hideInRecents) { vm.setHideInRecents(it) }
+            }
         }
         item { SectionTitle("About") }
         item {

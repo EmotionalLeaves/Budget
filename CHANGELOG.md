@@ -2,6 +2,14 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [1.1.0] - 2026-11-24
+
+Privacy options.
+
+### Added
+- Settings → Privacy → "Lock Sprout with your screen lock": Sprout asks for your phone's PIN, pattern or fingerprint when you open it, and again after it's been in the background for a minute. Off by default.
+- Settings → Privacy → "Hide in screenshots and recent apps": your balances don't show in the app switcher or in screenshots. Off by default.
+
 ## [1.0.1] - 2026-11-24
 
 ### Added

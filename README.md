@@ -95,6 +95,8 @@ Decisions made while building, one per line:
 - The CSV dedup key uses the description uppercased with single spaces, so case or spacing changes between exports don't create duplicates.
 - Export cells starting with = + - @ (that aren't numbers) get a leading apostrophe against spreadsheet formula injection; import removes it again so round trips are exact.
 - "Disconnect" offers to delete synced bank accounts and transactions; imported (manual) accounts are always kept.
+- App lock uses Android's screen-lock confirmation (KeyguardManager) instead of BiometricPrompt, because BiometricPrompt needs the USE_BIOMETRIC permission and the security checklist allows only internet, network state, notifications and WorkManager's permissions. It still offers fingerprint on phones that use it for the screen lock.
+- App lock and "hide in recents" are off by default, to keep everyday use simple.
 - Signing-key secrets are deliberately not mapped in CI: the committed key is always used.
 
 ---
