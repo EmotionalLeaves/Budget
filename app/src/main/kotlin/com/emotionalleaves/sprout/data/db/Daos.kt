@@ -299,3 +299,65 @@ interface AlertDao {
 
     @Query("UPDATE transactions SET alertedAt = :at WHERE id = :id") suspend fun markAlerted(id: String, at: Long)
 }
+
+data class ChargeRow(val merchantKey: String, val amountMinor: Long, val occurredAt: Long, val categoryId: Long, val accountId: String)
+
+data class RecurringRow(
+    val id: Long,
+    val merchantKey: String,
+    val displayName: String,
+    val categoryId: Long,
+    val categoryName: String,
+    val categoryColor: Int,
+    val accountId: String?,
+    val cadence: com.emotionalleaves.sprout.domain.recurring.Cadence,
+    val typicalAmountMinor: Long,
+    val lastChargeAt: Long,
+    val nextDueAt: Long,
+    val status: RecurringStatus,
+    val userEdited: Boolean,
+    val confidence: Float,
+    val occurrences: Int,
+)
+
+@Dao
+interface RecurringDao {
+    /** Posted outflows in EXPENSE categories (no transfers or income), for detection. */
+    @Query(
+        """
+        SELECT t.merchantKey AS merchantKey, t.amountMinor AS amountMinor, t.occurredAt AS occurredAt,
+               t.categoryId AS categoryId, t.accountId AS accountId
+        FROM transactions t JOIN categories c ON c.id = t.categoryId
+        WHERE t.amountMinor < 0 AND t.pending = 0 AND t.occurredAt >= :from AND c.kind = 'EXPENSE'
+        """,
+    )
+    suspend fun outflowsSince(from: Long): List<ChargeRow>
+
+    @Query("SELECT * FROM recurring_charges") suspend fun getAll(): List<RecurringChargeEntity>
+    @Query("SELECT * FROM recurring_charges WHERE id = :id") suspend fun getById(id: Long): RecurringChargeEntity?
+    @Insert suspend fun insert(item: RecurringChargeEntity): Long
+    @Update suspend fun update(item: RecurringChargeEntity)
+    @Query("DELETE FROM recurring_charges WHERE id IN (:ids)") suspend fun delete(ids: List<Long>)
+
+    @Query(
+        """
+        SELECT r.id, r.merchantKey, r.displayName, r.categoryId, c.name AS categoryName, c.colorArgb AS categoryColor,
+               r.accountId, r.cadence, r.typicalAmountMinor, r.lastChargeAt, r.nextDueAt, r.status, r.userEdited,
+               r.confidence, r.occurrences
+        FROM recurring_charges r JOIN categories c ON c.id = r.categoryId
+        WHERE r.status != 'DISMISSED'
+        ORDER BY r.nextDueAt
+        """,
+    )
+    fun observeActive(): Flow<List<RecurringRow>>
+
+    @Query("UPDATE transactions SET recurringChargeId = :id WHERE merchantKey = :merchantKey AND amountMinor < 0")
+    suspend fun linkTransactions(id: Long, merchantKey: String)
+
+    @Query("UPDATE transactions SET recurringChargeId = NULL WHERE recurringChargeId IN (:ids)")
+    suspend fun unlink(ids: List<Long>)
+
+    /** Whether a charge from this merchant posted in [start, end) — "Paid ✓". */
+    @Query("SELECT COUNT(*) FROM transactions WHERE merchantKey = :merchantKey AND amountMinor < 0 AND occurredAt >= :start AND occurredAt < :end")
+    suspend fun chargesBetween(merchantKey: String, start: Long, end: Long): Int
+}

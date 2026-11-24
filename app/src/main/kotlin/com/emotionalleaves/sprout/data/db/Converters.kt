@@ -5,6 +5,7 @@ import com.emotionalleaves.sprout.domain.accounts.AccountType
 import com.emotionalleaves.sprout.domain.categorize.CategoryKind
 import com.emotionalleaves.sprout.domain.categorize.CategorySource
 import com.emotionalleaves.sprout.domain.categorize.RuleType
+import com.emotionalleaves.sprout.domain.recurring.Cadence
 
 /**
  * Enums are stored by name. Unknown names (from a future version after a downgrade) fall back to a safe value

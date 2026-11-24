@@ -40,6 +40,7 @@ abstract class SproutDatabase : RoomDatabase() {
     abstract fun syncLog(): SyncLogDao
     abstract fun budgets(): BudgetDao
     abstract fun alerts(): AlertDao
+    abstract fun recurring(): RecurringDao
 
     companion object {
         const val VERSION = 1

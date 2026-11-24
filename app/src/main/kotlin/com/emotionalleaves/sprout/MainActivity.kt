@@ -43,6 +43,7 @@ import androidx.navigation.compose.rememberNavController
 import com.emotionalleaves.sprout.data.settings.Settings
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import com.emotionalleaves.sprout.ui.bills.BillsScreen
 import com.emotionalleaves.sprout.ui.budgets.BudgetsScreen
 import com.emotionalleaves.sprout.ui.budgets.CategoryDetailScreen
 import com.emotionalleaves.sprout.ui.budgets.QuickSetupScreen
@@ -180,6 +181,7 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
                     onSetBudgets = { nav.navigate("quick-setup") },
                     onCategory = { nav.navigate("category/$it") },
                     onSeeBudgets = { goTab(Tab.BUDGETS) },
+                    onSeeBills = { goTab(Tab.BILLS) },
                 )
             }
             composable(Tab.TRANSACTIONS.route) { TransactionsScreen(snackbar, onReview = { nav.navigate("review") }) }
@@ -201,9 +203,7 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
                     onEditCategories = { nav.navigate("categories") },
                 )
             }
-            composable(Tab.BILLS.route) {
-                EmptyState("Bills are coming soon", "Sprout will spot subscriptions and upcoming bills in version 0.7.")
-            }
+            composable(Tab.BILLS.route) { BillsScreen() }
             composable(Tab.SETTINGS.route) {
                 SettingsScreen(
                     snackbar,

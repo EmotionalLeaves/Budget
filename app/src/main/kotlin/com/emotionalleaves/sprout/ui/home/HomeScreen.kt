@@ -45,6 +45,7 @@ import androidx.compose.foundation.clickable
 import com.emotionalleaves.sprout.domain.budget.BudgetMonth
 import com.emotionalleaves.sprout.domain.budget.CategoryLine
 import com.emotionalleaves.sprout.domain.budget.ProgressLevel
+import com.emotionalleaves.sprout.ui.bills.dueText
 import com.emotionalleaves.sprout.ui.budgets.BudgetProgress
 import com.emotionalleaves.sprout.ui.budgets.SafeToSpendCard
 import com.emotionalleaves.sprout.ui.budgets.leftOrOver
@@ -67,11 +68,13 @@ fun HomeScreen(
     onSetBudgets: () -> Unit,
     onCategory: (Long) -> Unit,
     onSeeBudgets: () -> Unit,
+    onSeeBills: () -> Unit,
 ) {
     val vm = sproutViewModel { HomeViewModel(it) }
     val state by vm.state.collectAsStateWithLifecycle()
     val syncing by vm.syncing.collectAsStateWithLifecycle()
     val budget by vm.budget.collectAsStateWithLifecycle()
+    val bills by vm.bills.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var openId by rememberSaveable { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
@@ -136,6 +139,24 @@ fun HomeScreen(
                         }
                     }
                     items(top, key = { "top-" + it.category.id }) { line -> TopCategoryRow(line) { onCategory(line.category.id) } }
+                }
+            }
+
+            if (bills.isNotEmpty()) {
+                item {
+                    Row(Modifier.fillMaxWidth().padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        SectionTitle("Upcoming bills", Modifier.weight(1f))
+                        TextButton(onClick = onSeeBills, modifier = Modifier.heightIn(min = 48.dp)) { Text("All bills") }
+                    }
+                }
+                items(bills, key = { "bill-${it.charge.id}-${it.dueAt}" }) { b ->
+                    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(b.charge.displayName, style = MaterialTheme.typography.bodyLarge)
+                            Text(dueText(b.dueAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Text(Money.format(b.charge.typicalAmountMinor))
+                    }
                 }
             }
 

@@ -82,6 +82,8 @@ Decisions made while building, one per line:
 - Onboarding goes accounts → notification explainer → Home; quick budget setup is offered from the Safe-to-spend card instead of a separate onboarding step, to keep first run short.
 - Budget threshold crossings are recorded even when budget alerts are off, so turning alerts on later never replays old ones.
 - A transaction is only marked alerted (alertedAt) if its notification was actually shown.
+- Recurring detection only looks at posted outflows in spending categories (not transfers or income). The expected amount is the latest charge, so price increases carry through. A charge with no payment for more than two cycles is treated as cancelled.
+- A bill up to 5 days late still counts as due (shown as due today) because banks post late.
 - Signing-key secrets are deliberately not mapped in CI: the committed key is always used.
 
 ---

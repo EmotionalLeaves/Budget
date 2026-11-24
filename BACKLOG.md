@@ -8,7 +8,7 @@ Prioritized. Phase 1 milestones come first (see PROGRESS.md); items below are gr
 - [x] M4 (0.4.0) – Budgets and safe to spend
 - [x] M5 (0.5.0) – Full dashboard (bills section arrives with M7)
 - [x] M6 (0.6.0) – Notifications
-- [ ] M7 (0.7.0) – Recurring charges and bills — *why: no surprise charges*
+- [x] M7 (0.7.0) – Recurring charges and bills
 - [ ] M8 (0.8.0) – CSV import — *why: works for banks SimpleFIN can't reach*
 - [ ] M9 (0.9.0) – CSV export, disconnect, delete all data, about/licenses — *why: user owns their data*
 - [ ] M10 (0.10.0 → 1.0.0) – Hardening and v1.0 checklist
@@ -31,6 +31,7 @@ Prioritized. Phase 1 milestones come first (see PROGRESS.md); items below are gr
 - [ ] 10k-transaction generated fixture through SyncMerger (DB side covered by LargeDataTest, 20k rows) — *why: performance regression guard*
 
 ## 5. UX polish and accessibility
+- [ ] Transaction detail: link to its recurring charge (recurringChargeId is stored) — *why: spec screen 3; jump from a charge to its bill*
 - [ ] Budgets: list every unbudgeted category (not just ones with spending) behind a "Show all" toggle — *why: budget a category before spending in it*
 - [ ] Category detail: month switcher (it shows the current month only) — *why: look back at a category*
 - [ ] Undo snackbar after recategorizing with "Always use" — *why: easy to fix a mis-tap that moved many transactions*

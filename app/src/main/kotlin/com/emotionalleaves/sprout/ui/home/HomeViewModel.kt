@@ -13,6 +13,7 @@ import com.emotionalleaves.sprout.data.db.TransactionRow
 import com.emotionalleaves.sprout.data.settings.Settings
 import com.emotionalleaves.sprout.domain.accounts.AccountTypes
 import com.emotionalleaves.sprout.domain.budget.BudgetMonth
+import com.emotionalleaves.sprout.data.recurring.UpcomingBill
 import com.emotionalleaves.sprout.ui.common.SyncActions
 import com.emotionalleaves.sprout.work.SyncScheduler
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -69,6 +70,9 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
     /** This month's budgets; re-subscribed when the screen comes back so a new month is picked up. */
     val budget: StateFlow<BudgetMonth?> = c.budgetRepository.observeMonth(c.budgetRepository.currentMonth())
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val bills: StateFlow<List<UpcomingBill>> = c.recurringRepository.observeUpcoming(30).map { it.take(3) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val syncing: StateFlow<Boolean> = WorkManager.getInstance(c.appContext)
         .getWorkInfosForUniqueWorkFlow(SyncScheduler.ONE_TIME_WORK)

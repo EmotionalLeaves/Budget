@@ -11,7 +11,10 @@ import com.emotionalleaves.sprout.data.db.SproutDatabase
 import com.emotionalleaves.sprout.data.secure.SecureStore
 import com.emotionalleaves.sprout.data.settings.SettingsStore
 import com.emotionalleaves.sprout.data.simplefin.SimpleFinClient
+import com.emotionalleaves.sprout.data.recurring.RecurringRepository
+import com.emotionalleaves.sprout.data.sync.AlertSink
 import com.emotionalleaves.sprout.data.sync.ConnectRepository
+import com.emotionalleaves.sprout.data.sync.SyncProblem
 import com.emotionalleaves.sprout.data.sync.SyncRepository
 import com.emotionalleaves.sprout.work.SyncScheduler
 import kotlinx.coroutines.CoroutineScope
@@ -29,9 +32,18 @@ class AppContainer(context: Context) {
     val secureStore = SecureStore(appContext)
     private val client = SimpleFinClient()
     val notifier = AndroidNotifier(appContext)
-    val budgetRepository = BudgetRepository(db, clock)
+    val recurringRepository = RecurringRepository(db, clock)
+    val budgetRepository = BudgetRepository(db, clock, expectedCharges = recurringRepository::expectedCharges)
     val alertRepository = AlertRepository(db, settings, budgetRepository, notifier, clock)
-    val syncRepository = SyncRepository(db, secureStore, settings, client, clock, alertRepository)
+
+    /** After every sync: refresh recurring charges first (they feed safe to spend), then alerts. */
+    private val postSync = object : AlertSink {
+        override suspend fun afterSync(newOutflowIds: List<String>, problems: List<SyncProblem>) {
+            runCatching { recurringRepository.detect() }
+            alertRepository.afterSync(newOutflowIds, problems)
+        }
+    }
+    val syncRepository = SyncRepository(db, secureStore, settings, client, clock, postSync)
     val connectRepository = ConnectRepository(client, secureStore, settings)
     val categoryRepository = CategoryRepository(db, clock)
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)

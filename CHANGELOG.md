@@ -2,6 +2,18 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [0.7.0] - 2026-11-24
+
+Bills and subscriptions.
+
+### Added
+- Sprout now spots subscriptions and bills (weekly, every 2 weeks, monthly, every 3 months, yearly) from your last 400 days, even after a price increase.
+- Bills tab: what's due in the next 30 days with a total, what's still due this month, and what's already paid (✓).
+- Suggested bills can be confirmed or dismissed (dismissed ones never come back). Tap any bill to change its amount, how often, next date or category.
+- Add a bill yourself with the + button (rent, for example).
+- Home shows your next 3 bills.
+- Safe to spend now subtracts bills still due this month in categories without a budget.
+
 ## [0.6.0] - 2026-11-24
 
 Notifications.

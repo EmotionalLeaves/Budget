@@ -9,11 +9,11 @@ import com.emotionalleaves.sprout.domain.accounts.AccountType
 import com.emotionalleaves.sprout.domain.categorize.CategoryKind
 import com.emotionalleaves.sprout.domain.categorize.CategorySource
 import com.emotionalleaves.sprout.domain.categorize.RuleType
+import com.emotionalleaves.sprout.domain.recurring.Cadence
 
 enum class ConnectionStatus { OK, NEEDS_ATTENTION, REVOKED }
 enum class AccountSource { SIMPLEFIN, MANUAL }
 enum class RuleOrigin { USER_CORRECTION, USER_CREATED }
-enum class Cadence { WEEKLY, BIWEEKLY, MONTHLY, QUARTERLY, YEARLY }
 enum class RecurringStatus { DETECTED, CONFIRMED, DISMISSED, MANUAL }
 enum class SyncTrigger { PERIODIC, MANUAL, ONBOARDING }
 enum class SyncResult { SUCCESS, PARTIAL, FAILED }
