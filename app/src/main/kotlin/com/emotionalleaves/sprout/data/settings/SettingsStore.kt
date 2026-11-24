@@ -31,6 +31,8 @@ data class Settings(
     val appLock: Boolean = false,
     /** FLAG_SECURE: hide Sprout from screenshots and the recent-apps preview. */
     val hideInRecents: Boolean = false,
+    /** Epoch seconds until which syncing pauses after a SimpleFIN rate-limit warning. */
+    val rateLimitedUntil: Long? = null,
 )
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -54,6 +56,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
             notificationsAsked = p[NOTIFY_ASKED] ?: false,
             appLock = p[APP_LOCK] ?: false,
             hideInRecents = p[HIDE_RECENTS] ?: false,
+            rateLimitedUntil = p[RATE_LIMITED_UNTIL],
         )
     }
 
@@ -72,6 +75,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
     suspend fun setNotificationsAsked() = dataStore.edit { it[NOTIFY_ASKED] = true }
     suspend fun setAppLock(on: Boolean) = dataStore.edit { it[APP_LOCK] = on }
     suspend fun setHideInRecents(on: Boolean) = dataStore.edit { it[HIDE_RECENTS] = on }
+    suspend fun setRateLimitedUntil(at: Long?) = dataStore.edit { if (at == null) it.remove(RATE_LIMITED_UNTIL) else it[RATE_LIMITED_UNTIL] = at }
 
     /** A new token: start fresh sync bookkeeping (first-sync window) but keep all other settings. */
     suspend fun onNewConnection() = dataStore.edit {
@@ -96,5 +100,6 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         val NOTIFY_ASKED = booleanPreferencesKey("notifications_asked")
         val APP_LOCK = booleanPreferencesKey("app_lock")
         val HIDE_RECENTS = booleanPreferencesKey("hide_in_recents")
+        val RATE_LIMITED_UNTIL = longPreferencesKey("rate_limited_until")
     }
 }

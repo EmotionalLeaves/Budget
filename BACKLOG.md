@@ -19,9 +19,9 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [ ] Pin the SimpleFIN Bridge certificate chain (with a safe fallback) — *why: defense against a compromised CA*
 
 ## 3. Sync reliability
-- [ ] Show per-connection problems in the Home sync status chip with a direct "Fix" link — *why: quicker diagnosis*
-- [ ] Detect SimpleFIN rate-limit warnings in "errors" and slow down automatically — *why: the Bridge disables tokens past the warning level*
-- [ ] Handle accounts that disappear from the response (closed accounts): mark "closed" instead of leaving stale balances — *why: totals stay right*
+- [x] (0.2.0/0.6.0) Per-connection problems on Home with a "Fix in Bridge" link — *why: quicker diagnosis*
+- [x] (1.3.0) Detect SimpleFIN rate-limit warnings in "errors" and slow down automatically — *why: the Bridge disables tokens past the warning level*
+- [x] (1.3.0) Flag accounts missing from syncs for 3+ days as possibly closed (no schema change) — *why: totals stay right*
 - [ ] Use transacted_at for posted transactions' display date when the bank provides it (setting) — *why: dates match receipts*
 
 ## 4. Test coverage

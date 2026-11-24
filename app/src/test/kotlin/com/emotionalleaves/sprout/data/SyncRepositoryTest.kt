@@ -193,4 +193,15 @@ class SyncRepositoryTest {
         env.repo().sync(SyncTrigger.PERIODIC)
         assertEquals(2, env.server.requestCount)
     }
+
+    @Test fun rateLimitWarningPausesSyncing() = runBlocking {
+        env.server.enqueue(MockResponse().setBody(
+            """{"errlist":[],"errors":["You have exceeded the daily request limit"],"connections":[],"accounts":[]}""",
+        ))
+        env.repo().sync(SyncTrigger.PERIODIC)
+        val until = env.settings.current().rateLimitedUntil!!
+        assertEquals(env.clock.instant().epochSecond + 12 * 3600, until)
+        assertEquals(SyncRunResult.Skipped(SkipReason.RATE_LIMITED), env.repo().sync(SyncTrigger.MANUAL))
+        assertEquals(1, env.server.requestCount)
+    }
 }

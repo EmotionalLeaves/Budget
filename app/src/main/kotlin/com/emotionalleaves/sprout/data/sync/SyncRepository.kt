@@ -49,7 +49,7 @@ sealed interface SyncRunResult {
     data class Skipped(val reason: SkipReason) : SyncRunResult
 }
 
-enum class SkipReason { NOT_CONNECTED, REVOKED, NEEDS_RECONNECT, DAILY_LIMIT }
+enum class SkipReason { NOT_CONNECTED, REVOKED, NEEDS_RECONNECT, DAILY_LIMIT, RATE_LIMITED }
 
 /** A problem worth a "Sync problems" notification. [message] is sanitized plain text. */
 data class SyncProblem(val key: String, val title: String, val message: String)
@@ -117,6 +117,7 @@ class SyncRepository(
                 ?: return SyncRunResult.Skipped(SkipReason.NEEDS_RECONNECT)
         }
         if (s.accessRevoked) return SyncRunResult.Skipped(SkipReason.REVOKED)
+        if ((s.rateLimitedUntil ?: 0L) > now) return SyncRunResult.Skipped(SkipReason.RATE_LIMITED)
 
         val used = db.syncLog().requestsSince(now - 86_400)
         if (used + 2 > SyncPolicy.DAILY_REQUEST_BUDGET) {
@@ -316,6 +317,10 @@ class SyncRepository(
             }
         }
 
+        if (SyncErrors.isRateLimitWarning(set.errors)) {
+            // The Bridge disables tokens that keep going past its warning. Pause all syncing for a while.
+            settings.setRateLimitedUntil(now + SyncErrors.RATE_LIMIT_BACKOFF_SECONDS)
+        }
         val outcome = plan.outcome
         if (outcome != SyncOutcome.FAILED) {
             settings.setLastSuccessfulSync(now)

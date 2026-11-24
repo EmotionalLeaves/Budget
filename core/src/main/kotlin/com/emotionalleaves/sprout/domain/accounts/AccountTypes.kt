@@ -28,6 +28,15 @@ object AccountTypes {
     /** Custom currencies are URLs; they can't be added to USD totals. */
     fun isUsd(currency: String) = currency.equals("USD", ignoreCase = true)
 
+    /** An account missing from syncs for this long while others update is probably closed. */
+    const val STALE_AFTER_SECONDS = 3 * 86_400L
+
+    /** True when a synced account hasn't appeared in successful syncs for [STALE_AFTER_SECONDS]. */
+    fun isStale(accountLastSyncedAt: Long?, lastSuccessfulSyncAt: Long?): Boolean {
+        if (accountLastSyncedAt == null || lastSuccessfulSyncAt == null) return false
+        return lastSuccessfulSyncAt - accountLastSyncedAt >= STALE_AFTER_SECONDS
+    }
+
     /** Display code for a currency; URL-based custom currencies show as "?". */
     fun currencyLabel(currency: String) = if (currency.contains("://")) "?" else currency.uppercase()
 }

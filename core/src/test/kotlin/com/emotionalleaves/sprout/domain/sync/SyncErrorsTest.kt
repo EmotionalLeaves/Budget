@@ -42,4 +42,12 @@ class SyncErrorsTest {
     }
 
     @Test fun emptyIsSuccess() = assertEquals(SyncOutcome.SUCCESS, plan("empty_accounts.json").outcome)
+
+    @Test fun rateLimitWarningsAreRecognized() {
+        fun e(msg: String) = com.emotionalleaves.sprout.data.simplefin.SfError(com.emotionalleaves.sprout.data.simplefin.SfError.LEGACY, msg)
+        assertTrue(SyncErrors.isRateLimitWarning(listOf(e("You have exceeded the daily request limit; access may be disabled"))))
+        assertTrue(SyncErrors.isRateLimitWarning(listOf(e("Too many requests. Please slow down."))))
+        assertTrue(SyncErrors.isRateLimitWarning(listOf(e("Rate-limit warning"))))
+        assertTrue(!SyncErrors.isRateLimitWarning(listOf(e("Connection to Old Town Bank may need attention."))))
+    }
 }

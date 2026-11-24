@@ -67,7 +67,8 @@ Sprout can't recover a forgotten backup password.
 - **A bank "needs attention"** — Tap Fix in SimpleFIN Bridge and sign in to that bank again.
 - **An account shows a warning** — SimpleFIN couldn't update that one account. Other data is fine; Sprout retries later.
 - **"Offline – showing data from …"** — Sprout shows what it already has and syncs when you're back online.
-- **"Paused to stay under SimpleFIN's daily limit"** — Wait a few hours. Sprout syncs again automatically.
+- **"Paused to stay under SimpleFIN's daily limit"** or **"Paused after SimpleFIN asked Sprout to slow down"** — Wait a few hours. Sprout syncs again automatically.
+- **An account says "Not updated since … — closed?"** — Your bank stopped sending it. If it's closed, hide it in Settings → Accounts.
 - **"Saved connection can't be read on this phone"** — Paste a new setup token in Settings.
 
 ## Assumptions
@@ -105,6 +106,8 @@ Decisions made while building, one per line:
 - "Disconnect" offers to delete synced bank accounts and transactions; imported (manual) accounts are always kept.
 - App lock uses Android's screen-lock confirmation (KeyguardManager) instead of BiometricPrompt, because BiometricPrompt needs the USE_BIOMETRIC permission and the security checklist allows only internet, network state, notifications and WorkManager's permissions. It still offers fingerprint on phones that use it for the screen lock.
 - App lock and "hide in recents" are off by default, to keep everyday use simple.
+- Rate-limit warnings are recognized by their wording (e.g. "exceeded", "too many requests", "rate limit"), since the Bridge sends them as plain text; Sprout then pauses all syncing for 12 hours.
+- "Closed" accounts are only flagged (missing from successful syncs for 3+ days), never changed automatically, so no database migration is needed.
 - Signing-key secrets are deliberately not mapped in CI: the committed key is always used.
 
 ---

@@ -14,6 +14,10 @@ object SyncActions {
         if (!c.secureStore.hasAccessUrlNow()) return "No bank connected. Connect one in Settings."
         val s = c.settings.current()
         if (s.accessRevoked) return "SimpleFIN access was turned off. Paste a new setup token in Settings."
+        val until = s.rateLimitedUntil
+        if (until != null && until > c.clock.instant().epochSecond) {
+            return "Paused after SimpleFIN asked Sprout to slow down. Syncing resumes in a few hours."
+        }
         val last = s.lastSuccessfulSyncAt
         if (SyncPolicy.isDebounced(c.clock, last) && last != null) {
             return "Synced ${Format.ago(last, c.clock.instant().epochSecond)}"

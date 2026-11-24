@@ -184,7 +184,7 @@ fun HomeScreen(
 
             if (state.accounts.isNotEmpty()) {
                 item { SectionTitle("Accounts") }
-                items(state.accounts, key = { "acct-" + it.id }) { AccountRow(it) }
+                items(state.accounts, key = { "acct-" + it.id }) { AccountRow(it, state.settings.lastSuccessfulSyncAt) }
             }
 
             item {
@@ -293,7 +293,7 @@ private fun BalanceCard(state: HomeState) {
 }
 
 @Composable
-private fun AccountRow(a: AccountEntity) {
+private fun AccountRow(a: AccountEntity, lastSuccess: Long?) {
     Row(
         Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 16.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -305,6 +305,13 @@ private fun AccountRow(a: AccountEntity) {
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (a.source == com.emotionalleaves.sprout.data.db.AccountSource.SIMPLEFIN && AccountTypes.isStale(a.lastSyncedAt, lastSuccess)) {
+                Text(
+                    "Not updated since ${Format.dateTime(a.lastSyncedAt ?: 0).substringBefore(',')} — closed? You can hide it in Settings.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = LocalSproutColors.current.warning,
+                )
+            }
             if (a.lastErrorMessage != null) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.Warning, contentDescription = "Account warning", tint = LocalSproutColors.current.warning)

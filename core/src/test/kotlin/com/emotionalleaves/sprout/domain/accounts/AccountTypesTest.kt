@@ -13,4 +13,10 @@ class AccountTypesTest {
     @Test fun unknownPositiveIsChecking() = assertEquals(AccountType.CHECKING, AccountTypes.infer("Primary", 100))
     @Test fun customCurrencyLabel() = assertEquals("?", AccountTypes.currencyLabel("https://points.example.test/c"))
     @Test fun usdLabel() = assertEquals("USD", AccountTypes.currencyLabel("usd"))
+    @Test fun staleAfterThreeDaysMissing() {
+        org.junit.Assert.assertTrue(AccountTypes.isStale(1_000_000, 1_000_000 + 3 * 86_400))
+        org.junit.Assert.assertFalse(AccountTypes.isStale(1_000_000, 1_000_000 + 2 * 86_400))
+        org.junit.Assert.assertFalse(AccountTypes.isStale(null, 5))
+        org.junit.Assert.assertFalse(AccountTypes.isStale(5, null))
+    }
 }

@@ -2,6 +2,14 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [1.3.0] - 2026-11-24
+
+Gentler, smarter syncing.
+
+### Added
+- If SimpleFIN warns that Sprout is making too many requests, Sprout pauses syncing for 12 hours, so your access never gets turned off. "Sync now" explains the pause.
+- Accounts your bank stopped reporting for 3+ days show "Not updated since … — closed?" on Home, with a hint to hide them.
+
 ## [1.2.0] - 2026-11-24
 
 Backup and restore.

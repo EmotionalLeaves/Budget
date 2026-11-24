@@ -46,6 +46,14 @@ object SyncErrors {
         return ErrorPlan(conn, acct, general, outcome)
     }
 
+    /** SimpleFIN Bridge warns in its messages before it disables an over-quota token. Back off for this long. */
+    const val RATE_LIMIT_BACKOFF_SECONDS = 12 * 3600L
+    private val RATE_LIMIT_WORDS = Regex("(?i)rate.?limit|too many requests|request limit|quota|exceeded|slow down|throttl")
+
+    /** True when any error reads like a rate-limit warning (structured or legacy). */
+    fun isRateLimitWarning(errors: List<SfError>): Boolean =
+        errors.any { RATE_LIMIT_WORDS.containsMatchIn(it.msg) || RATE_LIMIT_WORDS.containsMatchIn(it.code) }
+
     /** Plain-language explanation for a code, used when a server message is missing. */
     fun explain(code: String): String = when {
         code == "con.auth" -> "Your bank needs you to sign in again in SimpleFIN Bridge."
