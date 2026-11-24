@@ -16,6 +16,7 @@ interface ConnectionDao {
     @Upsert suspend fun upsert(items: List<ConnectionEntity>)
     @Query("SELECT * FROM connections ORDER BY name") fun observeAll(): Flow<List<ConnectionEntity>>
     @Query("SELECT * FROM connections") suspend fun getAll(): List<ConnectionEntity>
+    @Query("DELETE FROM connections") suspend fun deleteAll()
     @Query("UPDATE connections SET status = :status, lastErrorCode = :code, lastErrorMessage = :message, updatedAt = :now")
     suspend fun setAllStatus(status: ConnectionStatus, code: String?, message: String?, now: Long)
 }
@@ -30,6 +31,10 @@ interface AccountDao {
     @Query("UPDATE accounts SET includeInTotals = :include WHERE id = :id") suspend fun setIncludeInTotals(id: String, include: Boolean)
     @Query("UPDATE accounts SET hidden = :hidden WHERE id = :id") suspend fun setHidden(id: String, hidden: Boolean)
     @Query("SELECT * FROM accounts WHERE source = 'MANUAL' ORDER BY name") fun observeManual(): Flow<List<AccountEntity>>
+    @Query("UPDATE accounts SET displayName = :name WHERE id = :id") suspend fun rename(id: String, name: String?)
+    @Query("UPDATE accounts SET type = :type WHERE id = :id") suspend fun setType(id: String, type: com.emotionalleaves.sprout.domain.accounts.AccountType)
+    /** Disconnect + delete: removes bank accounts (their transactions cascade) and connections. Manual accounts stay. */
+    @Query("DELETE FROM accounts WHERE source = 'SIMPLEFIN'") suspend fun deleteSimpleFinAccounts()
     @Query("UPDATE accounts SET balanceMinor = (SELECT COALESCE(SUM(amountMinor), 0) FROM transactions WHERE accountId = :id), balanceDate = :now, lastSyncedAt = :now WHERE id = :id")
     suspend fun recomputeManualBalance(id: String, now: Long)
 }
@@ -134,6 +139,17 @@ interface TransactionDao {
 
     @Query("SELECT * FROM transactions WHERE id IN (:ids)") suspend fun getByIds(ids: List<String>): List<TransactionEntity>
     @Query("SELECT id FROM transactions WHERE id IN (:ids)") suspend fun existingIds(ids: List<String>): List<String>
+
+    @Query(
+        """
+        SELECT t.occurredAt AS occurredAt, t.description AS description, t.amountMinor AS amountMinor, c.name AS categoryName,
+               COALESCE(a.displayName, a.name) AS accountName, t.pending AS pending, t.note AS note, t.merchantKey AS merchantKey
+        FROM transactions t JOIN categories c ON c.id = t.categoryId JOIN accounts a ON a.id = t.accountId
+        WHERE t.occurredAt >= :start AND t.occurredAt < :end
+        ORDER BY t.occurredAt, t.id
+        """,
+    )
+    suspend fun exportRows(start: Long, end: Long): List<ExportRow>
 
     @Query("SELECT * FROM transactions WHERE accountId = :accountId AND pending = 1")
     suspend fun pendingForAccount(accountId: String): List<TransactionEntity>
@@ -245,6 +261,7 @@ data class SpendRow(val categoryId: Long, val amountMinor: Long, val occurredAt:
 interface BudgetDao {
     @Query("SELECT * FROM category_budgets") fun observeDefaults(): Flow<List<CategoryBudgetEntity>>
     @Query("SELECT * FROM budget_overrides WHERE yearMonth = :yearMonth") fun observeOverrides(yearMonth: String): Flow<List<BudgetOverrideEntity>>
+    @Query("SELECT * FROM budget_overrides ORDER BY yearMonth, categoryId") suspend fun allOverrides(): List<BudgetOverrideEntity>
     @Upsert suspend fun upsertDefault(item: CategoryBudgetEntity)
     @Upsert suspend fun upsertDefaults(items: List<CategoryBudgetEntity>)
     @Query("DELETE FROM category_budgets WHERE categoryId = :categoryId") suspend fun deleteDefault(categoryId: Long)
@@ -365,3 +382,14 @@ interface RecurringDao {
     @Query("SELECT COUNT(*) FROM transactions WHERE merchantKey = :merchantKey AND amountMinor < 0 AND occurredAt >= :start AND occurredAt < :end")
     suspend fun chargesBetween(merchantKey: String, start: Long, end: Long): Int
 }
+
+data class ExportRow(
+    val occurredAt: Long,
+    val description: String,
+    val amountMinor: Long,
+    val categoryName: String,
+    val accountName: String,
+    val pending: Boolean,
+    val note: String?,
+    val merchantKey: String,
+)

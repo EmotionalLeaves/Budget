@@ -93,6 +93,8 @@ Decisions made while building, one per line:
 - Imported accounts' balances are the sum of their imported transactions.
 - Imported rows are marked alerted at import time, so they can never trigger unusual-charge alerts.
 - The CSV dedup key uses the description uppercased with single spaces, so case or spacing changes between exports don't create duplicates.
+- Export cells starting with = + - @ (that aren't numbers) get a leading apostrophe against spreadsheet formula injection; import removes it again so round trips are exact.
+- "Disconnect" offers to delete synced bank accounts and transactions; imported (manual) accounts are always kept.
 - Signing-key secrets are deliberately not mapped in CI: the committed key is always used.
 
 ---

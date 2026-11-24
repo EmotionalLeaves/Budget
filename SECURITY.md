@@ -37,7 +37,10 @@ Every build fails if it finds: analytics/crash/ads SDKs, destructive database mi
 Every database change ships with an explicit migration and a test proving existing data survives. Destructive migration is forbidden.
 
 ## Deleting data
-"Disconnect" and "Delete all data" (coming in 0.9) remove the database rows, settings and the Keystore key.
+"Disconnect" deletes the stored access URL and its Keystore key and stops background sync; it keeps your data unless you also choose to delete synced bank data. "Delete all data" (two confirmations) clears every database table, all settings and the Keystore key.
+
+## Exports
+CSV exports are written only where you choose (Android's file picker). They contain only data columns, never the access URL or any credential (a test checks every export kind). Text that a spreadsheet could run as a formula is prefixed with an apostrophe.
 
 ## Reporting a problem
 Open an issue in this repo. Never paste a setup token, access URL or bank data into an issue.

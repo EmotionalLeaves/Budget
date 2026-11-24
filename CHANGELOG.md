@@ -2,6 +2,17 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [0.9.0] - 2026-11-24
+
+Your data, your control.
+
+### Added
+- Settings → Export CSV: transactions (all time or a date range), accounts, categories, budgets, merchant rules or bills. You choose where the file goes. Exports never include your bank connection. An exported transactions file imports back exactly.
+- Settings → Disconnect: Sprout forgets your SimpleFIN connection and stops syncing. Keep your data, or also delete the synced bank accounts (imported ones stay).
+- Settings → Delete all data: erases everything on this phone after two confirmations, then starts fresh.
+- Rename accounts and change their type (checking, savings, credit and so on).
+- About: source code link and open-source licenses.
+
 ## [0.8.0] - 2026-11-24
 
 CSV import, for banks SimpleFIN can't reach.

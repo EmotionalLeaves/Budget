@@ -14,6 +14,9 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
+import androidx.compose.foundation.verticalScroll
+import com.emotionalleaves.sprout.domain.accounts.AccountType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -91,6 +94,15 @@ class SettingsViewModel(private val c: AppContainer) : ViewModel() {
     fun setIncluded(a: AccountEntity, include: Boolean) = viewModelScope.launch { c.db.accounts().setIncludeInTotals(a.id, include) }
     fun setHidden(a: AccountEntity, hidden: Boolean) = viewModelScope.launch { c.db.accounts().setHidden(a.id, hidden) }
     fun canPost() = c.notifier.canPost()
+    fun rename(a: AccountEntity, name: String) = viewModelScope.launch {
+        c.db.accounts().rename(a.id, name.trim().take(60).ifBlank { null }?.takeIf { it != a.name })
+    }
+    fun setType(a: AccountEntity, t: AccountType) = viewModelScope.launch { c.db.accounts().setType(a.id, t) }
+    fun disconnect(deleteData: Boolean) = viewModelScope.launch {
+        c.dataManager.disconnect(deleteData)
+        _messages.tryEmit(if (deleteData) "Disconnected and bank data deleted" else "Disconnected. Your data is kept.")
+    }
+    fun deleteAll() = viewModelScope.launch { c.dataManager.deleteAll() }
     fun setNotifyBudget(on: Boolean) = viewModelScope.launch { c.settings.setNotifyBudget(on) }
     fun setNotifyUnusual(on: Boolean) = viewModelScope.launch { c.settings.setNotifyUnusual(on) }
     fun setNotifySync(on: Boolean) = viewModelScope.launch { c.settings.setNotifySyncProblems(on) }
@@ -104,11 +116,16 @@ fun SettingsScreen(
     onCategories: () -> Unit,
     onRules: () -> Unit,
     onImport: () -> Unit,
+    onExport: () -> Unit,
 ) {
     val vm = sproutViewModel { SettingsViewModel(it) }
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val now = vm.now()
+    var confirmDisconnect by remember { mutableStateOf(false) }
+    var deleteStep by remember { mutableStateOf(0) }
+    var editingAccount by remember { mutableStateOf<AccountEntity?>(null) }
+    var showLicenses by remember { mutableStateOf(false) }
     LaunchedEffect(vm) { vm.messages.collect { snackbar.showSnackbar(it) } }
 
     LazyColumn(Modifier.fillMaxSize()) {
@@ -132,6 +149,9 @@ fun SettingsScreen(
                 OutlinedButton(onClick = onReplaceToken, modifier = Modifier.heightIn(min = 48.dp)) {
                     Text(if (state.connected) "Replace setup token" else "Connect a bank")
                 }
+                if (state.connected) {
+                    TextButton(onClick = { confirmDisconnect = true }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Disconnect") }
+                }
             }
         }
 
@@ -143,6 +163,8 @@ fun SettingsScreen(
         item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
         item { SectionTitle("Your data") }
         item { NavRow("Import CSV", "Add transactions from a bank's CSV export", onImport) }
+        item { NavRow("Export CSV", "Transactions, accounts, categories, budgets, rules or bills", onExport) }
+        item { NavRow("Delete all data", "Erase everything Sprout stored on this phone", { deleteStep = 1 }) }
 
         item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
         item { SectionTitle("Notifications") }
@@ -209,7 +231,13 @@ fun SettingsScreen(
             item { SectionTitle("Accounts") }
             items(state.accounts, key = { "a-" + it.id }) { a ->
                 Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
-                    Text(a.label, style = MaterialTheme.typography.bodyLarge)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(a.label, style = MaterialTheme.typography.bodyLarge)
+                            Text(a.type.name.lowercase().replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.labelSmall)
+                        }
+                        TextButton(onClick = { editingAccount = a }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Edit") }
+                    }
                     ToggleRow("Include in total balance", a.includeInTotals) { vm.setIncluded(a, it) }
                     ToggleRow("Hide this account", a.hidden) { vm.setHidden(a, it) }
                 }
@@ -232,10 +260,100 @@ fun SettingsScreen(
                 TextButton(onClick = { openUrl(context, "$REPO_URL/releases") }, modifier = Modifier.heightIn(min = 48.dp)) {
                     Text("Releases and updates")
                 }
+                TextButton(onClick = { openUrl(context, REPO_URL) }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Source code") }
+                TextButton(onClick = { showLicenses = true }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Open-source licenses") }
             }
         }
     }
+
+    if (confirmDisconnect) {
+        var alsoDelete by remember { mutableStateOf(false) }
+        AlertDialog(
+            onDismissRequest = { confirmDisconnect = false },
+            title = { Text("Disconnect SimpleFIN?") },
+            text = {
+                Column {
+                    Text("Sprout forgets your bank connection and stops syncing. Your transactions, budgets and rules stay unless you choose otherwise.")
+                    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(role = Role.Checkbox) { alsoDelete = !alsoDelete },
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = alsoDelete, onCheckedChange = null)
+                        Text("Also delete synced bank accounts and their transactions", Modifier.padding(start = 8.dp))
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { vm.disconnect(alsoDelete); confirmDisconnect = false }) { Text("Disconnect") } },
+            dismissButton = { TextButton(onClick = { confirmDisconnect = false }) { Text("Cancel") } },
+        )
+    }
+    if (deleteStep == 1) {
+        AlertDialog(
+            onDismissRequest = { deleteStep = 0 },
+            title = { Text("Delete all data?") },
+            text = { Text("This erases every transaction, budget, rule, bill, setting and your bank connection from this phone.") },
+            confirmButton = { TextButton(onClick = { deleteStep = 2 }) { Text("Continue") } },
+            dismissButton = { TextButton(onClick = { deleteStep = 0 }) { Text("Cancel") } },
+        )
+    }
+    if (deleteStep == 2) {
+        AlertDialog(
+            onDismissRequest = { deleteStep = 0 },
+            title = { Text("Are you sure?") },
+            text = { Text("This can't be undone. Export anything you want to keep first.") },
+            confirmButton = {
+                TextButton(onClick = { vm.deleteAll(); deleteStep = 0 }) {
+                    Text("Delete everything", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = { TextButton(onClick = { deleteStep = 0 }) { Text("Keep my data") } },
+        )
+    }
+    editingAccount?.let { a ->
+        var name by remember(a.id) { mutableStateOf(a.label) }
+        var type by remember(a.id) { mutableStateOf(a.type) }
+        AlertDialog(
+            onDismissRequest = { editingAccount = null },
+            title = { Text("Edit account") },
+            text = {
+                Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+                    OutlinedTextField(value = name, onValueChange = { name = it.take(60) }, label = { Text("Name") }, singleLine = true)
+                    AccountType.entries.forEach { t ->
+                        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).selectable(type == t, role = Role.RadioButton) { type = t },
+                            verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(selected = type == t, onClick = null)
+                            Text(t.name.lowercase().replaceFirstChar { it.uppercase() }, Modifier.padding(start = 8.dp))
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { vm.rename(a, name); vm.setType(a, type); editingAccount = null }) { Text("Save") }
+            },
+            dismissButton = { TextButton(onClick = { editingAccount = null }) { Text("Cancel") } },
+        )
+    }
+    if (showLicenses) {
+        AlertDialog(
+            onDismissRequest = { showLicenses = false },
+            title = { Text("Open-source licenses") },
+            text = {
+                Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+                    LICENSES.forEach { (name, license) ->
+                        Text(name, style = MaterialTheme.typography.bodyMedium)
+                        Text(license, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = 6.dp))
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showLicenses = false }) { Text("Close") } },
+        )
+    }
 }
+
+private val LICENSES = listOf(
+    "Kotlin, kotlinx.coroutines, kotlinx.serialization (JetBrains)" to "Apache License 2.0",
+    "AndroidX: Core, Activity, Lifecycle, Navigation, Compose, Material 3, Room, Paging, WorkManager, DataStore (Google)" to "Apache License 2.0",
+    "OkHttp (Square)" to "Apache License 2.0",
+    "Sprout" to "Your own app; source at github.com/EmotionalLeaves/Budget",
+)
 
 @Composable
 private fun ThresholdRow(currentMinor: Long, onSave: (Long) -> Unit) {

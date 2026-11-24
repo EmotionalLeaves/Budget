@@ -55,6 +55,7 @@ import com.emotionalleaves.sprout.ui.common.EmptyState
 import com.emotionalleaves.sprout.ui.common.appContainer
 import com.emotionalleaves.sprout.ui.home.HomeScreen
 import com.emotionalleaves.sprout.ui.onboarding.ConnectScreen
+import com.emotionalleaves.sprout.ui.settings.ExportScreen
 import com.emotionalleaves.sprout.ui.settings.SettingsScreen
 import com.emotionalleaves.sprout.ui.theme.SproutTheme
 import com.emotionalleaves.sprout.ui.transactions.TransactionsScreen
@@ -214,8 +215,10 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
                     onCategories = { nav.navigate("categories") },
                     onRules = { nav.navigate("rules") },
                     onImport = { nav.navigate("import") },
+                    onExport = { nav.navigate("export") },
                 )
             }
+            composable("export") { ExportScreen(snackbar, onBack = { nav.popBackStack() }) }
             composable("connect") {
                 ConnectScreen(
                     startAtToken = true,

@@ -129,7 +129,11 @@ object CsvImport {
                 errors += CsvRowError(line, "No amount")
                 return@forEachIndexed
             }
-            val desc = Sanitize.text(row.getOrNull(m.description).orEmpty(), 300).ifBlank { "Imported transaction" }
+            val raw = row.getOrNull(m.description).orEmpty().let {
+                // Undo the apostrophe exports add before formula-like text (=, +, -, @).
+                if (it.length > 1 && it[0] == '\'' && it[1] in "=+-@") it.substring(1) else it
+            }
+            val desc = Sanitize.text(raw, 300).ifBlank { "Imported transaction" }
             out += CsvRow(line, date, if (m.invert) -amount else amount, desc)
         }
         return CsvParseResult(out, errors)

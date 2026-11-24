@@ -10,14 +10,14 @@ Prioritized. Phase 1 milestones come first (see PROGRESS.md); items below are gr
 - [x] M6 (0.6.0) – Notifications
 - [x] M7 (0.7.0) – Recurring charges and bills
 - [x] M8 (0.8.0) – CSV import
-- [ ] M9 (0.9.0) – CSV export, disconnect, delete all data, about/licenses — *why: user owns their data*
+- [x] M9 (0.9.0) – CSV export, disconnect, delete all data, about/licenses
 - [ ] M10 (0.10.0 → 1.0.0) – Hardening and v1.0 checklist
 
 ## 1. Bugs and crashes
 - [x] Carry `excludedFromBudget` over from a pending row to its posted row (0.2.0)
 
 ## 2. Security and data safety
-- [ ] Disconnect: delete access URL + Keystore key, keep data, offer to delete data — *why: user control over the connection*
+- [x] Disconnect (0.9.0)
 - [ ] Add Kover coverage report to CI (target ≥80% on domain/data) — *why: spec requirement; finds untested paths*
 
 ## 3. Sync reliability
