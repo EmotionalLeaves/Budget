@@ -2,6 +2,17 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [0.5.0] - 2026-11-24
+
+A fuller Home screen and a faster transaction list.
+
+### Added
+- Home now shows "Spent this month" against your total budget, the Safe to spend card, and your top 5 spending categories with mini progress bars. Tap a category to open it.
+- Transactions: "Pending only" filter.
+
+### Changed
+- The transaction list now loads in pages, so it stays smooth with tens of thousands of transactions (it used to stop at 3,000). The current day stays pinned at the top while you scroll.
+
 ## [0.4.0] - 2026-11-24
 
 Budgets and "safe to spend".

@@ -123,7 +123,14 @@ private fun MainScaffold() {
     ) { padding ->
         NavHost(nav, startDestination = Tab.HOME.route, modifier = Modifier.padding(padding)) {
             composable(Tab.HOME.route) {
-                HomeScreen(snackbar, onConnect = { nav.navigate("connect") }, onSeeAllTransactions = { goTab(Tab.TRANSACTIONS) })
+                HomeScreen(
+                    snackbar,
+                    onConnect = { nav.navigate("connect") },
+                    onSeeAllTransactions = { goTab(Tab.TRANSACTIONS) },
+                    onSetBudgets = { nav.navigate("quick-setup") },
+                    onCategory = { nav.navigate("category/$it") },
+                    onSeeBudgets = { goTab(Tab.BUDGETS) },
+                )
             }
             composable(Tab.TRANSACTIONS.route) { TransactionsScreen(snackbar, onReview = { nav.navigate("review") }) }
             composable("review") { ReviewScreen(onBack = { nav.popBackStack() }) }

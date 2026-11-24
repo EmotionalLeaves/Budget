@@ -77,7 +77,8 @@ Decisions made while building, one per line:
 - Debug builds use the app id suffix `.debug` so they can never replace the real app.
 - The lint baseline holds one warning: the adaptive icon must stay in `mipmap-anydpi-v26` because AAPT can't find it otherwise.
 - Outgoing amounts show a minus sign as well as the default color, so color is never the only signal.
-- The transaction list shows the newest 3,000 rows until the paged list ships (on the backlog).
+- The transaction list is paged (Room Paging); day headers are list rows plus a floating copy of the current day, since true sticky headers need non-paged groups.
+- Spending in hidden accounts is left out of budgets, the same way hidden accounts are left out of lists.
 - Signing-key secrets are deliberately not mapped in CI: the committed key is always used.
 
 ---

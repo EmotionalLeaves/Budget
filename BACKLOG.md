@@ -6,7 +6,7 @@ Prioritized. Phase 1 milestones come first (see PROGRESS.md); items below are gr
 - [x] M2 (0.2.0) – Reliable sync: backfill for new connections, Retry-After, offline state, partial-sync note — *why: sync is the app's lifeline*
 - [x] M3 (0.3.0) – Categorization: detail sheet, one-tap recategorize + "Always use" rules, uncategorized review, category/rule management
 - [x] M4 (0.4.0) – Budgets and safe to spend
-- [ ] M5 (0.5.0) – Full dashboard — *why: one glance answers "am I OK?"*
+- [x] M5 (0.5.0) – Full dashboard (bills section arrives with M7)
 - [ ] M6 (0.6.0) – Notifications — *why: warn before overspending*
 - [ ] M7 (0.7.0) – Recurring charges and bills — *why: no surprise charges*
 - [ ] M8 (0.8.0) – CSV import — *why: works for banks SimpleFIN can't reach*
@@ -28,15 +28,15 @@ Prioritized. Phase 1 milestones come first (see PROGRESS.md); items below are gr
 ## 4. Test coverage
 - [ ] Compose UI tests for the detail sheet and review flow (Robolectric) — *why: guard the main correction path*
 - [ ] ViewModel tests for connect flow error messages — *why: copy is part of the spec*
-- [ ] 10k-transaction generated fixture through SyncMerger — *why: performance regression guard*
+- [ ] 10k-transaction generated fixture through SyncMerger (DB side covered by LargeDataTest, 20k rows) — *why: performance regression guard*
 
 ## 5. UX polish and accessibility
 - [ ] Budgets: list every unbudgeted category (not just ones with spending) behind a "Show all" toggle — *why: budget a category before spending in it*
 - [ ] Category detail: month switcher (it shows the current month only) — *why: look back at a category*
 - [ ] Undo snackbar after recategorizing with "Always use" — *why: easy to fix a mis-tap that moved many transactions*
 - [ ] Category icons (iconKey) shown in chips and grid — *why: faster scanning*
-- [ ] Paged transaction list (Room Paging) instead of the 3,000-row cap — *why: smooth with 20,000 transactions*
-- [ ] Filter chips on Transactions (account, category, month, pending, uncategorized) — *why: find things fast*
+- [x] Paged transaction list (0.5.0)
+- [ ] Filter chips on Transactions: account, category and month (uncategorized and pending done) — *why: find things fast*
 - [ ] TalkBack pass on all screens — *why: accessibility*
 
 ## 6. Performance and battery

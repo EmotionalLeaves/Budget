@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.data.db
 
+import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
@@ -153,6 +154,25 @@ interface TransactionDao {
         """,
     )
     fun observeRows(query: String, limit: Int, categoryId: Long? = null, start: Long? = null, end: Long? = null): Flow<List<TransactionRow>>
+
+    /** The full list, paged so it stays smooth with tens of thousands of rows. */
+    @Query(
+        """
+        SELECT t.id, t.accountId, t.description, t.merchantKey, t.amountMinor, t.occurredAt, t.pending, t.note,
+               t.categoryId, c.name AS categoryName, c.colorArgb AS categoryColor, t.categorySource,
+               COALESCE(a.displayName, a.name) AS accountName
+        FROM transactions t
+        JOIN categories c ON c.id = t.categoryId
+        JOIN accounts a ON a.id = t.accountId
+        WHERE a.hidden = 0
+          AND (:query = '' OR t.description LIKE '%' || :query || '%' OR t.merchantKey LIKE '%' || :query || '%'
+               OR t.note LIKE '%' || :query || '%')
+          AND (:categoryId IS NULL OR t.categoryId = :categoryId)
+          AND (:pendingOnly = 0 OR t.pending = 1)
+        ORDER BY t.occurredAt DESC, t.id DESC
+        """,
+    )
+    fun pagingRows(query: String, categoryId: Long?, pendingOnly: Boolean): PagingSource<Int, TransactionRow>
 }
 
 @Dao

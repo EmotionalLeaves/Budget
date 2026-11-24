@@ -41,6 +41,13 @@ import com.emotionalleaves.sprout.data.db.AccountEntity
 import com.emotionalleaves.sprout.data.db.SyncResult
 import com.emotionalleaves.sprout.domain.accounts.AccountTypes
 import com.emotionalleaves.sprout.domain.money.Money
+import androidx.compose.foundation.clickable
+import com.emotionalleaves.sprout.domain.budget.BudgetMonth
+import com.emotionalleaves.sprout.domain.budget.CategoryLine
+import com.emotionalleaves.sprout.domain.budget.ProgressLevel
+import com.emotionalleaves.sprout.ui.budgets.BudgetProgress
+import com.emotionalleaves.sprout.ui.budgets.SafeToSpendCard
+import com.emotionalleaves.sprout.ui.budgets.leftOrOver
 import com.emotionalleaves.sprout.ui.common.BRIDGE_URL
 import com.emotionalleaves.sprout.ui.common.Banner
 import com.emotionalleaves.sprout.ui.common.EmptyState
@@ -57,10 +64,14 @@ fun HomeScreen(
     snackbar: SnackbarHostState,
     onConnect: () -> Unit,
     onSeeAllTransactions: () -> Unit,
+    onSetBudgets: () -> Unit,
+    onCategory: (Long) -> Unit,
+    onSeeBudgets: () -> Unit,
 ) {
     val vm = sproutViewModel { HomeViewModel(it) }
     val state by vm.state.collectAsStateWithLifecycle()
     val syncing by vm.syncing.collectAsStateWithLifecycle()
+    val budget by vm.budget.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var openId by rememberSaveable { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
@@ -113,6 +124,21 @@ fun HomeScreen(
 
             item { BalanceCard(state) }
 
+            budget?.let { m ->
+                if (m.totalBudgetMinor > 0) item { SpentThisMonth(m) }
+                item { SafeToSpendCard(m, onSetBudget = onSetBudgets) }
+                val top = (m.budgeted + m.unbudgetedWithSpending).filter { it.spentMinor > 0 }.sortedByDescending { it.spentMinor }.take(5)
+                if (top.isNotEmpty()) {
+                    item {
+                        Row(Modifier.fillMaxWidth().padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            SectionTitle("Top spending this month", Modifier.weight(1f))
+                            TextButton(onClick = onSeeBudgets, modifier = Modifier.heightIn(min = 48.dp)) { Text("Budgets") }
+                        }
+                    }
+                    items(top, key = { "top-" + it.category.id }) { line -> TopCategoryRow(line) { onCategory(line.category.id) } }
+                }
+            }
+
             if (state.accounts.isNotEmpty()) {
                 item { SectionTitle("Accounts") }
                 items(state.accounts, key = { "acct-" + it.id }) { AccountRow(it) }
@@ -129,6 +155,37 @@ fun HomeScreen(
                 HorizontalDivider(Modifier.padding(start = 16.dp))
             }
         }
+    }
+}
+
+@Composable
+private fun SpentThisMonth(m: BudgetMonth) {
+    val level = when {
+        m.totalSpentBudgetedMinor * 100 >= m.totalBudgetMinor * 100L -> ProgressLevel.RED
+        m.totalSpentBudgetedMinor * 100 >= m.totalBudgetMinor * 80L -> ProgressLevel.AMBER
+        else -> ProgressLevel.GREEN
+    }
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text("Spent this month", style = MaterialTheme.typography.labelLarge)
+        BudgetProgress(m.totalSpentBudgetedMinor, m.totalBudgetMinor, level)
+        Text(
+            "${Money.format(m.totalSpentBudgetedMinor)} of ${Money.format(m.totalBudgetMinor)} budgeted · ${leftOrOver(m.totalBudgetMinor - m.totalSpentBudgetedMinor)}",
+            style = MaterialTheme.typography.bodySmall,
+        )
+    }
+}
+
+@Composable
+private fun TopCategoryRow(line: CategoryLine, onClick: () -> Unit) {
+    Column(Modifier.fillMaxWidth().clickable(onClick = onClick).heightIn(min = 48.dp).padding(horizontal = 16.dp, vertical = 6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(line.category.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+            Text(
+                Money.format(line.spentMinor) + (line.budgetMinor?.let { " of ${Money.formatWhole(it)}" } ?: ""),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+        line.budgetMinor?.let { b -> BudgetProgress(line.spentMinor, b, line.level, Modifier.padding(top = 4.dp)) }
     }
 }
 

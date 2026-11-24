@@ -18,6 +18,7 @@ androidxTestCore = "1.6.1"
 coreKtx = "1.15.0"
 navigation = "2.8.5"
 datastore = "1.1.1"
+paging = "3.3.5"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -33,6 +34,8 @@ compose-material-icons = { module = "androidx.compose.material:material-icons-ex
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+room-paging = { module = "androidx.room:room-paging", version.ref = "room" }
+paging-compose = { module = "androidx.paging:paging-compose", version.ref = "paging" }
 room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
 work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
 work-testing = { module = "androidx.work:work-testing", version.ref = "work" }
