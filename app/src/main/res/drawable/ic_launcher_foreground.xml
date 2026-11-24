@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A simple two-leaf sprout. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M52,78 L52,54 C52,46 47,40 38,38 C31,36.5 26,38 26,38 C26,38 27,47 33,52 C38,56 45,57 50,55 L50,78 Z" />
+    <path
+        android:fillColor="#FFDDEFD9"
+        android:pathData="M56,78 L56,50 C56,41 62,34 72,32 C79,30.5 84,32 84,32 C84,32 83,42 76,47 C70,51 62,52 58,49 L58,78 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M44,78 L64,78 L64,81 L44,81 Z" />
+</vector>

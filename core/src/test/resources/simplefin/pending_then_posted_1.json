@@ -1,0 +1,11 @@
+{
+  "errlist": [],
+  "connections": [{"conn_id": "C", "name": "Bank", "org_id": "O", "sfin_url": "https://bridge.example.test/simplefin"}],
+  "accounts": [
+    {"id": "CHK", "name": "Checking", "conn_id": "C", "currency": "USD", "balance": "500.00", "balance-date": 1763800000, "transactions": [
+      {"id": "P-1", "posted": 0, "pending": true, "amount": "-20.00", "description": "TST* JOES DINER", "transacted_at": 1763700000},
+      {"id": "P-2", "posted": 0, "pending": true, "amount": "-60.00", "description": "CASEYS #3021 LINCOLN NE", "transacted_at": 1763710000},
+      {"id": "P-3", "posted": 0, "pending": true, "amount": "-11.00", "description": "SOME STORE THAT VANISHES", "transacted_at": 1763720000}
+    ]}
+  ]
+}

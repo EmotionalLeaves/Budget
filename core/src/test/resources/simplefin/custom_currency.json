@@ -1,0 +1,7 @@
+{
+  "errlist": [],
+  "connections": [{"conn_id": "C", "name": "Rewards Program", "org_id": "O", "sfin_url": "https://bridge.example.test/simplefin"}],
+  "accounts": [
+    {"id": "PTS", "name": "Reward Points", "conn_id": "C", "currency": "https://points.example.test/currency", "balance": "12000", "balance-date": 1763900000, "transactions": []}
+  ]
+}

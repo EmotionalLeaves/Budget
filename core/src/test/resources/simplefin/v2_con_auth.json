@@ -1,0 +1,14 @@
+{
+  "errlist": [
+    {"code": "con.auth", "msg": "Cornhusker Bank needs you to sign in again in SimpleFIN Bridge.", "conn_id": "CON-A"}
+  ],
+  "connections": [
+    {"conn_id": "CON-A", "name": "Cornhusker Bank", "org_id": "ORG-A", "sfin_url": "https://bridge.example.test/simplefin"},
+    {"conn_id": "CON-B", "name": "Big National Card", "org_id": "ORG-B", "sfin_url": "https://bridge.example.test/simplefin"}
+  ],
+  "accounts": [
+    {"id": "9", "name": "Card", "conn_id": "CON-B", "currency": "USD", "balance": "-20.00", "balance-date": 1763900000, "transactions": [
+      {"id": "Z", "posted": 1763500000, "amount": "-20.00", "description": "CHIPOTLE 1234"}
+    ]}
+  ]
+}

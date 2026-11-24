@@ -1,0 +1,17 @@
+{
+  "errlist": [
+    {"code": "act.missingdata", "msg": "Recent transactions for Savings may be incomplete. We'll try again later.", "account_id": "ACT-SAV"},
+    {"code": "gen.", "msg": "Some data could not be refreshed."}
+  ],
+  "errors": ["Some data could not be refreshed."],
+  "connections": [
+    {"conn_id": "CON-1", "name": "Prairie Federal", "org_id": "ORG-1", "sfin_url": "https://bridge.example.test/simplefin"}
+  ],
+  "accounts": [
+    {"id": "ACT-CHK", "name": "Checking", "conn_id": "CON-1", "currency": "USD", "balance": "800.00", "balance-date": 1763900000, "transactions": [
+      {"id": "A", "posted": 1763500000, "amount": "-12.00", "description": "SPOTIFY USA"},
+      {"id": "B", "posted": 1763510000, "amount": "-30.00", "description": "KROGER #555"}
+    ]},
+    {"id": "ACT-SAV", "name": "Savings", "conn_id": "CON-1", "currency": "USD", "balance": "2500.00", "balance-date": 1763900000, "transactions": []}
+  ]
+}

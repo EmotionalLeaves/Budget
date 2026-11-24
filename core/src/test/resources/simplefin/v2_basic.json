@@ -1,0 +1,26 @@
+{
+  "errlist": [],
+  "connections": [
+    {"conn_id": "CON-111", "name": "Prairie Federal Credit Union", "org_id": "ORG-PFCU", "org_url": "prairiefcu.example.test", "sfin_url": "https://bridge.example.test/simplefin"}
+  ],
+  "accounts": [
+    {
+      "id": "ACT-CHK-1", "name": "Everyday Checking", "conn_id": "CON-111", "currency": "USD",
+      "balance": "1523.45", "available-balance": "1500.00", "balance-date": 1763900000,
+      "transactions": [
+        {"id": "TX-1001", "posted": 1763500000, "amount": "-54.21", "description": "POS DEBIT CARD PURCHASE HY-VEE #1234 LINCOLN NE", "transacted_at": 1763490000},
+        {"id": "TX-1002", "posted": 1763600000, "amount": "1850.00", "description": "ACME CORP PAYROLL PPD ID: 9876543210"},
+        {"id": "TX-1003", "posted": 1763700000, "amount": "-15.49", "description": "NETFLIX.COM 866-579-7172 CA"},
+        {"id": "TX-1004", "posted": 0, "amount": "-23.10", "description": "TST* RUNZA LINCOLN NE", "transacted_at": 1763880000, "pending": true}
+      ]
+    },
+    {
+      "id": "ACT-CC-9", "name": "Rewards Visa", "conn_id": "CON-111", "currency": "USD",
+      "balance": "-312.88", "balance-date": 1763900000,
+      "transactions": [
+        {"id": "TX-2001", "posted": 1763550000, "amount": "-42.00", "description": "SHELL OIL 57444123 LINCOLN NE"},
+        {"id": "TX-2002", "posted": 1763650000, "amount": "300.00", "description": "PAYMENT THANK YOU"}
+      ]
+    }
+  ]
+}

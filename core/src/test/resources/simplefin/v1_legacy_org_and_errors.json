@@ -1,0 +1,17 @@
+{
+  "errors": ["Connection to Old Town Bank may need attention."],
+  "accounts": [
+    {
+      "org": {"domain": "oldtownbank.example.test", "sfin-url": "https://bridge.example.test/simplefin", "name": "Old Town Bank"},
+      "id": "OLD-1", "name": "Old Checking", "currency": "USD", "balance": "250.10", "available-balance": "250.10", "balance-date": 1763900000,
+      "transactions": [
+        {"id": "L1", "posted": 1763500000, "amount": "-9.99", "description": "SPOTIFY P1234ABCD"},
+        {"id": "L2", "posted": 1763510000, "amount": "-4.25", "description": "SQ *COFFEE HOUSE"}
+      ]
+    },
+    {
+      "org": {"name": "No Domain Credit Union", "sfin-url": "https://bridge.example.test/simplefin"},
+      "id": "OLD-2", "name": "Share Savings", "currency": "USD", "balance": "10.00", "balance-date": 1763900000
+    }
+  ]
+}

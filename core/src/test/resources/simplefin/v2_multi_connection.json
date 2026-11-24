@@ -1,0 +1,15 @@
+{
+  "errlist": [],
+  "connections": [
+    {"conn_id": "CON-A", "name": "Cornhusker Bank", "org_id": "ORG-A", "sfin_url": "https://bridge.example.test/simplefin"},
+    {"conn_id": "CON-B", "name": "Big National Card", "org_id": "ORG-B", "org_url": "bignational.example.test", "sfin_url": "https://bridge.example.test/simplefin"}
+  ],
+  "accounts": [
+    {"id": "1", "name": "Checking", "conn_id": "CON-A", "currency": "USD", "balance": "100.00", "balance-date": 1763900000, "transactions": [
+      {"id": "T1", "posted": 1763500000, "amount": "-5.00", "description": "STARBUCKS STORE 12345"}
+    ]},
+    {"id": "1", "name": "Card", "conn_id": "CON-B", "currency": "USD", "balance": "-50.00", "balance-date": 1763900000, "transactions": [
+      {"id": "T1", "posted": 1763500000, "amount": "-50.00", "description": "AMAZON.COM*AB12CD SEATTLE WA"}
+    ]}
+  ]
+}

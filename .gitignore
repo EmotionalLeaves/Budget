@@ -1,0 +1,19 @@
+# Build outputs
+build/
+.gradle/
+.kotlin/
+*.apk
+*.aab
+captures/
+
+# Local and secret files (never commit)
+local.properties
+*.env
+.env*
+google-services.json
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.DS_Store
