@@ -2,6 +2,17 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [0.10.0] - 2026-11-24
+
+Hardening before 1.0.
+
+### Changed
+- Removed two diagnostic components that libraries added and Sprout doesn't need, so only the app's main screen is open to other apps (plus Android's background-job service, which the system needs).
+- Every build now checks the app's permissions and open components, and reports test coverage.
+
+### Added
+- More tests for connecting (used tokens keep your existing connection, invalid tokens never touch the network) and for exports never containing credentials.
+
 ## [0.9.0] - 2026-11-24
 
 Your data, your control.

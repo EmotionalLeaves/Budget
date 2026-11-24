@@ -21,7 +21,7 @@ one POST to claim a setup token (once), and GETs to read your accounts.
 - Credentials are sent in an `Authorization: Basic` header; they are removed from the request URL. Redirects are never followed.
 
 ## Permissions
-Only internet, network state and notifications (plus what WorkManager needs for background sync). No storage, contacts, location, phone or SMS. Only the launcher screen is exported.
+Only internet, network state and notifications (plus what WorkManager needs for background sync: wake lock, boot completed, foreground service). No storage, contacts, location, phone or SMS. Only the launcher screen is exported, plus WorkManager's job service, which Android binds and protects with the system-only BIND_JOB_SERVICE permission. Library diagnostic receivers are removed. CI checks the merged manifest on every build.
 
 ## Signing key (why it's in the repo)
 Every APK is signed with the same key, committed at `keystore/ci-release.keystore` with public, documented passwords (`sprout-ci`, alias `sprout`).

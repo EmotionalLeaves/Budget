@@ -30,5 +30,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Library debug/diagnostic receivers that would be exported: not needed, removed. -->
+        <receiver
+            android:name="androidx.work.impl.diagnostics.DiagnosticsReceiver"
+            tools:node="remove" />
+        <receiver
+            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+            tools:ignore="MissingClass"
+            tools:node="remove" />
     </application>
 </manifest>

@@ -45,8 +45,33 @@ jobs:
           echo "code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
           echo "Sprout $VERSION_NAME ($VERSION_CODE)"
 
-      - name: Unit tests
-        run: ./gradlew --console=plain :core:test testDebugUnitTest
+      - name: Unit tests and coverage
+        run: ./gradlew --console=plain :core:test testDebugUnitTest :core:koverHtmlReport :core:koverXmlReport :app:koverHtmlReportDebug :app:koverXmlReportDebug
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import glob, xml.etree.ElementTree as ET
+          for f in sorted(glob.glob("*/build/reports/kover/*.xml")):
+              r = ET.parse(f).getroot()
+              c = next((x for x in r.findall("counter") if x.get("type") == "LINE"), None)
+              if c is not None:
+                  cov, miss = int(c.get("covered")), int(c.get("missed"))
+                  line = f"{f}: {100 * cov / max(1, cov + miss):.1f}% lines covered"
+                  print(line)
+                  open(__import__("os").environ["GITHUB_STEP_SUMMARY"], "a").write(line + "\n")
+          PY
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: |
+            core/build/reports/kover/
+            app/build/reports/kover/
+          if-no-files-found: ignore
 
       - name: Upload test reports
         if: failure()
@@ -73,6 +98,9 @@ jobs:
       # here: switching keys would force an uninstall and wipe the user's data. See SECURITY.md.
       - name: Build release APK (R8)
         run: ./gradlew --console=plain assembleRelease
+
+      - name: Check merged manifest (permissions and exported components)
+        run: bash .github/scripts/manifest_check.sh
 
       - name: Verify signing certificate (must never change)
         id: apk

@@ -2,6 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kover)
 }
 
 // Pure Kotlin: no Android imports can leak into domain logic or the SimpleFIN client.

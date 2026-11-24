@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.kover)
 }
 
 val versionProps = Properties().apply {
@@ -119,6 +120,18 @@ tasks.withType<Test>().configureEach {
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
     arg("room.generateKotlin", "true")
+}
+
+// Coverage for the app's data layer (core has its own report). UI and generated code are left out.
+kover {
+    reports {
+        filters {
+            excludes {
+                packages("com.emotionalleaves.sprout.ui")
+                classes("*_Impl", "*_Impl\$*", "*.BuildConfig", "*.MainActivity*", "*.ComposableSingletons*", "*.SproutApp*", "*.AppContainer*")
+            }
+        }
+    }
 }
 
 dependencies {
