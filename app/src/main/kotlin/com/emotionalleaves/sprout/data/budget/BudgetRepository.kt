@@ -12,7 +12,10 @@ import com.emotionalleaves.sprout.domain.budget.MonthWindow
 import com.emotionalleaves.sprout.domain.categorize.CategoryKind
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.withContext
@@ -32,6 +35,14 @@ class BudgetRepository(
 ) {
     fun today(): LocalDate = LocalDate.now(clock.withZone(zone()))
     fun currentMonth(): YearMonth = YearMonth.from(today())
+
+    /** Today's date, re-emitted when it changes (checked every minute) so screens roll over at midnight. */
+    fun todayFlow(): Flow<LocalDate> = flow {
+        while (true) {
+            emit(today())
+            delay(60_000)
+        }
+    }.distinctUntilChanged()
 
     fun observeMonth(month: YearMonth): Flow<BudgetMonth> {
         val window = MonthWindow.of(month, zone())

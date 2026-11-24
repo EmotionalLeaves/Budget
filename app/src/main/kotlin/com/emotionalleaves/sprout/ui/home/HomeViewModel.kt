@@ -23,6 +23,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 
 data class Totals(val totalMinor: Long, val cashMinor: Long, val creditMinor: Long, val excludedNonUsd: Int)
@@ -68,10 +70,16 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeState())
 
     /** This month's budgets; re-subscribed when the screen comes back so a new month is picked up. */
-    val budget: StateFlow<BudgetMonth?> = c.budgetRepository.observeMonth(c.budgetRepository.currentMonth())
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val budget: StateFlow<BudgetMonth?> = c.budgetRepository.todayFlow()
+        .map { java.time.YearMonth.from(it) }
+        .distinctUntilChanged()
+        .flatMapLatest { c.budgetRepository.observeMonth(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    val bills: StateFlow<List<UpcomingBill>> = c.recurringRepository.observeUpcoming(30).map { it.take(3) }
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val bills: StateFlow<List<UpcomingBill>> = c.budgetRepository.todayFlow()
+        .flatMapLatest { c.recurringRepository.observeUpcoming(30) }.map { it.take(3) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val syncing: StateFlow<Boolean> = WorkManager.getInstance(c.appContext)
@@ -83,6 +91,19 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
     val messages: SharedFlow<String> = _messages
 
     fun now(): Long = c.clock.instant().epochSecond
+
+    /** A crash report from a previous run, if any (local only; shared only if the user taps Share). */
+    private val _crash = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
+    val crash: StateFlow<String?> = _crash
+
+    init {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) { _crash.value = c.crashLog.read() }
+    }
+
+    fun dismissCrash() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) { c.crashLog.clear() }
+        _crash.value = null
+    }
 
     fun syncNow() {
         viewModelScope.launch { SyncActions.requestSync(c)?.let { _messages.tryEmit(it) } }

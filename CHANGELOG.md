@@ -2,6 +2,15 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [1.0.1] - 2026-11-24
+
+### Added
+- If Sprout ever closes unexpectedly, Home shows a note next time with "Share details" (your choice of app, e.g. to paste into a GitHub issue) or "Dismiss". The report is saved only on your phone and has no amounts, descriptions or bank details.
+
+### Fixed
+- Home's budget and bills now switch to the new month at midnight on the 1st, even if the app stays open.
+- "Today" and "Yesterday" labels on Transactions update after midnight.
+
 ## [1.0.0] - 2026-11-24
 
 Sprout 1.0: everything from the 0.x releases, checked and ready for everyday use.

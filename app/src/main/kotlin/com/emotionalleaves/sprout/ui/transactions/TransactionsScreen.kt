@@ -101,7 +101,9 @@ class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
     fun setQuery(q: String) { _filter.value = _filter.value.copy(query = q) }
     fun toggleUncategorized() { _filter.value = _filter.value.copy(uncategorizedOnly = !_filter.value.uncategorizedOnly) }
     fun togglePending() { _filter.value = _filter.value.copy(pendingOnly = !_filter.value.pendingOnly) }
-    fun today(): LocalDate = LocalDate.now(c.clock.withZone(ZoneId.systemDefault()))
+    /** Rolls over at midnight so "Today"/"Yesterday" headers stay right while the app is open. */
+    val today: StateFlow<LocalDate> = c.budgetRepository.todayFlow()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LocalDate.now(c.clock.withZone(ZoneId.systemDefault())))
 }
 
 @Composable
@@ -111,7 +113,7 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit) {
     val uncategorized by vm.uncategorizedCount.collectAsStateWithLifecycle()
     val total by vm.total.collectAsStateWithLifecycle()
     val items = vm.pages.collectAsLazyPagingItems()
-    val today = vm.today()
+    val today by vm.today.collectAsStateWithLifecycle()
     var openId by rememberSaveable { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()

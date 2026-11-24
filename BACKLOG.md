@@ -8,9 +8,9 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [x] M8 (0.8.0) CSV import · [x] M9 (0.9.0) export and settings · [x] M10 (0.10.0) hardening → 1.0.0
 
 ## 1. Bugs and crashes
-- [ ] Local crash log: catch uncaught exceptions to a file on the phone and show "Sprout closed unexpectedly — share details?" (no network) — *why: no crash reporting service, so the user needs a way to report crashes*
-- [ ] Home's budget card keeps the month it was created with; refresh when the month changes while the app stays open — *why: wrong month after midnight on the 1st*
-- [ ] Transactions list "today/yesterday" labels don't refresh after midnight — *why: stale headers*
+- [x] (1.0.1) Local crash log: catch uncaught exceptions to a file on the phone and show "Sprout closed unexpectedly — share details?" (no network) — *why: no crash reporting service, so the user needs a way to report crashes*
+- [x] (1.0.1) Home's budget card keeps the month it was created with; refresh when the month changes while the app stays open — *why: wrong month after midnight on the 1st*
+- [x] (1.0.1) Transactions list "today/yesterday" labels don't refresh after midnight — *why: stale headers*
 
 ## 2. Security and data safety
 - [ ] Optional app lock with fingerprint/PIN (BiometricPrompt) — *why: banking data on a shared or lost phone*

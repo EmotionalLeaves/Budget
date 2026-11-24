@@ -76,6 +76,7 @@ fun HomeScreen(
     val syncing by vm.syncing.collectAsStateWithLifecycle()
     val budget by vm.budget.collectAsStateWithLifecycle()
     val bills by vm.bills.collectAsStateWithLifecycle()
+    val crash by vm.crash.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var openId by rememberSaveable { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
@@ -87,6 +88,21 @@ fun HomeScreen(
 
     PullToRefreshBox(isRefreshing = syncing, onRefresh = vm::syncNow, modifier = Modifier.fillMaxSize()) {
         LazyColumn(Modifier.fillMaxSize()) {
+            crash?.let { report ->
+                item {
+                    CrashCard(
+                        onShare = {
+                            val send = android.content.Intent(android.content.Intent.ACTION_SEND)
+                                .setType("text/plain")
+                                .putExtra(android.content.Intent.EXTRA_SUBJECT, "Sprout crash report")
+                                .putExtra(android.content.Intent.EXTRA_TEXT, report)
+                            runCatching { context.startActivity(android.content.Intent.createChooser(send, "Share crash details")) }
+                            vm.dismissCrash()
+                        },
+                        onDismiss = vm::dismissCrash,
+                    )
+                }
+            }
             item { SyncStatusLine(state, vm.now()) }
             val partial = state.lastLog?.takeIf { it.result == SyncResult.PARTIAL }
             if (partial != null) {
@@ -180,6 +196,24 @@ fun HomeScreen(
             items(state.recent, key = { "tx-" + it.id }) { row ->
                 TransactionItem(row) { openId = row.id }
                 HorizontalDivider(Modifier.padding(start = 16.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun CrashCard(onShare: () -> Unit, onDismiss: () -> Unit) {
+    Card(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text("Sprout closed unexpectedly last time", style = MaterialTheme.typography.titleSmall)
+            Text(
+                "A short technical report was saved on this phone. It has no amounts, descriptions or bank details. " +
+                    "You can share it (for example in a GitHub issue) to help fix the problem.",
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = onShare, modifier = Modifier.heightIn(min = 48.dp)) { Text("Share details") }
+                TextButton(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp)) { Text("Dismiss") }
             }
         }
     }

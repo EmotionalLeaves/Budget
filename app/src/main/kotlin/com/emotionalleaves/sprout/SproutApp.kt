@@ -2,6 +2,7 @@ package com.emotionalleaves.sprout
 
 import android.app.Application
 import android.content.Context
+import com.emotionalleaves.sprout.data.CrashLog
 import com.emotionalleaves.sprout.data.NetworkMonitor
 import com.emotionalleaves.sprout.data.alerts.AlertRepository
 import com.emotionalleaves.sprout.data.alerts.AndroidNotifier
@@ -29,6 +30,7 @@ import java.time.Clock
 /** Simple manual dependency injection: one container per process. */
 class AppContainer(context: Context) {
     val appContext: Context = context.applicationContext
+    val crashLog = CrashLog(java.io.File(appContext.filesDir, "crash-report.txt"))
     val clock: Clock = Clock.systemDefaultZone()
     val db: SproutDatabase = SproutDatabase.build(appContext)
     val settings = SettingsStore(appContext)
@@ -66,6 +68,7 @@ class SproutApp : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+        container.crashLog.install(BuildConfig.VERSION_NAME)
         container.notifier.createChannels()
         container.appScope.launch {
             container.syncRepository.ensureSeeded()

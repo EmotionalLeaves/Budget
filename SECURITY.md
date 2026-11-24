@@ -20,6 +20,9 @@ one POST to claim a setup token (once), and GETs to read your accounts.
 - The access URL and setup token are never logged, shown, exported, put in notifications or sent anywhere but the SimpleFIN host. `AccessUrl.toString()` prints `AccessUrl(***)`, and every network error message goes through a redactor.
 - Credentials are sent in an `Authorization: Basic` header; they are removed from the request URL. Redirects are never followed.
 
+## Crash reports
+If Sprout crashes, a short report is saved in the app's private storage: exception class names and code locations only, never exception messages (which could contain transaction text). It is shown to you on the next start and leaves the phone only if you tap Share and choose where to send it.
+
 ## Permissions
 Only internet, network state and notifications (plus what WorkManager needs for background sync: wake lock, boot completed, foreground service). No storage, contacts, location, phone or SMS. Only the launcher screen is exported, plus WorkManager's job service, which Android binds and protects with the system-only BIND_JOB_SERVICE permission. Library diagnostic receivers are removed. CI checks the merged manifest on every build.
 
