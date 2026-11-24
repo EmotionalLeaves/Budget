@@ -22,7 +22,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
-enum class ConnectStep { WELCOME, TOKEN, CONNECTING, SYNCING, ACCOUNTS, NOTIFY }
+enum class ConnectStep { WELCOME, TOKEN, CONNECTING, SYNCING, ACCOUNTS, QUICK_BUDGET, NOTIFY }
 
 data class ConnectUiState(
     val step: ConnectStep = ConnectStep.WELCOME,
@@ -30,6 +30,8 @@ data class ConnectUiState(
     val error: String? = null,
     /** Show the "Get a new token" button (claim 403, network problems). */
     val offerNewToken: Boolean = false,
+    /** Quick budget setup suggestions shown after the first sync. */
+    val suggestions: List<com.emotionalleaves.sprout.data.budget.Suggestion> = emptyList(),
 )
 
 class ConnectViewModel(private val c: AppContainer, startAtToken: Boolean) : ViewModel() {
@@ -94,9 +96,31 @@ class ConnectViewModel(private val c: AppContainer, startAtToken: Boolean) : Vie
         viewModelScope.launch { c.db.accounts().setIncludeInTotals(account.id, include) }
     }
 
-    /** After the accounts list: explain notifications first on Android 13+ if we never asked. */
+    /** After the accounts list: offer budgets from recent spending (if there's history), then notifications. */
     fun accountsDone(onDone: () -> Unit) {
         viewModelScope.launch {
+            val suggestions = runCatching { c.budgetRepository.suggestions() }.getOrDefault(emptyList())
+            val hasBudgets = c.db.budgets().observeDefaults().first().isNotEmpty()
+            if (suggestions.isNotEmpty() && !hasBudgets) {
+                _state.update { it.copy(step = ConnectStep.QUICK_BUDGET, suggestions = suggestions) }
+            } else {
+                afterBudgets(onDone)
+            }
+        }
+    }
+
+    fun useSuggestions(onDone: () -> Unit) {
+        viewModelScope.launch {
+            c.budgetRepository.applySuggestions(_state.value.suggestions.associate { it.categoryId to it.suggestedMinor })
+            afterBudgets(onDone)
+        }
+    }
+
+    fun skipBudgets(onDone: () -> Unit) { viewModelScope.launch { afterBudgets(onDone) } }
+
+    /** Explain notifications first on Android 13+ if we never asked. */
+    private suspend fun afterBudgets(onDone: () -> Unit) {
+        run {
             val ask = android.os.Build.VERSION.SDK_INT >= 33 && !c.notifier.canPost() && !c.settings.current().notificationsAsked
             if (ask) _state.update { it.copy(step = ConnectStep.NOTIFY) } else finish(onDone)
         }

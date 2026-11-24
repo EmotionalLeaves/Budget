@@ -2,6 +2,12 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [1.5.0] - 2026-11-24
+
+### Added
+- Category pages now have month arrows, so you can look back at any month's spending, merchants and transactions.
+- Right after you connect your bank, Sprout offers budgets based on your recent spending. Tap "Use these budgets" or "Not now".
+
 ## [1.4.0] - 2026-11-24
 
 Easier everyday use.

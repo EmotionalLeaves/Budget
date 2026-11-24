@@ -59,7 +59,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.YearMonth
@@ -67,19 +70,27 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class CategoryDetailViewModel(private val c: AppContainer, val categoryId: Long) : ViewModel() {
-    private val month: YearMonth = c.budgetRepository.currentMonth()
-    private val window = MonthWindow.of(month, ZoneId.systemDefault())
+    private val _month = MutableStateFlow(c.budgetRepository.currentMonth())
+    val month: StateFlow<YearMonth> = _month.asStateFlow()
+    private fun window(m: YearMonth) = MonthWindow.of(m, ZoneId.systemDefault())
+
+    fun prev() { _month.value = _month.value.minusMonths(1) }
+    fun next() { _month.value = _month.value.plusMonths(1) }
 
     val category: StateFlow<CategoryEntity?> = c.db.categories().observeAll().map { l -> l.firstOrNull { it.id == categoryId } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
-    val budgetMonth: StateFlow<BudgetMonth?> = c.budgetRepository.observeMonth(month)
+    val budgetMonth: StateFlow<BudgetMonth?> = _month.flatMapLatest { c.budgetRepository.observeMonth(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
-    val merchants: StateFlow<List<MerchantSum>> = c.db.budgets().observeMerchantSums(categoryId, window.start, window.end)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-    val transactions: StateFlow<List<TransactionRow>> =
-        c.db.transactions().observeRows("", 200, categoryId, window.start, window.end)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val merchants: StateFlow<List<MerchantSum>> = _month.flatMapLatest { m ->
+        val w = window(m)
+        c.db.budgets().observeMerchantSums(categoryId, w.start, w.end)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val transactions: StateFlow<List<TransactionRow>> = _month.flatMapLatest { m ->
+        val w = window(m)
+        c.db.transactions().observeRows("", 200, categoryId, w.start, w.end)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val rules: StateFlow<List<RuleRow>> = c.db.merchantRules().observeRows().map { l -> l.filter { it.categoryId == categoryId } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
@@ -92,16 +103,18 @@ class CategoryDetailViewModel(private val c: AppContainer, val categoryId: Long)
 }
 
 private val shortMonth = DateTimeFormatter.ofPattern("MMM", Locale.US)
+private val monthTitle = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.US)
 
 @Composable
 fun CategoryDetailScreen(categoryId: Long, snackbar: SnackbarHostState, onBack: () -> Unit, onEditCategories: () -> Unit) {
     val vm = sproutViewModel(key = "cat-$categoryId") { CategoryDetailViewModel(it, categoryId) }
     val category by vm.category.collectAsStateWithLifecycle()
-    val month by vm.budgetMonth.collectAsStateWithLifecycle()
+    val budgetMonth by vm.budgetMonth.collectAsStateWithLifecycle()
     val merchants by vm.merchants.collectAsStateWithLifecycle()
     val txs by vm.transactions.collectAsStateWithLifecycle()
     val rules by vm.rules.collectAsStateWithLifecycle()
     val history by vm.history.collectAsStateWithLifecycle()
+    val month by vm.month.collectAsStateWithLifecycle()
     var openId by rememberSaveable { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
@@ -115,11 +128,19 @@ fun CategoryDetailScreen(categoryId: Long, snackbar: SnackbarHostState, onBack: 
                 TextButton(onClick = onEditCategories, modifier = Modifier.heightIn(min = 48.dp)) { Text("Edit") }
             }
         }
-        val line = month?.let { m -> (m.budgeted + m.unbudgetedWithSpending).firstOrNull { it.category.id == categoryId } }
+        val line = budgetMonth?.let { m -> m.allLines.firstOrNull { it.category.id == categoryId } }
+        item {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = vm::prev) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous month") }
+                Text(month.format(monthTitle), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                IconButton(onClick = vm::next) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next month") }
+            }
+        }
         item {
             Card(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("This month", style = MaterialTheme.typography.labelLarge)
+                    Text("Spent", style = MaterialTheme.typography.labelLarge)
                     val spent = line?.spentMinor ?: 0L
                     val budget = line?.budgetMinor
                     Text(Money.format(spent), style = MaterialTheme.typography.headlineMedium)
@@ -137,7 +158,7 @@ fun CategoryDetailScreen(categoryId: Long, snackbar: SnackbarHostState, onBack: 
             item { HistoryChart(history, category?.colorArgb?.let { Color(it) } ?: MaterialTheme.colorScheme.primary) }
         }
         if (merchants.isNotEmpty()) {
-            item { SectionTitle("By merchant this month") }
+            item { SectionTitle("By merchant") }
             items(merchants, key = { "m-" + it.merchantKey }) { m ->
                 Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(MerchantNormalizer.displayName(m.merchantKey) + " (${m.count})", Modifier.weight(1f))
@@ -154,7 +175,7 @@ fun CategoryDetailScreen(categoryId: Long, snackbar: SnackbarHostState, onBack: 
                 )
             }
         }
-        item { SectionTitle("Transactions this month") }
+        item { SectionTitle("Transactions") }
         items(txs, key = { "t-" + it.id }) { row ->
             TransactionItem(row) { openId = row.id }
             HorizontalDivider(Modifier.padding(start = 16.dp))

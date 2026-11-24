@@ -123,6 +123,22 @@ fun ConnectScreen(startAtToken: Boolean, onDone: () -> Unit, onSkip: () -> Unit,
                 }
                 Button(onClick = { vm.accountsDone(onDone) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Done") }
             }
+            ConnectStep.QUICK_BUDGET -> {
+                Text("Start with these budgets?", style = MaterialTheme.typography.headlineSmall)
+                Text(
+                    "Based on your average spending over the last few months, rounded up to the next \$10. " +
+                        "You can change any of them later in Budgets.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                state.suggestions.forEach { s ->
+                    Row(Modifier.fillMaxWidth().heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(s.name, Modifier.weight(1f))
+                        Text("${Money.formatWhole(s.suggestedMinor)}/month")
+                    }
+                }
+                Button(onClick = { vm.useSuggestions(onDone) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Use these budgets") }
+                TextButton(onClick = { vm.skipBudgets(onDone) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Not now") }
+            }
             ConnectStep.NOTIFY -> {
                 val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.finish(onDone) }
                 Icon(Icons.Filled.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(48.dp))
