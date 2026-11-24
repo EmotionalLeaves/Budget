@@ -2,6 +2,18 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [0.6.0] - 2026-11-24
+
+Notifications.
+
+### Added
+- Budget alerts when a category reaches 80% and when it reaches 100% of its budget (each once per month; if one charge crosses both, you only get the 100% alert).
+- Alerts for large charges (default $250 or more) and unusual ones: much more than you usually spend at a merchant, or $150+ at a merchant you've never used. Never for your first sync or CSV imports.
+- "Sync problems" alerts when a bank needs attention or SimpleFIN access is turned off.
+- Amounts are hidden on the lock screen. Tapping an alert opens the category or transaction.
+- After connecting on Android 13+, Sprout explains alerts before asking for permission. Everything works without them.
+- Settings → Notifications: turn each kind on or off and set the large-charge amount.
+
 ## [0.5.0] - 2026-11-24
 
 A fuller Home screen and a faster transaction list.

@@ -34,6 +34,8 @@ data class MergeResult(
     val deleteIds: List<String>,
     val newCount: Int,
     val updatedCount: Int,
+    /** Ids inserted by this merge (not updates, not pending rows that just posted with their history carried over). */
+    val newIds: List<String> = emptyList(),
 )
 
 /**
@@ -65,6 +67,7 @@ class SyncMerger(
         val deletes = linkedSetOf<String>()
         var newCount = 0
         var updatedCount = 0
+        val newIds = mutableListOf<String>()
 
         val incomingIds = incoming.map { Ids.transactionId(accountKey, it.id) }.toSet()
         // Pending rows that a posted transaction could replace: stored, pending, not returned again under their own id.
@@ -116,6 +119,7 @@ class SyncMerger(
                 )
             }
 
+            var carried = false
             if (!tx.pending) {
                 val match = findPendingMatch(fresh, pendingPool)
                 if (match != null) {
@@ -129,8 +133,10 @@ class SyncMerger(
                         createdAt = match.createdAt,
                         excludedFromBudget = match.excludedFromBudget,
                     )
+                    carried = true
                 }
             }
+            if (!carried) newIds += id
             upserts[id] = fresh
             byId[id] = fresh
             newCount++
@@ -143,7 +149,7 @@ class SyncMerger(
             }
         }
         deletes.removeAll(upserts.keys)
-        return MergeResult(upserts.values.toList(), deletes.toList(), newCount, updatedCount)
+        return MergeResult(upserts.values.toList(), deletes.toList(), newCount, updatedCount, newIds)
     }
 
     private fun findPendingMatch(posted: StoredTx, pool: List<StoredTx>): StoredTx? =

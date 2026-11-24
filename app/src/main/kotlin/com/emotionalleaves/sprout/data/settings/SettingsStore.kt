@@ -25,6 +25,8 @@ data class Settings(
     val accessRevoked: Boolean = false,
     /** Set when /accounts answered 402. */
     val paymentRequired: Boolean = false,
+    /** The notification explainer has been shown (Android 13+). */
+    val notificationsAsked: Boolean = false,
 )
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -45,6 +47,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
             notifySyncProblems = p[NOTIFY_SYNC] ?: true,
             accessRevoked = p[REVOKED] ?: false,
             paymentRequired = p[PAYMENT] ?: false,
+            notificationsAsked = p[NOTIFY_ASKED] ?: false,
         )
     }
 
@@ -56,6 +59,11 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
     suspend fun setLastSuccessfulSync(at: Long) = dataStore.edit { it[LAST_SUCCESS] = at }
     suspend fun setAccessRevoked(revoked: Boolean) = dataStore.edit { it[REVOKED] = revoked }
     suspend fun setPaymentRequired(required: Boolean) = dataStore.edit { it[PAYMENT] = required }
+    suspend fun setNotifyBudget(on: Boolean) = dataStore.edit { it[NOTIFY_BUDGET] = on }
+    suspend fun setNotifyUnusual(on: Boolean) = dataStore.edit { it[NOTIFY_UNUSUAL] = on }
+    suspend fun setNotifySyncProblems(on: Boolean) = dataStore.edit { it[NOTIFY_SYNC] = on }
+    suspend fun setLargeTxThreshold(minor: Long) = dataStore.edit { it[LARGE_TX] = minor.coerceAtLeast(100) }
+    suspend fun setNotificationsAsked() = dataStore.edit { it[NOTIFY_ASKED] = true }
 
     /** A new token: start fresh sync bookkeeping (first-sync window) but keep all other settings. */
     suspend fun onNewConnection() = dataStore.edit {
@@ -77,5 +85,6 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         val NOTIFY_SYNC = booleanPreferencesKey("notify_sync")
         val REVOKED = booleanPreferencesKey("access_revoked")
         val PAYMENT = booleanPreferencesKey("payment_required")
+        val NOTIFY_ASKED = booleanPreferencesKey("notifications_asked")
     }
 }

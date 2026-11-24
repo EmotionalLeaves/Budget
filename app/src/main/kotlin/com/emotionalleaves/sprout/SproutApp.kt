@@ -3,6 +3,8 @@ package com.emotionalleaves.sprout
 import android.app.Application
 import android.content.Context
 import com.emotionalleaves.sprout.data.NetworkMonitor
+import com.emotionalleaves.sprout.data.alerts.AlertRepository
+import com.emotionalleaves.sprout.data.alerts.AndroidNotifier
 import com.emotionalleaves.sprout.data.budget.BudgetRepository
 import com.emotionalleaves.sprout.data.categories.CategoryRepository
 import com.emotionalleaves.sprout.data.db.SproutDatabase
@@ -26,10 +28,12 @@ class AppContainer(context: Context) {
     val settings = SettingsStore(appContext)
     val secureStore = SecureStore(appContext)
     private val client = SimpleFinClient()
-    val syncRepository = SyncRepository(db, secureStore, settings, client, clock)
+    val notifier = AndroidNotifier(appContext)
+    val budgetRepository = BudgetRepository(db, clock)
+    val alertRepository = AlertRepository(db, settings, budgetRepository, notifier, clock)
+    val syncRepository = SyncRepository(db, secureStore, settings, client, clock, alertRepository)
     val connectRepository = ConnectRepository(client, secureStore, settings)
     val categoryRepository = CategoryRepository(db, clock)
-    val budgetRepository = BudgetRepository(db, clock)
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     val network = NetworkMonitor(appContext)
 }
@@ -41,6 +45,7 @@ class SproutApp : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+        container.notifier.createChannels()
         container.appScope.launch {
             container.syncRepository.ensureSeeded()
             val s = container.settings.current()

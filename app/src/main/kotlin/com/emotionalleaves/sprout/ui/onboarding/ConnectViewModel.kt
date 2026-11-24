@@ -22,7 +22,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
-enum class ConnectStep { WELCOME, TOKEN, CONNECTING, SYNCING, ACCOUNTS }
+enum class ConnectStep { WELCOME, TOKEN, CONNECTING, SYNCING, ACCOUNTS, NOTIFY }
 
 data class ConnectUiState(
     val step: ConnectStep = ConnectStep.WELCOME,
@@ -94,8 +94,17 @@ class ConnectViewModel(private val c: AppContainer, startAtToken: Boolean) : Vie
         viewModelScope.launch { c.db.accounts().setIncludeInTotals(account.id, include) }
     }
 
+    /** After the accounts list: explain notifications first on Android 13+ if we never asked. */
+    fun accountsDone(onDone: () -> Unit) {
+        viewModelScope.launch {
+            val ask = android.os.Build.VERSION.SDK_INT >= 33 && !c.notifier.canPost() && !c.settings.current().notificationsAsked
+            if (ask) _state.update { it.copy(step = ConnectStep.NOTIFY) } else finish(onDone)
+        }
+    }
+
     fun finish(onDone: () -> Unit) {
         viewModelScope.launch {
+            c.settings.setNotificationsAsked()
             c.settings.setOnboardingComplete(true)
             onDone()
         }

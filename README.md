@@ -79,6 +79,9 @@ Decisions made while building, one per line:
 - Outgoing amounts show a minus sign as well as the default color, so color is never the only signal.
 - The transaction list is paged (Room Paging); day headers are list rows plus a floating copy of the current day, since true sticky headers need non-paged groups.
 - Spending in hidden accounts is left out of budgets, the same way hidden accounts are left out of lists.
+- Onboarding goes accounts → notification explainer → Home; quick budget setup is offered from the Safe-to-spend card instead of a separate onboarding step, to keep first run short.
+- Budget threshold crossings are recorded even when budget alerts are off, so turning alerts on later never replays old ones.
+- A transaction is only marked alerted (alertedAt) if its notification was actually shown.
 - Signing-key secrets are deliberately not mapped in CI: the committed key is always used.
 
 ---

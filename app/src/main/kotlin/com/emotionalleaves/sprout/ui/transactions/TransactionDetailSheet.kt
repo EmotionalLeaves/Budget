@@ -57,11 +57,15 @@ class TransactionDetailViewModel(private val c: AppContainer, private val id: St
 
     fun pick(category: CategoryEntity, always: Boolean, merchant: String) = viewModelScope.launch {
         val others = c.categoryRepository.recategorize(id, category.id, always)
+        c.alertRepository.evaluateBudgets()
         if (always && others > 0) _messages.tryEmit("Moved $others more from $merchant to ${category.name}")
     }
 
     fun saveNote(note: String) = viewModelScope.launch { c.categoryRepository.setNote(id, note) }
-    fun setExcluded(excluded: Boolean) = viewModelScope.launch { c.categoryRepository.setExcluded(id, excluded) }
+    fun setExcluded(excluded: Boolean) = viewModelScope.launch {
+        c.categoryRepository.setExcluded(id, excluded)
+        c.alertRepository.evaluateBudgets()
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

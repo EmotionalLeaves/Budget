@@ -65,6 +65,7 @@ class ReviewViewModel(private val c: AppContainer) : ViewModel() {
 
     fun pick(row: TransactionRow, category: CategoryEntity, always: Boolean) = viewModelScope.launch {
         c.categoryRepository.recategorize(row.id, category.id, always)
+        c.alertRepository.evaluateBudgets()
     }
 
     fun skip(row: TransactionRow) = skipped.update { it + row.id }

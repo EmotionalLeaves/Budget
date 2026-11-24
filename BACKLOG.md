@@ -7,7 +7,7 @@ Prioritized. Phase 1 milestones come first (see PROGRESS.md); items below are gr
 - [x] M3 (0.3.0) – Categorization: detail sheet, one-tap recategorize + "Always use" rules, uncategorized review, category/rule management
 - [x] M4 (0.4.0) – Budgets and safe to spend
 - [x] M5 (0.5.0) – Full dashboard (bills section arrives with M7)
-- [ ] M6 (0.6.0) – Notifications — *why: warn before overspending*
+- [x] M6 (0.6.0) – Notifications
 - [ ] M7 (0.7.0) – Recurring charges and bills — *why: no surprise charges*
 - [ ] M8 (0.8.0) – CSV import — *why: works for banks SimpleFIN can't reach*
 - [ ] M9 (0.9.0) – CSV export, disconnect, delete all data, about/licenses — *why: user owns their data*

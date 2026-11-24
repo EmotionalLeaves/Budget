@@ -11,7 +11,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.input.KeyboardType
+import com.emotionalleaves.sprout.domain.money.Money
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -82,6 +90,11 @@ class SettingsViewModel(private val c: AppContainer) : ViewModel() {
     fun setFirstSyncDays(days: Int) = viewModelScope.launch { c.settings.setFirstSyncDays(days) }
     fun setIncluded(a: AccountEntity, include: Boolean) = viewModelScope.launch { c.db.accounts().setIncludeInTotals(a.id, include) }
     fun setHidden(a: AccountEntity, hidden: Boolean) = viewModelScope.launch { c.db.accounts().setHidden(a.id, hidden) }
+    fun canPost() = c.notifier.canPost()
+    fun setNotifyBudget(on: Boolean) = viewModelScope.launch { c.settings.setNotifyBudget(on) }
+    fun setNotifyUnusual(on: Boolean) = viewModelScope.launch { c.settings.setNotifyUnusual(on) }
+    fun setNotifySync(on: Boolean) = viewModelScope.launch { c.settings.setNotifySyncProblems(on) }
+    fun setThreshold(minor: Long) = viewModelScope.launch { c.settings.setLargeTxThreshold(minor) }
 }
 
 @Composable
@@ -120,6 +133,31 @@ fun SettingsScreen(snackbar: SnackbarHostState, onReplaceToken: () -> Unit, onCa
         item { SectionTitle("Categories") }
         item { NavRow("Categories", "Add, rename, recolor or archive", onCategories) }
         item { NavRow("Category rules", "What Sprout learned from your changes, plus keyword rules", onRules) }
+
+        item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
+        item { SectionTitle("Notifications") }
+        item {
+            Column(Modifier.padding(horizontal = 16.dp)) {
+                if (!vm.canPost()) {
+                    Text("Notifications are off for Sprout.", style = MaterialTheme.typography.bodyMedium)
+                    TextButton(
+                        onClick = {
+                            runCatching {
+                                context.startActivity(
+                                    android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                        .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName),
+                                )
+                            }
+                        },
+                        modifier = Modifier.heightIn(min = 48.dp),
+                    ) { Text("Turn on in system settings") }
+                }
+                ToggleRow("Budget alerts (80% and 100%)", state.settings.notifyBudget) { vm.setNotifyBudget(it) }
+                ToggleRow("Large or unusual charges", state.settings.notifyUnusual) { vm.setNotifyUnusual(it) }
+                ToggleRow("Sync problems", state.settings.notifySyncProblems) { vm.setNotifySync(it) }
+                ThresholdRow(state.settings.largeTxThresholdMinor) { vm.setThreshold(it) }
+            }
+        }
 
         item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
         item { SectionTitle("Sync") }
@@ -186,6 +224,34 @@ fun SettingsScreen(snackbar: SnackbarHostState, onReplaceToken: () -> Unit, onCa
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ThresholdRow(currentMinor: Long, onSave: (Long) -> Unit) {
+    var editing by remember { mutableStateOf(false) }
+    Column(
+        Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable { editing = true }.padding(vertical = 8.dp),
+    ) {
+        Text("Large charge amount", style = MaterialTheme.typography.bodyLarge)
+        Text("Alert for any charge of ${Money.formatWhole(currentMinor)} or more", style = MaterialTheme.typography.bodySmall)
+    }
+    if (editing) {
+        var text by remember { mutableStateOf((currentMinor / 100).toString()) }
+        val parsed = Money.parseUserInput(text)?.takeIf { it >= 100 }
+        AlertDialog(
+            onDismissRequest = { editing = false },
+            title = { Text("Large charge amount") },
+            text = {
+                OutlinedTextField(
+                    value = text, onValueChange = { text = it.take(8) }, prefix = { Text("$") }, singleLine = true,
+                    isError = parsed == null,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                )
+            },
+            confirmButton = { TextButton(onClick = { parsed?.let(onSave); editing = false }, enabled = parsed != null) { Text("Save") } },
+            dismissButton = { TextButton(onClick = { editing = false }) { Text("Cancel") } },
+        )
     }
 }
 

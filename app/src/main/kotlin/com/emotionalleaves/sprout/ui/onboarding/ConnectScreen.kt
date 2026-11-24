@@ -18,6 +18,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Eco
+import androidx.compose.material.icons.filled.Notifications
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
@@ -118,7 +121,23 @@ fun ConnectScreen(startAtToken: Boolean, onDone: () -> Unit, onSkip: () -> Unit,
                         }
                     }
                 }
-                Button(onClick = { vm.finish(onDone) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Done") }
+                Button(onClick = { vm.accountsDone(onDone) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Done") }
+            }
+            ConnectStep.NOTIFY -> {
+                val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.finish(onDone) }
+                Icon(Icons.Filled.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(48.dp))
+                Text("Get helpful alerts?", style = MaterialTheme.typography.headlineSmall)
+                Text(
+                    "Sprout can tell you when a category reaches 80% or 100% of its budget, when there's a large or unusual " +
+                        "charge, and when a bank connection needs attention. Amounts are hidden on your lock screen. " +
+                        "Everything works without notifications too.",
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Button(
+                    onClick = { launcher.launch(android.Manifest.permission.POST_NOTIFICATIONS) },
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                ) { Text("Turn on alerts") }
+                TextButton(onClick = { vm.finish(onDone) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Not now") }
             }
         }
     }

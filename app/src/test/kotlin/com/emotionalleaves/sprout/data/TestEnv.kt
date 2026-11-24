@@ -65,7 +65,7 @@ class TestEnv(nowSeconds: Long = 1_763_900_000) : AutoCloseable {
     /** Access URL pointing at the mock server, in the demo:demo form tests always use. */
     val accessUrl: String get() = "https://demo:demo@" + server.url("/simplefin").toString().removePrefix("https://")
 
-    fun repo() = SyncRepository(db, secure, settings, client, clock)
+    fun repo(alerts: com.emotionalleaves.sprout.data.sync.AlertSink? = null) = SyncRepository(db, secure, settings, client, clock, alerts)
 
     fun fixture(name: String): String =
         requireNotNull(javaClass.getResource("/simplefin/$name")) { "missing $name" }.readText()

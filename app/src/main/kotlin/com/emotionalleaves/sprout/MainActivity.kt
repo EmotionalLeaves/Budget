@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -23,7 +24,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import com.emotionalleaves.sprout.data.alerts.AndroidNotifier
+import com.emotionalleaves.sprout.ui.transactions.TransactionDetailSheet
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -50,14 +58,39 @@ import com.emotionalleaves.sprout.ui.theme.SproutTheme
 import com.emotionalleaves.sprout.ui.transactions.TransactionsScreen
 import kotlinx.coroutines.launch
 
+/** Where a notification tap should take the user. */
+sealed interface DeepLink {
+    data class Category(val id: Long) : DeepLink
+    data class Transaction(val id: String) : DeepLink
+    data object Settings : DeepLink
+}
+
 class MainActivity : ComponentActivity() {
+    private val deepLink = mutableStateOf<DeepLink?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null) deepLink.value = parse(intent)
         setContent {
             SproutTheme {
-                Surface(Modifier.fillMaxSize()) { SproutRoot() }
+                Surface(Modifier.fillMaxSize()) { SproutRoot(deepLink.value) { deepLink.value = null } }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        parse(intent)?.let { deepLink.value = it }
+    }
+
+    private fun parse(intent: Intent?): DeepLink? {
+        intent ?: return null
+        return when {
+            intent.hasExtra(AndroidNotifier.EXTRA_CATEGORY) -> DeepLink.Category(intent.getLongExtra(AndroidNotifier.EXTRA_CATEGORY, 0))
+            intent.hasExtra(AndroidNotifier.EXTRA_TRANSACTION) -> intent.getStringExtra(AndroidNotifier.EXTRA_TRANSACTION)?.let { DeepLink.Transaction(it) }
+            intent.hasExtra(AndroidNotifier.EXTRA_SETTINGS) -> DeepLink.Settings
+            else -> null
         }
     }
 }
@@ -71,7 +104,7 @@ private enum class Tab(val route: String, val label: String, val icon: ImageVect
 }
 
 @Composable
-private fun SproutRoot() {
+private fun SproutRoot(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
     val container = appContainer()
     // null until DataStore answers, so the onboarding screen never flashes for returning users.
     val settings: Settings? by container.settings.settings.collectAsState(initial = null)
@@ -85,15 +118,17 @@ private fun SproutRoot() {
                 onSkip = { scope.launch { container.settings.setOnboardingComplete(true) } },
             )
         } else {
-            MainScaffold()
+            MainScaffold(deepLink, onDeepLinkHandled)
         }
     }
 }
 
 @Composable
-private fun MainScaffold() {
+private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
     val nav = rememberNavController()
     val snackbar = remember { SnackbarHostState() }
+    var openTx by rememberSaveable { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
     val backStack by nav.currentBackStackEntryAsState()
     val route = backStack?.destination?.route
     val showBar = Tab.entries.any { it.route == route }
@@ -102,6 +137,21 @@ private fun MainScaffold() {
         popUpTo(nav.graph.findStartDestination().id) { saveState = true }
         launchSingleTop = true
         restoreState = true
+    }
+
+    // Wait until the NavHost has a graph (backStack != null) before navigating.
+    LaunchedEffect(deepLink, backStack != null) {
+        if (backStack == null) return@LaunchedEffect
+        when (deepLink) {
+            is DeepLink.Category -> nav.navigate("category/${deepLink.id}")
+            is DeepLink.Transaction -> openTx = deepLink.id
+            DeepLink.Settings -> goTab(Tab.SETTINGS)
+            null -> return@LaunchedEffect
+        }
+        onDeepLinkHandled()
+    }
+    openTx?.let { id ->
+        TransactionDetailSheet(id, onDismiss = { openTx = null }, onMessage = { msg -> scope.launch { snackbar.showSnackbar(msg) } })
     }
 
     Scaffold(

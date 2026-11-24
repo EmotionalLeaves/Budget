@@ -281,3 +281,21 @@ interface BudgetDao {
 
     @Query("SELECT MIN(occurredAt) FROM transactions") suspend fun firstOccurredAt(): Long?
 }
+
+@Dao
+interface AlertDao {
+    @Query("SELECT * FROM budget_alerts WHERE yearMonth = :yearMonth") suspend fun firedIn(yearMonth: String): List<BudgetAlertEntity>
+    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun record(items: List<BudgetAlertEntity>)
+
+    /** The merchant's earlier charges, newest first, for "unusual for this merchant". */
+    @Query(
+        """
+        SELECT amountMinor FROM transactions
+        WHERE merchantKey = :merchantKey AND id != :excludeId AND occurredAt <= :before
+        ORDER BY occurredAt DESC LIMIT :limit
+        """,
+    )
+    suspend fun priorAmounts(merchantKey: String, excludeId: String, before: Long, limit: Int = 50): List<Long>
+
+    @Query("UPDATE transactions SET alertedAt = :at WHERE id = :id") suspend fun markAlerted(id: String, at: Long)
+}

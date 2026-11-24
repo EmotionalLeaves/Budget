@@ -51,6 +51,15 @@ sealed interface SyncRunResult {
 
 enum class SkipReason { NOT_CONNECTED, REVOKED, NEEDS_RECONNECT, DAILY_LIMIT }
 
+/** A problem worth a "Sync problems" notification. [message] is sanitized plain text. */
+data class SyncProblem(val key: String, val title: String, val message: String)
+
+/** Receives what a sync found, for notifications. Must never throw into the sync. */
+interface AlertSink {
+    /** [newOutflowIds]: transactions newly inserted by a non-first sync, money out. */
+    suspend fun afterSync(newOutflowIds: List<String>, problems: List<SyncProblem>)
+}
+
 /**
  * Runs one SimpleFIN sync: fetch, merge, store, log. Never on the main thread; one at a time.
  */
@@ -60,6 +69,7 @@ class SyncRepository(
     private val settings: SettingsStore,
     private val client: SimpleFinClient,
     private val clock: Clock,
+    private val alerts: AlertSink? = null,
 ) {
     private val mutex = Mutex()
 
@@ -76,8 +86,20 @@ class SyncRepository(
     }
 
     suspend fun sync(trigger: SyncTrigger): SyncRunResult = withContext(Dispatchers.IO) {
-        mutex.withLock { syncLocked(trigger) }
+        mutex.withLock {
+            pendingOutflows.clear()
+            pendingProblems.clear()
+            val result = syncLocked(trigger)
+            if (alerts != null && (pendingOutflows.isNotEmpty() || pendingProblems.isNotEmpty() || result is SyncRunResult.Done)) {
+                runCatching { alerts.afterSync(pendingOutflows.toList(), pendingProblems.toList()) }
+            }
+            result
+        }
     }
+
+    // Collected during one locked sync run, handed to [alerts] afterwards.
+    private val pendingOutflows = mutableListOf<String>()
+    private val pendingProblems = mutableListOf<SyncProblem>()
 
     private suspend fun syncLocked(trigger: SyncTrigger): SyncRunResult {
         ensureSeeded()
@@ -112,9 +134,11 @@ class SyncRepository(
                 val backfill = backfillNewAccounts(access, fetch.accountSet, s.lastSuccessfulSyncAt, s.firstSyncDays, used + fetch.requestCount)
                 val merged = backfill?.let { mergeBackfill(fetch.accountSet, it.set) } ?: fetch.accountSet
                 val windows = backfill?.let { b -> b.set.accounts.associate { Ids.accountKey(it.connId, it.id) to b.window } }.orEmpty()
-                store(merged, { key -> windows[key] ?: window }, now, trigger, fetch.requestCount + (backfill?.requests ?: 0))
+                store(merged, { key -> windows[key] ?: window }, now, trigger, fetch.requestCount + (backfill?.requests ?: 0), windows.keys)
             }
             is FetchResult.AuthFailed -> {
+                pendingProblems += SyncProblem("revoked", "SimpleFIN access turned off",
+                    "Paste a new setup token in Sprout to reconnect. Your data is kept.")
                 db.connections().setAllStatus(ConnectionStatus.REVOKED, "http.403",
                     "Your SimpleFIN access was turned off. Paste a new setup token to reconnect.", now)
                 settings.setAccessRevoked(true)
@@ -123,6 +147,10 @@ class SyncRepository(
                 SyncRunResult.Skipped(SkipReason.REVOKED)
             }
             is FetchResult.PaymentRequired -> {
+                if (!s.paymentRequired) {
+                    pendingProblems += SyncProblem("payment", "SimpleFIN Bridge needs attention",
+                        "Your SimpleFIN Bridge subscription needs attention.")
+                }
                 settings.setPaymentRequired(true)
                 log(now, trigger, SyncResult.FAILED, codes = "http.402", requests = fetch.requestCount,
                     message = "Your SimpleFIN Bridge subscription needs attention (402).")
@@ -187,7 +215,10 @@ class SyncRepository(
         return main.copy(accounts = accounts, errors = main.errors + backfill.errors.filter { it !in main.errors })
     }
 
-    private suspend fun store(set: AccountSet, windowFor: (String) -> SyncWindow, now: Long, trigger: SyncTrigger, requests: Int): SyncRunResult {
+    private suspend fun store(
+        set: AccountSet, windowFor: (String) -> SyncWindow, now: Long, trigger: SyncTrigger, requests: Int,
+        backfilled: Set<String> = emptySet(),
+    ): SyncRunResult {
         val plan = SyncErrors.plan(set)
         var newCount = 0
         var updatedCount = 0
@@ -204,6 +235,13 @@ class SyncRepository(
 
             // Connections
             val oldConnections = db.connections().getAll().associateBy { it.connId }
+            plan.connectionErrors.forEach { (id, e) ->
+                if (oldConnections[id]?.status != ConnectionStatus.NEEDS_ATTENTION) {
+                    val name = set.connections.firstOrNull { it.connId == id }?.name ?: oldConnections[id]?.name ?: "A bank"
+                    pendingProblems += SyncProblem("conn:$id", "$name needs attention",
+                        Sanitize.text(e.msg.ifBlank { SyncErrors.explain(e.code) }, Sanitize.MAX_MESSAGE))
+                }
+            }
             db.connections().upsert(set.connections.map { c ->
                 val err = plan.connectionErrors[c.connId]
                 ConnectionEntity(
@@ -270,6 +308,11 @@ class SyncRepository(
                 }
                 newCount += result.newCount
                 updatedCount += result.updatedCount
+                // Unusual-charge alerts only for accounts past their first (backfill) sync.
+                if (existingAccounts[key]?.firstSyncCompleted == true && key !in backfilled) {
+                    val amounts = result.upserts.associate { it.id to it.amountMinor }
+                    pendingOutflows += result.newIds.filter { (amounts[it] ?: 0L) < 0L }
+                }
             }
         }
 
