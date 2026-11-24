@@ -113,4 +113,14 @@ class RecurringDetectorTest {
         assertTrue(!RecurringDetector.withinTolerance(11_600, 10_000))
         assertNull(null)
     }
+
+    @Test fun calendarGridStartsOnSunday() {
+        val cells = CalendarGrid.cells(java.time.YearMonth.of(2026, 11)) // Nov 1, 2026 is a Sunday
+        assertEquals(d(2026, 11, 1), cells.first())
+        assertEquals(35, cells.size)
+        val feb = CalendarGrid.cells(java.time.YearMonth.of(2027, 2)) // Feb 1, 2027 is a Monday
+        assertNull(feb[0])
+        assertEquals(d(2027, 2, 1), feb[1])
+        assertEquals(0, feb.size % 7)
+    }
 }

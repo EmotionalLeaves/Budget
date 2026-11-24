@@ -26,6 +26,9 @@ import java.time.ZoneId
 /** One expected charge on a date. */
 data class UpcomingBill(val charge: RecurringRow, val dueAt: Long)
 
+/** A bill on a calendar day: already paid this month, or still expected. */
+data class CalendarBill(val date: LocalDate, val name: String, val amountMinor: Long, val paid: Boolean)
+
 class RecurringRepository(
     private val db: SproutDatabase,
     private val clock: Clock,
@@ -118,6 +121,21 @@ class RecurringRepository(
             paid + Schedule.occurrences(first, r.cadence, from, to, date(r.nextDueAt).dayOfMonth)
                 .map { ExpectedCharge(r.displayName, r.categoryId, r.typicalAmountMinor, epoch(it), false) }
         }
+    }
+
+    /** Bills for a month view: paid ones on the day they posted, expected ones on their due dates. */
+    fun observeCalendar(month: YearMonth): Flow<List<CalendarBill>> = observeActive().map { list ->
+        val window = MonthWindow.of(month, zone())
+        val today = today()
+        val from = month.atDay(1)
+        val to = month.plusMonths(1).atDay(1)
+        list.flatMap { r ->
+            val paid = if (r.lastChargeAt in window) listOf(CalendarBill(date(r.lastChargeAt), r.displayName, r.typicalAmountMinor, true)) else emptyList()
+            val next = date(r.nextDueAt)
+            val expected = Schedule.occurrences(next, r.cadence, maxOf(from, if (month == YearMonth.from(today)) minOf(today, next) else from), to, next.dayOfMonth)
+                .map { CalendarBill(it, r.displayName, r.typicalAmountMinor, false) }
+            paid + expected
+        }.sortedBy { it.date }
     }
 
     suspend fun confirm(id: Long) = setStatus(id, RecurringStatus.CONFIRMED)

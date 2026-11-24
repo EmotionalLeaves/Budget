@@ -162,3 +162,18 @@ object Schedule {
         return out
     }
 }
+
+object CalendarGrid {
+    /**
+     * Cells for a month view starting on Sunday (US): nulls for the blank cells before the 1st, then each day.
+     * Always a whole number of weeks.
+     */
+    fun cells(month: java.time.YearMonth): List<LocalDate?> {
+        val first = month.atDay(1)
+        val lead = first.dayOfWeek.value % 7 // Sunday = 0
+        val days = (1..month.lengthOfMonth()).map { month.atDay(it) }
+        val cells = List(lead) { null } + days
+        val trail = (7 - cells.size % 7) % 7
+        return cells + List(trail) { null }
+    }
+}

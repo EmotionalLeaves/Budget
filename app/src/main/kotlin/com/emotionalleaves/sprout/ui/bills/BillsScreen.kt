@@ -27,6 +27,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -64,7 +65,12 @@ import com.emotionalleaves.sprout.ui.common.sproutViewModel
 import com.emotionalleaves.sprout.ui.theme.LocalSproutColors
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -92,6 +98,15 @@ class BillsViewModel(private val c: AppContainer) : ViewModel() {
     fun add(name: String, amount: Long, cadence: Cadence, next: LocalDate, category: Long) =
         viewModelScope.launch { c.recurringRepository.addManual(name, amount, cadence, next, category) }
     fun today(): LocalDate = LocalDate.now(c.clock.withZone(ZoneId.systemDefault()))
+
+    private val _calMonth = kotlinx.coroutines.flow.MutableStateFlow(java.time.YearMonth.from(today()))
+    val calMonth: StateFlow<java.time.YearMonth> = _calMonth
+    fun shiftMonth(by: Long) { _calMonth.value = _calMonth.value.plusMonths(by) }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val calendar: StateFlow<List<com.emotionalleaves.sprout.data.recurring.CalendarBill>> =
+        _calMonth.flatMapLatest { c.recurringRepository.observeCalendar(it) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 }
 
 private val dueFormat = DateTimeFormatter.ofPattern("EEE, MMM d", Locale.US)
@@ -113,10 +128,23 @@ fun BillsScreen() {
     val categories by vm.categories.collectAsStateWithLifecycle()
     var editing by remember { mutableStateOf<RecurringRow?>(null) }
     var adding by remember { mutableStateOf(false) }
+    var calendarView by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
 
     Box(Modifier.fillMaxSize()) {
         val list = upcoming
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 96.dp)) {
+            item {
+                Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    androidx.compose.material3.FilterChip(!calendarView, { calendarView = false }, label = { Text("List") },
+                        modifier = Modifier.heightIn(min = 48.dp))
+                    androidx.compose.material3.FilterChip(calendarView, { calendarView = true }, label = { Text("Calendar") },
+                        modifier = Modifier.heightIn(min = 48.dp))
+                }
+            }
+            if (calendarView) {
+                item { BillCalendar(vm) }
+                return@LazyColumn
+            }
             if (list != null && list.isEmpty() && all.isEmpty()) {
                 item {
                     EmptyState(
@@ -203,6 +231,78 @@ fun BillsScreen() {
             onSave = { name, amount, cadence, next, cat -> vm.add(name ?: "Bill", amount, cadence, next, cat); adding = false },
             onRemove = null,
         )
+    }
+}
+
+@Composable
+private fun BillCalendar(vm: BillsViewModel) {
+    val month by vm.calMonth.collectAsStateWithLifecycle()
+    val bills by vm.calendar.collectAsStateWithLifecycle()
+    var selected by remember(month) { mutableStateOf<LocalDate?>(null) }
+    val byDay = bills.groupBy { it.date }
+    val today = vm.today()
+    Column(Modifier.padding(horizontal = 8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = { vm.shiftMonth(-1) }) {
+                Icon(androidx.compose.material.icons.Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous month")
+            }
+            Text(month.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.US)), Modifier.weight(1f),
+                style = MaterialTheme.typography.titleMedium, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            IconButton(onClick = { vm.shiftMonth(1) }) {
+                Icon(androidx.compose.material.icons.Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next month")
+            }
+        }
+        Row(Modifier.fillMaxWidth()) {
+            listOf("S", "M", "T", "W", "T", "F", "S").forEach {
+                Text(it, Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            }
+        }
+        com.emotionalleaves.sprout.domain.recurring.CalendarGrid.cells(month).chunked(7).forEach { week ->
+            Row(Modifier.fillMaxWidth()) {
+                week.forEach { day ->
+                    val dayBills = day?.let { byDay[it] }.orEmpty()
+                    val total = dayBills.sumOf { it.amountMinor }
+                    val label = day?.let { d ->
+                        "${d.format(DateTimeFormatter.ofPattern("MMMM d", Locale.US))}" +
+                            if (dayBills.isEmpty()) ", no bills" else ", ${dayBills.size} bill${if (dayBills.size == 1) "" else "s"}, ${Money.format(total)}"
+                    } ?: ""
+                    Column(
+                        Modifier.weight(1f).heightIn(min = 56.dp).padding(2.dp)
+                            .then(if (day != null) Modifier.clickable { selected = day } else Modifier)
+                            .semantics(mergeDescendants = true) { contentDescription = label },
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        if (day != null) {
+                            Text(
+                                day.dayOfMonth.toString(),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (day == today) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                            )
+                            if (dayBills.isNotEmpty()) {
+                                Text(Money.formatWhole(total), style = MaterialTheme.typography.labelSmall,
+                                    color = if (dayBills.all { it.paid }) LocalSproutColors.current.ok else MaterialTheme.colorScheme.tertiary)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        val shown = selected?.let { byDay[it].orEmpty() } ?: bills
+        Text(
+            selected?.format(DateTimeFormatter.ofPattern("EEEE, MMM d", Locale.US)) ?: "All bills this month",
+            style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(start = 8.dp, top = 12.dp),
+        )
+        if (shown.isEmpty()) Text("No bills.", Modifier.padding(8.dp))
+        shown.forEach { b ->
+            Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(b.name + if (b.paid) " · Paid ✓" else "", style = MaterialTheme.typography.bodyLarge)
+                    Text(b.date.format(dueFormat), style = MaterialTheme.typography.labelSmall)
+                }
+                Text(Money.format(b.amountMinor))
+            }
+        }
+        Text("Total this month: ${Money.format(bills.sumOf { it.amountMinor })}", Modifier.padding(8.dp), style = MaterialTheme.typography.labelLarge)
     }
 }
 

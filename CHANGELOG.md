@@ -2,6 +2,11 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [1.8.0] - 2026-11-24
+
+### Added
+- Bills → Calendar: a month calendar showing which days bills land on and how much. Tap a day to see its bills; paid ones are marked ✓. Use the arrows to look ahead or back.
+
 ## [1.7.0] - 2026-11-24
 
 Savings goals.

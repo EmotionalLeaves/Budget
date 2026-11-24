@@ -95,4 +95,12 @@ class RecurringRepositoryTest {
         recurring.detect()
         assertTrue(recurring.observeActive().first().any { it.displayName == "Rent" && it.status == RecurringStatus.MANUAL })
     }
+
+    @Test fun calendarShowsExpectedAndPaidBills() = runBlocking {
+        val nov = recurring.observeCalendar(YearMonth.of(2026, 11)).first()
+        assertEquals(listOf(LocalDate.of(2026, 11, 15)), nov.map { it.date })
+        assertTrue(nov.none { it.paid })
+        val dec = recurring.observeCalendar(YearMonth.of(2026, 12)).first()
+        assertEquals(listOf(LocalDate.of(2026, 12, 15)), dec.map { it.date })
+    }
 }
