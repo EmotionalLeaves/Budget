@@ -36,7 +36,12 @@ Each setup token works only once.
 
 ## No SimpleFIN? Use CSV
 
-CSV import is coming in version 0.8. You can already skip the bank connection: tap **Skip — I'll import a CSV**.
+1. On your bank's website (in your phone browser), open the account's transactions.
+2. Look for **Download** or **Export** and choose **CSV**. Save it to your phone.
+3. In Sprout: **Settings → Import CSV** → **Choose a CSV file**.
+4. Check the columns and preview, pick or create an account, and tap **Import**.
+
+Importing the same file again is safe: nothing is added twice.
 
 ## Privacy
 
@@ -84,6 +89,10 @@ Decisions made while building, one per line:
 - A transaction is only marked alerted (alertedAt) if its notification was actually shown.
 - Recurring detection only looks at posted outflows in spending categories (not transfers or income). The expected amount is the latest charge, so price increases carry through. A charge with no payment for more than two cycles is treated as cancelled.
 - A bill up to 5 days late still counts as due (shown as due today) because banks post late.
+- CSV amounts use US decimals ("1,234.56"); European comma decimals aren't supported yet (backlog). Files over 10 MB are refused.
+- Imported accounts' balances are the sum of their imported transactions.
+- Imported rows are marked alerted at import time, so they can never trigger unusual-charge alerts.
+- The CSV dedup key uses the description uppercased with single spaces, so case or spacing changes between exports don't create duplicates.
 - Signing-key secrets are deliberately not mapped in CI: the committed key is always used.
 
 ---

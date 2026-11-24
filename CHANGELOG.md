@@ -2,6 +2,19 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [0.8.0] - 2026-11-24
+
+CSV import, for banks SimpleFIN can't reach.
+
+### Added
+- Settings → Import CSV (also on Home before you connect a bank): pick a CSV file from your phone. No storage permission needed.
+- Sprout finds the Date, Description and Amount columns (or separate Debit and Credit columns) and the date format by itself; you can change any of them and flip signs.
+- A preview of the first 10 rows before importing.
+- Import into an existing imported account or create a new one (name and type).
+- Importing the same or an overlapping file never creates duplicates.
+- A summary shows how many rows were imported, skipped as duplicates, or couldn't be read (with reasons).
+- Imported transactions get categories, count toward budgets and bills, and can trigger budget alerts (never "unusual charge" alerts).
+
 ## [0.7.0] - 2026-11-24
 
 Bills and subscriptions.

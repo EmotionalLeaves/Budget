@@ -1,0 +1,6 @@
+Transaction Date,Post Date,Description,Category,Type,Amount,Memo
+11/02/2026,11/03/2026,STARBUCKS STORE 12345,Food & Drink,Sale,-5.75,
+11/03/2026,11/04/2026,"AMAZON.COM*AB12CD, SEATTLE",Shopping,Sale,-42.10,
+11/05/2026,11/05/2026,Payment Thank You-Mobile,,Payment,300.00,
+11/06/2026,11/07/2026,"TRADER JOE'S #552 ""QPS""",Groceries,Sale,-61.03,"multi
+line memo"

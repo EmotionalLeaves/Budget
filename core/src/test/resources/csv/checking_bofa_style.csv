@@ -1,0 +1,9 @@
+Description,,Summary Amt.
+Beginning balance as of 10/01/2026,,"1,200.00"
+Total credits,,"2,500.00"
+
+Date,Description,Amount,Running Bal.
+10/01/2026,Beginning balance as of 10/01/2026,,"1,200.00"
+10/02/2026,"DIRECT DEP UNIV OF NEBRASKA","1,850.00","3,050.00"
+10/03/2026,"HY-VEE #1234 LINCOLN NE","-87.45","2,962.55"
+10/04/2026,"LINCOLN ELECTRIC SYSTEM","-64.00","2,898.55"

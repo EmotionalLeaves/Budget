@@ -98,7 +98,13 @@ class SettingsViewModel(private val c: AppContainer) : ViewModel() {
 }
 
 @Composable
-fun SettingsScreen(snackbar: SnackbarHostState, onReplaceToken: () -> Unit, onCategories: () -> Unit, onRules: () -> Unit) {
+fun SettingsScreen(
+    snackbar: SnackbarHostState,
+    onReplaceToken: () -> Unit,
+    onCategories: () -> Unit,
+    onRules: () -> Unit,
+    onImport: () -> Unit,
+) {
     val vm = sproutViewModel { SettingsViewModel(it) }
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -133,6 +139,10 @@ fun SettingsScreen(snackbar: SnackbarHostState, onReplaceToken: () -> Unit, onCa
         item { SectionTitle("Categories") }
         item { NavRow("Categories", "Add, rename, recolor or archive", onCategories) }
         item { NavRow("Category rules", "What Sprout learned from your changes, plus keyword rules", onRules) }
+
+        item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
+        item { SectionTitle("Your data") }
+        item { NavRow("Import CSV", "Add transactions from a bank's CSV export", onImport) }
 
         item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
         item { SectionTitle("Notifications") }

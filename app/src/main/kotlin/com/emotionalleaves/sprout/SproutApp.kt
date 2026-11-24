@@ -7,6 +7,7 @@ import com.emotionalleaves.sprout.data.alerts.AlertRepository
 import com.emotionalleaves.sprout.data.alerts.AndroidNotifier
 import com.emotionalleaves.sprout.data.budget.BudgetRepository
 import com.emotionalleaves.sprout.data.categories.CategoryRepository
+import com.emotionalleaves.sprout.data.csv.ImportRepository
 import com.emotionalleaves.sprout.data.db.SproutDatabase
 import com.emotionalleaves.sprout.data.secure.SecureStore
 import com.emotionalleaves.sprout.data.settings.SettingsStore
@@ -46,6 +47,10 @@ class AppContainer(context: Context) {
     val syncRepository = SyncRepository(db, secureStore, settings, client, clock, postSync)
     val connectRepository = ConnectRepository(client, secureStore, settings)
     val categoryRepository = CategoryRepository(db, clock)
+    val importRepository = ImportRepository(db, clock, afterImport = {
+        recurringRepository.detect()
+        alertRepository.evaluateBudgets()
+    })
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     val network = NetworkMonitor(appContext)
 }

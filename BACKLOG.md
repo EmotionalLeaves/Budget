@@ -9,7 +9,7 @@ Prioritized. Phase 1 milestones come first (see PROGRESS.md); items below are gr
 - [x] M5 (0.5.0) – Full dashboard (bills section arrives with M7)
 - [x] M6 (0.6.0) – Notifications
 - [x] M7 (0.7.0) – Recurring charges and bills
-- [ ] M8 (0.8.0) – CSV import — *why: works for banks SimpleFIN can't reach*
+- [x] M8 (0.8.0) – CSV import
 - [ ] M9 (0.9.0) – CSV export, disconnect, delete all data, about/licenses — *why: user owns their data*
 - [ ] M10 (0.10.0 → 1.0.0) – Hardening and v1.0 checklist
 
@@ -44,6 +44,7 @@ Prioritized. Phase 1 milestones come first (see PROGRESS.md); items below are gr
 - [ ] Baseline profile for faster cold start — *why: opens instantly*
 
 ## 7. New budgeting features
+- [ ] CSV import: European comma decimals and a Category column — *why: more bank formats*
 - [ ] Custom-currency lookup (GET the currency URL) — *why: show points/crypto accounts properly*
 - [ ] Spending trends chart — *why: see direction over months*
 - [ ] Local encrypted backup and restore to a user-chosen file — *why: survive phone changes*

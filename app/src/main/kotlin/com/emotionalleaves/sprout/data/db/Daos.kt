@@ -29,6 +29,9 @@ interface AccountDao {
     @Query("SELECT * FROM accounts WHERE id IN (:ids)") suspend fun getByIds(ids: List<String>): List<AccountEntity>
     @Query("UPDATE accounts SET includeInTotals = :include WHERE id = :id") suspend fun setIncludeInTotals(id: String, include: Boolean)
     @Query("UPDATE accounts SET hidden = :hidden WHERE id = :id") suspend fun setHidden(id: String, hidden: Boolean)
+    @Query("SELECT * FROM accounts WHERE source = 'MANUAL' ORDER BY name") fun observeManual(): Flow<List<AccountEntity>>
+    @Query("UPDATE accounts SET balanceMinor = (SELECT COALESCE(SUM(amountMinor), 0) FROM transactions WHERE accountId = :id), balanceDate = :now, lastSyncedAt = :now WHERE id = :id")
+    suspend fun recomputeManualBalance(id: String, now: Long)
 }
 
 /** A transaction joined with what the list needs to show. */
@@ -130,6 +133,7 @@ interface TransactionDao {
     @Query("DELETE FROM transactions WHERE id IN (:ids)") suspend fun deleteByIds(ids: List<String>)
 
     @Query("SELECT * FROM transactions WHERE id IN (:ids)") suspend fun getByIds(ids: List<String>): List<TransactionEntity>
+    @Query("SELECT id FROM transactions WHERE id IN (:ids)") suspend fun existingIds(ids: List<String>): List<String>
 
     @Query("SELECT * FROM transactions WHERE accountId = :accountId AND pending = 1")
     suspend fun pendingForAccount(accountId: String): List<TransactionEntity>

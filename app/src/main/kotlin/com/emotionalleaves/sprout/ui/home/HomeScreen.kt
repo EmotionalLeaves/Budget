@@ -69,6 +69,7 @@ fun HomeScreen(
     onCategory: (Long) -> Unit,
     onSeeBudgets: () -> Unit,
     onSeeBills: () -> Unit,
+    onImport: () -> Unit,
 ) {
     val vm = sproutViewModel { HomeViewModel(it) }
     val state by vm.state.collectAsStateWithLifecycle()
@@ -113,10 +114,15 @@ fun HomeScreen(
                         body = if (state.connected) {
                             "Pull down to sync now. Your accounts and recent transactions will show up here."
                         } else {
-                            "Connect your bank with SimpleFIN to see balances and transactions. CSV import is coming soon."
+                            "Connect your bank with SimpleFIN, or import a CSV from your bank's website."
                         },
                         action = if (!state.connected) {
-                            { Button(onClick = onConnect, modifier = Modifier.heightIn(min = 48.dp)) { Text("Connect a bank") } }
+                            {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Button(onClick = onConnect, modifier = Modifier.heightIn(min = 48.dp)) { Text("Connect a bank") }
+                                    TextButton(onClick = onImport, modifier = Modifier.heightIn(min = 48.dp)) { Text("Import a CSV") }
+                                }
+                            }
                         } else {
                             null
                         },
