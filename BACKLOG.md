@@ -5,7 +5,7 @@ Prioritized. Phase 1 milestones come first (see PROGRESS.md); items below are gr
 ## Phase 1 milestones
 - [x] M2 (0.2.0) – Reliable sync: backfill for new connections, Retry-After, offline state, partial-sync note — *why: sync is the app's lifeline*
 - [x] M3 (0.3.0) – Categorization: detail sheet, one-tap recategorize + "Always use" rules, uncategorized review, category/rule management
-- [ ] M4 (0.4.0) – Budgets and safe to spend — *why: the core value of the app*
+- [x] M4 (0.4.0) – Budgets and safe to spend
 - [ ] M5 (0.5.0) – Full dashboard — *why: one glance answers "am I OK?"*
 - [ ] M6 (0.6.0) – Notifications — *why: warn before overspending*
 - [ ] M7 (0.7.0) – Recurring charges and bills — *why: no surprise charges*
@@ -31,6 +31,8 @@ Prioritized. Phase 1 milestones come first (see PROGRESS.md); items below are gr
 - [ ] 10k-transaction generated fixture through SyncMerger — *why: performance regression guard*
 
 ## 5. UX polish and accessibility
+- [ ] Budgets: list every unbudgeted category (not just ones with spending) behind a "Show all" toggle — *why: budget a category before spending in it*
+- [ ] Category detail: month switcher (it shows the current month only) — *why: look back at a category*
 - [ ] Undo snackbar after recategorizing with "Always use" — *why: easy to fix a mis-tap that moved many transactions*
 - [ ] Category icons (iconKey) shown in chips and grid — *why: faster scanning*
 - [ ] Paged transaction list (Room Paging) instead of the 3,000-row cap — *why: smooth with 20,000 transactions*

@@ -2,6 +2,21 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [0.4.0] - 2026-11-24
+
+Budgets and "safe to spend".
+
+### Added
+- Budgets tab: a monthly budget per category, with a progress bar that turns amber at 80% and red at 100%, and "$X left" or "$X over".
+- Safe to spend this month: what's left in your budgets, minus bills still due in categories without a budget, with "≈ $Y/day". Tap it to see how it's worked out.
+- Budgets can apply to every month or just this month. Switch months with the arrows.
+- Quick setup: suggests a budget per category from your last 3 months of spending, rounded up to the next $10. Edit anything, then save.
+- Category pages: this month vs budget, a 6-month spending chart, spending by merchant, transactions, and the rules for that category.
+- "Not budgeted" list shows categories where you spent money without a budget, with an Add budget button.
+
+### Notes
+- Transfers and income never count as spending. Refunds reduce spending.
+
 ## [0.3.0] - 2026-11-24
 
 Categories that learn from you.

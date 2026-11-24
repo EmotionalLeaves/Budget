@@ -33,6 +33,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.emotionalleaves.sprout.data.settings.Settings
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import com.emotionalleaves.sprout.ui.budgets.BudgetsScreen
+import com.emotionalleaves.sprout.ui.budgets.CategoryDetailScreen
+import com.emotionalleaves.sprout.ui.budgets.QuickSetupScreen
 import com.emotionalleaves.sprout.ui.categories.CategoriesScreen
 import com.emotionalleaves.sprout.ui.categories.ReviewScreen
 import com.emotionalleaves.sprout.ui.categories.RulesScreen
@@ -125,7 +130,19 @@ private fun MainScaffold() {
             composable("categories") { CategoriesScreen(onBack = { nav.popBackStack() }) }
             composable("rules") { RulesScreen(onBack = { nav.popBackStack() }) }
             composable(Tab.BUDGETS.route) {
-                EmptyState("Budgets are coming soon", "Monthly budgets and a \"safe to spend\" number arrive in version 0.4.")
+                BudgetsScreen(onQuickSetup = { nav.navigate("quick-setup") }, onCategory = { nav.navigate("category/$it") })
+            }
+            composable("quick-setup") { QuickSetupScreen(onBack = { nav.popBackStack() }) }
+            composable(
+                "category/{id}",
+                arguments = listOf(navArgument("id") { type = NavType.LongType }),
+            ) { entry ->
+                CategoryDetailScreen(
+                    categoryId = entry.arguments?.getLong("id") ?: 0L,
+                    snackbar = snackbar,
+                    onBack = { nav.popBackStack() },
+                    onEditCategories = { nav.navigate("categories") },
+                )
             }
             composable(Tab.BILLS.route) {
                 EmptyState("Bills are coming soon", "Sprout will spot subscriptions and upcoming bills in version 0.7.")

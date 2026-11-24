@@ -144,6 +144,7 @@ interface TransactionDao {
         JOIN categories c ON c.id = t.categoryId
         JOIN accounts a ON a.id = t.accountId
         WHERE a.hidden = 0
+          AND (:start IS NULL OR (t.occurredAt >= :start AND t.occurredAt < :end))
           AND (:query = '' OR t.description LIKE '%' || :query || '%' OR t.merchantKey LIKE '%' || :query || '%'
                OR t.note LIKE '%' || :query || '%')
           AND (:categoryId IS NULL OR t.categoryId = :categoryId)
@@ -151,7 +152,7 @@ interface TransactionDao {
         LIMIT :limit
         """,
     )
-    fun observeRows(query: String, limit: Int, categoryId: Long? = null): Flow<List<TransactionRow>>
+    fun observeRows(query: String, limit: Int, categoryId: Long? = null, start: Long? = null, end: Long? = null): Flow<List<TransactionRow>>
 }
 
 @Dao
@@ -206,4 +207,57 @@ interface SyncLogDao {
     /** Keeps the newest [keep] rows. */
     @Query("DELETE FROM sync_log WHERE id NOT IN (SELECT id FROM sync_log ORDER BY startedAt DESC, id DESC LIMIT :keep)")
     suspend fun trim(keep: Int)
+}
+
+data class CategorySum(val categoryId: Long, val total: Long)
+data class MerchantSum(val merchantKey: String, val total: Long, val count: Int)
+data class SpendRow(val categoryId: Long, val amountMinor: Long, val occurredAt: Long)
+
+/**
+ * Budgets and the spending they're compared with. Spending queries skip hidden accounts and transactions the
+ * user excluded from budgets.
+ */
+@Dao
+interface BudgetDao {
+    @Query("SELECT * FROM category_budgets") fun observeDefaults(): Flow<List<CategoryBudgetEntity>>
+    @Query("SELECT * FROM budget_overrides WHERE yearMonth = :yearMonth") fun observeOverrides(yearMonth: String): Flow<List<BudgetOverrideEntity>>
+    @Upsert suspend fun upsertDefault(item: CategoryBudgetEntity)
+    @Upsert suspend fun upsertDefaults(items: List<CategoryBudgetEntity>)
+    @Query("DELETE FROM category_budgets WHERE categoryId = :categoryId") suspend fun deleteDefault(categoryId: Long)
+    @Upsert suspend fun upsertOverride(item: BudgetOverrideEntity)
+    @Query("DELETE FROM budget_overrides WHERE categoryId = :categoryId AND yearMonth = :yearMonth")
+    suspend fun deleteOverride(categoryId: Long, yearMonth: String)
+
+    @Query(
+        """
+        SELECT t.categoryId AS categoryId, SUM(t.amountMinor) AS total
+        FROM transactions t JOIN accounts a ON a.id = t.accountId
+        WHERE t.occurredAt >= :start AND t.occurredAt < :end AND t.excludedFromBudget = 0 AND a.hidden = 0
+        GROUP BY t.categoryId
+        """,
+    )
+    fun observeSums(start: Long, end: Long): Flow<List<CategorySum>>
+
+    @Query(
+        """
+        SELECT t.categoryId AS categoryId, t.amountMinor AS amountMinor, t.occurredAt AS occurredAt
+        FROM transactions t JOIN accounts a ON a.id = t.accountId
+        WHERE t.occurredAt >= :start AND t.occurredAt < :end AND t.excludedFromBudget = 0 AND a.hidden = 0
+          AND (:categoryId IS NULL OR t.categoryId = :categoryId)
+        """,
+    )
+    suspend fun spendRows(start: Long, end: Long, categoryId: Long? = null): List<SpendRow>
+
+    @Query(
+        """
+        SELECT t.merchantKey AS merchantKey, SUM(t.amountMinor) AS total, COUNT(*) AS count
+        FROM transactions t JOIN accounts a ON a.id = t.accountId
+        WHERE t.categoryId = :categoryId AND t.occurredAt >= :start AND t.occurredAt < :end
+          AND t.excludedFromBudget = 0 AND a.hidden = 0
+        GROUP BY t.merchantKey ORDER BY total ASC
+        """,
+    )
+    fun observeMerchantSums(categoryId: Long, start: Long, end: Long): Flow<List<MerchantSum>>
+
+    @Query("SELECT MIN(occurredAt) FROM transactions") suspend fun firstOccurredAt(): Long?
 }

@@ -38,6 +38,7 @@ abstract class SproutDatabase : RoomDatabase() {
     abstract fun categories(): CategoryDao
     abstract fun merchantRules(): MerchantRuleDao
     abstract fun syncLog(): SyncLogDao
+    abstract fun budgets(): BudgetDao
 
     companion object {
         const val VERSION = 1
