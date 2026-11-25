@@ -86,13 +86,16 @@ fun AddTransactionSheet(onDismiss: () -> Unit, onAdded: (String) -> Unit) {
             Text("Category", style = MaterialTheme.typography.titleSmall)
             CategoryGrid(categories.filter { (it.kind == CategoryKind.EXPENSE) == spending || it.kind == CategoryKind.TRANSFER }, categoryId) { categoryId = it.id }
             Text("Account", style = MaterialTheme.typography.titleSmall)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Wraps instead of running off the edge when there are several accounts.
+            @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+            androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val options = (listOf(com.emotionalleaves.sprout.data.manual.ManualRepository.CASH_ACCOUNT_ID to "Cash") +
                     manualAccounts.filter { it.id != com.emotionalleaves.sprout.data.manual.ManualRepository.CASH_ACCOUNT_ID }.map { it.id to it.label })
-                options.take(4).forEach { (id, label) ->
+                options.take(8).forEach { (id, label) ->
                     androidx.compose.material3.FilterChip(accountId == id, { accountId = id }, label = { Text(label) }, modifier = Modifier.heightIn(min = 48.dp))
                 }
             }
+            Text("Date", style = MaterialTheme.typography.titleSmall)
             OutlinedButton(onClick = { picking = true }, modifier = Modifier.heightIn(min = 48.dp)) {
                 Text(if (date == LocalDate.now()) "Today" else date.format(DateTimeFormatter.ofPattern("EEE, MMM d", Locale.US)))
             }

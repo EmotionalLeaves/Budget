@@ -223,11 +223,21 @@ fun UpdateSettings(updates: UpdateRepository, beta: Boolean = false, onBeta: (Bo
         }
         when (state) {
             UpdateState.Checking -> Text("Checking…", style = MaterialTheme.typography.bodySmall)
-            UpdateState.UpToDate -> Text("You're up to date.", style = MaterialTheme.typography.bodySmall)
+            UpdateState.UpToDate, UpdateState.Idle -> {
+                val last by updates.lastCheckedAt.collectAsState(initial = null)
+                val ago = last?.let { com.emotionalleaves.sprout.ui.common.Format.ago(it, System.currentTimeMillis() / 1000) }
+                Text(
+                    when {
+                        state == UpdateState.UpToDate -> "You're up to date." + (ago?.let { " Checked $it." } ?: "")
+                        ago != null -> "Last checked $ago."
+                        else -> "Not checked yet."
+                    },
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             is UpdateState.Failed -> Text((state as UpdateState.Failed).message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
             is UpdateState.Available, is UpdateState.Downloading, is UpdateState.ReadyToInstall, is UpdateState.OpenReleasesPage, is UpdateState.DownloadFailed, is UpdateState.InstallFailed ->
                 Card { UpdateBody(updates, state, showLater = false) }
-            UpdateState.Idle -> Unit
         }
         val context = LocalContext.current
         var notes by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<List<com.emotionalleaves.sprout.update.Changelog.Group>?>(null) }

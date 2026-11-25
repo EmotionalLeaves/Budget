@@ -218,6 +218,24 @@ class TagAndInsightTest {
         assertTrue(!m.delete(synced))
     }
 
+    @Test fun searchFindsCategoryRenamedMerchantAndTag() = runBlocking {
+        sync(Triple("1", "HY-VEE #1234|-80.00", at(11, 5)), Triple("2", "DELTA AIR 0061|-300.00", at(11, 6)), Triple("3", "SQ *JOES|-5.00", at(11, 7)))
+        val ids = env.db.backup().transactions().associate { it.description to it.id }
+        val travel = TagRepository(env.db, env.clock).getOrCreate("Travel")!!
+        env.db.tags().attach(com.emotionalleaves.sprout.data.db.TransactionTagEntity(ids.getValue("DELTA AIR 0061"), travel))
+        val joeKey = env.db.backup().transactions().first { it.description == "SQ *JOES" }.merchantKey
+        env.db.merchantNames().upsert(com.emotionalleaves.sprout.data.db.MerchantNameEntity(joeKey, "Corner coffee", 1))
+        suspend fun find(q: String): Set<String> {
+            val page = env.db.transactions().pagingRows(q, null, false)
+                .load(androidx.paging.PagingSource.LoadParams.Refresh(null, 50, false)) as androidx.paging.PagingSource.LoadResult.Page
+            return page.data.map { it.description }.toSet()
+        }
+        assertEquals(setOf("HY-VEE #1234"), find("Groceries"))
+        assertEquals(setOf("DELTA AIR 0061"), find("#trav"))
+        assertEquals(setOf("DELTA AIR 0061"), find("travel"))
+        assertEquals(setOf("SQ *JOES"), find("corner"))
+    }
+
     @Test fun challengesAndHealth() = runBlocking {
         sync(Triple("1", "ACME PAYROLL|3000.00", at(10, 1)), Triple("2", "TARGET|-200.00", at(10, 15)), Triple("3", "PIZZA HUT|-20.00", at(11, 23)))
         val ch = com.emotionalleaves.sprout.data.challenge.ChallengeRepository(env.context, env.db) { zone }

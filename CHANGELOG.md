@@ -2,6 +2,21 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.12.0] - 2026-11-25
+
+Round 13: calmer transaction details, smarter search, and friendlier first-run screens.
+
+### Auto-update
+- Settings → Updates shows when Sprout last checked ("You're up to date. Checked 2 h ago."), so you can tell at a glance that updates are flowing.
+
+### Polish
+- **Transaction details** are much calmer. The amount, date, account and the bank's own wording sit together at the top. The category is one row with a **Change** button; the full grid only opens when you tap it (or when the transaction is uncategorized). Picking a category closes it again.
+- **First run**: with no balance yet, Home and Budgets no longer shout "$0.00". The empty Activity screen says what you can do (connect, import, or tap Add). The "Import a CSV" link is centered under its button.
+- **Add a transaction**: accounts wrap onto a new line instead of running off the screen, and the date has a label.
+
+### Smarter search
+- Activity search now also finds **categories** ("groceries"), **tags** ("#travel" or just "travel") and **merchants you renamed** ("Corner coffee").
+
 ## [2.11.0] - 2026-11-25
 
 Round 12: polish, from a third screenshot pass (settings, detail pages, dark mode).

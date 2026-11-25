@@ -162,7 +162,7 @@ fun HomeScreen(
                         },
                         action = if (!state.connected) {
                             {
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                                     Button(onClick = onConnect, modifier = Modifier.heightIn(min = 48.dp)) { Text("Connect a bank") }
                                     TextButton(onClick = onImport, modifier = Modifier.heightIn(min = 48.dp)) { Text("Import a CSV") }
                                 }

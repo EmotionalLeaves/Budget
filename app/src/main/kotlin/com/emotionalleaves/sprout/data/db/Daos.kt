@@ -234,7 +234,10 @@ interface TransactionDao {
         JOIN accounts a ON a.id = t.accountId
         WHERE a.hidden = 0
           AND (:query = '' OR t.description LIKE '%' || :query || '%' OR t.merchantKey LIKE '%' || :query || '%'
-               OR t.note LIKE '%' || :query || '%')
+               OR t.note LIKE '%' || :query || '%' OR c.name LIKE '%' || :query || '%'
+               OR EXISTS (SELECT 1 FROM merchant_names mn WHERE mn.merchantKey = t.merchantKey AND mn.displayName LIKE '%' || :query || '%')
+               OR EXISTS (SELECT 1 FROM transaction_tags tq JOIN tags g ON g.id = tq.tagId
+                          WHERE tq.transactionId = t.id AND ('#' || g.name) LIKE '%' || :query || '%'))
           AND (:categoryId IS NULL OR t.categoryId = :categoryId
                OR EXISTS (SELECT 1 FROM transaction_splits s WHERE s.transactionId = t.id AND s.categoryId = :categoryId))
           AND (:pendingOnly = 0 OR t.pending = 1)

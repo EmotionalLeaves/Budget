@@ -237,7 +237,7 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
         OutlinedTextField(
             value = filter.query,
             onValueChange = vm::setQuery,
-            placeholder = { Text("Search or amount, like >100", maxLines = 1) },
+            placeholder = { Text("Search, #tag, or an amount like >100", maxLines = 1) },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
             trailingIcon = {
                 if (filter.query.isNotEmpty()) {
@@ -322,7 +322,7 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
             if (total == 0 || filter != TxFilter()) {
                 EmptyState(
                     if (filter == TxFilter()) "No transactions yet" else "Nothing matches",
-                    if (filter == TxFilter()) "They'll appear here after your first sync." else "Try a different word or filter.",
+                    if (filter == TxFilter()) "Connect a bank or import a CSV from More, or tap Add to log one yourself." else "Try a different word or filter.",
                 )
             }
             return@Column

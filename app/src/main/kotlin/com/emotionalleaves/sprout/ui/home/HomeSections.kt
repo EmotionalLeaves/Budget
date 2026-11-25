@@ -101,8 +101,14 @@ fun SafeToSpendHero(m: BudgetMonth?, netWorthMinor: Long, onSetBudget: () -> Uni
     val safe = m?.safeToSpend
     HeroCard(c.hero, onClick = if (safe != null) ({ breakdown = true }) else null) {
         if (m == null || safe == null) {
-            Text("Total balance", style = MaterialTheme.typography.labelLarge, color = c.onHero.copy(alpha = 0.8f))
-            Text(com.emotionalleaves.sprout.ui.common.animatedMoney(netWorthMinor), style = MaterialTheme.typography.displayMedium, color = c.onHero)
+            if (netWorthMinor != 0L) {
+                Text("Total balance", style = MaterialTheme.typography.labelLarge, color = c.onHero.copy(alpha = 0.8f))
+                Text(com.emotionalleaves.sprout.ui.common.animatedMoney(netWorthMinor), style = MaterialTheme.typography.displayMedium, color = c.onHero)
+            } else {
+                // No balance yet: a "$0.00" headline would only look alarming.
+                Text("Safe to spend", style = MaterialTheme.typography.labelLarge, color = c.onHero.copy(alpha = 0.8f))
+                Text("Your daily number", style = MaterialTheme.typography.headlineMedium, color = c.onHero)
+            }
             Text("Set budgets to see what's safe to spend each day.", style = MaterialTheme.typography.bodyMedium, color = c.onHero.copy(alpha = 0.85f))
             Spacer(Modifier.size(4.dp))
             Button(

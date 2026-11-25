@@ -186,8 +186,11 @@ class ScreenTour {
             ActivityScenario.launch(MainActivity::class.java).use {
                 scenario = it
                 shot("o-01-welcome")
-                runCatching { tap("Get started"); shot("o-02") }
-                runCatching { tap("Skip for now"); shot("o-03-empty-home") }
+                runCatching { tap("Skip — I'll import a CSV"); shot("o-02-after-skip") }
+                runCatching { tap("Home"); shot("o-03-empty-home") }
+                runCatching { tap("Activity"); shot("o-04-empty-activity") }
+                runCatching { tap("Budgets"); shot("o-05-empty-budgets") }
+                runCatching { tap("Bills"); shot("o-06-empty-bills") }
             }
             return
         }

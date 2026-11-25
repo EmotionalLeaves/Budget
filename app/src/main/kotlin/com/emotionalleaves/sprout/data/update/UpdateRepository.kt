@@ -145,6 +145,9 @@ class UpdateRepository(
     suspend fun dismiss(version: String) { context.updateStore.edit { it[DISMISSED] = version } }
 
     /** On app start: at most every 6 hours, and only if automatic checks are on. Quiet on any failure. */
+    /** Epoch seconds of the last check that reached GitHub, or null. */
+    val lastCheckedAt: kotlinx.coroutines.flow.Flow<Long?> get() = context.updateStore.data.map { it[LAST_OK] }
+
     suspend fun checkIfDue(nowSeconds: Long) {
         val prefs = context.updateStore.data.first()
         if (prefs[AUTO] == false) return
@@ -174,6 +177,9 @@ class UpdateRepository(
                     else -> error("HTTP ${r.code}")
                 }
             }
+        }
+        if (result.isSuccess && result.getOrNull() !is UpdateState) {
+            runCatching { context.updateStore.edit { it[LAST_OK] = System.currentTimeMillis() / 1000 } }
         }
         _state.value = result.fold(
             onSuccess = { v ->
@@ -285,6 +291,8 @@ class UpdateRepository(
         const val CHECK_INTERVAL_SECONDS = 6 * 3600L
         private val AUTO = booleanPreferencesKey("auto_check")
         private val LAST = longPreferencesKey("last_check")
+        /** When GitHub last answered (any result), for "checked 2 hours ago". */
+        private val LAST_OK = longPreferencesKey("last_check_ok")
         private val DISMISSED = stringPreferencesKey("dismissed_version")
         private val NOTIFIED = stringPreferencesKey("notified_version")
         private val AUTO_DOWNLOAD = booleanPreferencesKey("auto_download")

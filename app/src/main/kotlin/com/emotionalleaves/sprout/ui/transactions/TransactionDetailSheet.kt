@@ -130,32 +130,60 @@ fun TransactionDetailSheet(transactionId: String, onDismiss: () -> Unit, onMessa
                     style = MaterialTheme.typography.displaySmall,
                     color = if (d.amountMinor > 0) LocalSproutColors.current.income else MaterialTheme.colorScheme.onSurface,
                 )
+                Text(
+                    buildString {
+                        append(if (d.pending) "Pending · " else "")
+                        append(Format.dateTime(d.occurredAt))
+                        if (d.transactedAt != null && !d.pending && d.transactedAt != d.postedAt) {
+                            append(" · made ").append(Format.dateTime(d.transactedAt))
+                        }
+                        append(" · ").append(d.accountName)
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+                // The bank's own wording, in case the tidied-up name hides something.
+                if (!d.description.equals(merchant, ignoreCase = true)) {
+                    Text("Bank says: " + d.description, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                }
+                val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
+                TextButton(
+                    onClick = { onDismiss(); navigate("merchant/" + android.net.Uri.encode(d.merchantKey)) },
+                    modifier = Modifier.heightIn(min = 48.dp),
+                ) { Text("Everything at $merchant ›") }
             }
-            Text(d.description, style = MaterialTheme.typography.bodyMedium)
-            val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
-            OutlinedButton(
-                onClick = { onDismiss(); navigate("merchant/" + android.net.Uri.encode(d.merchantKey)) },
-                modifier = Modifier.heightIn(min = 48.dp),
-            ) { Text("Everything at $merchant") }
-            Text(
-                buildString {
-                    append(if (d.pending) "Pending · " else "")
-                    append(Format.dateTime(d.occurredAt))
-                    if (d.transactedAt != null && !d.pending && d.transactedAt != d.postedAt) {
-                        append(" · made ").append(Format.dateTime(d.transactedAt))
-                    }
-                    append(" · ").append(d.accountName)
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
 
             var bill by remember(d.recurringChargeId) { mutableStateOf<String?>(null) }
             LaunchedEffect(d.recurringChargeId) { bill = vm.billText(d.recurringChargeId) }
             bill?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary) }
-            Text("Category: ${d.categoryName}", style = MaterialTheme.typography.titleMedium)
-            SwitchRow("Always use this for $merchant", always) { always = it }
-            CategoryGrid(categories, d.categoryId) { vm.pick(it, always, merchant) }
+            // The category as one calm row; the full grid only when you ask to change it (or it needs one).
+            val current = categories.firstOrNull { it.id == d.categoryId }
+            var changing by remember(d.id) { mutableStateOf(current?.key == com.emotionalleaves.sprout.domain.categorize.DefaultCategories.UNCATEGORIZED) }
+            androidx.compose.material3.Surface(
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(Modifier.clickable { changing = !changing }.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    com.emotionalleaves.sprout.ui.common.IconBadge(
+                        com.emotionalleaves.sprout.ui.common.CategoryIcons.forKey(current?.iconKey),
+                        androidx.compose.ui.graphics.Color(current?.colorArgb ?: 0xFF888888.toInt()), 40.dp,
+                    )
+                    Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                        Text("Category", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(d.categoryName, style = MaterialTheme.typography.titleMedium)
+                    }
+                    TextButton(onClick = { changing = !changing }) { Text(if (changing) "Done" else "Change") }
+                }
+            }
+            androidx.compose.animation.AnimatedVisibility(changing) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SwitchRow("Always use this for $merchant", always) { always = it }
+                    CategoryGrid(categories, d.categoryId) { vm.pick(it, always, merchant); changing = false }
+                }
+            }
 
             val names = categories.associate { it.id to it.name }
             if (splits.isNotEmpty()) {
