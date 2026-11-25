@@ -26,7 +26,8 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [x] (1.9.0) Purchase-date option (transacted_at) for posted transactions — *why: dates match receipts*
 
 ## 4. Test coverage
-- [ ] Compose UI tests (Robolectric) for the detail sheet, review flow and budget edit dialog — *why: guard the main correction paths*
+- [x] (1.12.1) Compose UI tests: budget dialog, split dialog, list row semantics (detail sheet/review flow still open below)
+- [ ] Compose UI tests for the detail sheet and review flow (need a fake AppContainer) — *why: guard recategorize + undo*
 - [x] (1.9.1) SyncWorker tests with work-testing (retry, Retry-After chain, revoked cancel, KEEP)
 - [x] (1.9.0) 10k-transaction generated SyncMerger test — *why: merge performance regression guard*
 - [x] (1.7.0) First migration (1→2) with MigrationTest seeding realistic v1 data — *why: the first migration must be easy and safe*

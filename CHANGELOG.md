@@ -2,7 +2,12 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
-## [1.12.0] - 2026-11-24
+## [1.12.1] - 2026-11-24
+
+### Tests
+- The budget editor, the split dialog and transaction list labels are now tested by tapping through them automatically, so fixes to these screens can't quietly break them.
+
+ - 2026-11-24
 
 ### Added
 - Split transactions show a small "+2 split" label in the list (and TalkBack says "split across categories").

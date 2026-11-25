@@ -150,6 +150,7 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.compose.material.icons)
     debugImplementation(libs.compose.ui.tooling)
+    debugImplementation(libs.compose.ui.test.manifest)
 
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
@@ -167,6 +168,8 @@ dependencies {
     testImplementation(libs.room.testing)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.work.testing)
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.compose.ui.test.junit4)
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.okhttp.tls)
 }
