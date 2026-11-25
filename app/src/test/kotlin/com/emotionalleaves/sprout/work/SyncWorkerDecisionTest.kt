@@ -18,4 +18,13 @@ class SyncWorkerDecisionTest {
     @Test fun retryAfterHasAFloor() = assertEquals(WorkDecision.RetryAt(900), d(SyncRunResult.RetryLater(5)))
     @Test fun retryAfterHasACeiling() = assertEquals(WorkDecision.RetryAt(21600), d(SyncRunResult.RetryLater(86_400)))
     @Test fun retryAfterChainStops() = assertEquals(WorkDecision.GiveUp, d(SyncRunResult.RetryLater(60), chain = 3))
+
+    @Test fun batterySaverSkipsRecentScheduledSyncsOnly() {
+        val now = 1_763_900_000L
+        org.junit.Assert.assertTrue(SyncWorker.skipForBatterySaver(com.emotionalleaves.sprout.data.db.SyncTrigger.PERIODIC, true, now - 3600, now))
+        org.junit.Assert.assertFalse(SyncWorker.skipForBatterySaver(com.emotionalleaves.sprout.data.db.SyncTrigger.PERIODIC, true, now - 25 * 3600, now))
+        org.junit.Assert.assertFalse(SyncWorker.skipForBatterySaver(com.emotionalleaves.sprout.data.db.SyncTrigger.PERIODIC, true, null, now))
+        org.junit.Assert.assertFalse(SyncWorker.skipForBatterySaver(com.emotionalleaves.sprout.data.db.SyncTrigger.PERIODIC, false, now - 3600, now))
+        org.junit.Assert.assertFalse(SyncWorker.skipForBatterySaver(com.emotionalleaves.sprout.data.db.SyncTrigger.MANUAL, true, now - 3600, now))
+    }
 }

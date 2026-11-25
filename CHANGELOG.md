@@ -2,7 +2,12 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
-## [1.12.1] - 2026-11-24
+## [1.13.0] - 2026-11-24
+
+### Changed
+- Easier on your battery: while Battery Saver is on, the 6-hourly background sync waits until your data is a day old. Pull-to-refresh and "Sync now" always sync right away.
+
+ - 2026-11-24
 
 ### Tests
 - The budget editor, the split dialog and transaction list labels are now tested by tapping through them automatically, so fixes to these screens can't quietly break them.

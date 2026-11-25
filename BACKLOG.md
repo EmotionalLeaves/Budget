@@ -46,7 +46,7 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 
 ## 6. Performance and battery
 - [ ] Baseline profile for faster cold start — *why: opens instantly*
-- [ ] Skip the 6-hourly sync in battery saver unless it's been 24 h — *why: battery*
+- [x] (1.13.0) Battery saver: scheduled sync waits until data is 24 h old
 - [ ] Debounce budget/recurring recomputation after bulk recategorization — *why: smooth on big histories*
 
 ## 7. New budgeting features

@@ -31,9 +31,17 @@ class SyncWorker(
     constructor(context: Context, params: WorkerParameters) : this(context, params, null)
 
     override suspend fun doWork(): Result {
-        val sync = runSync ?: (applicationContext as SproutApp).container.syncRepository::sync
         val trigger = inputData.getString(KEY_TRIGGER)?.let { name -> SyncTrigger.entries.firstOrNull { it.name == name } }
             ?: SyncTrigger.PERIODIC
+        if (runSync == null) {
+            val container = (applicationContext as SproutApp).container
+            val power = applicationContext.getSystemService(android.os.PowerManager::class.java)
+            val last = container.settings.current().lastSuccessfulSyncAt
+            if (skipForBatterySaver(trigger, power?.isPowerSaveMode == true, last, System.currentTimeMillis() / 1000)) {
+                return Result.success()
+            }
+        }
+        val sync = runSync ?: (applicationContext as SproutApp).container.syncRepository::sync
         val chain = inputData.getInt(KEY_CHAIN, 0)
         val result = sync(trigger)
         if (result is SyncRunResult.Skipped &&
@@ -69,6 +77,12 @@ class SyncWorker(
         const val MAX_RETRIES = 3
         private const val MIN_RETRY_SECONDS = 15 * 60L
         private const val MAX_RETRY_SECONDS = 6 * 3600L
+
+        /** In battery saver, scheduled syncs wait until the data is a day old. Syncs you start always run. */
+        const val BATTERY_SAVER_MAX_AGE_SECONDS = 24 * 3600L
+
+        fun skipForBatterySaver(trigger: SyncTrigger, powerSave: Boolean, lastSuccessAt: Long?, now: Long): Boolean =
+            trigger == SyncTrigger.PERIODIC && powerSave && lastSuccessAt != null && now - lastSuccessAt < BATTERY_SAVER_MAX_AGE_SECONDS
 
         fun decide(result: SyncRunResult, runAttemptCount: Int, chain: Int): WorkDecision = when (result) {
             is SyncRunResult.Done, is SyncRunResult.Skipped -> WorkDecision.Success
