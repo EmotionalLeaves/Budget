@@ -2,7 +2,12 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
-## [1.11.0] - 2026-11-24
+## [1.11.1] - 2026-11-24
+
+### Fixed
+- The month-end forecast now follows split transactions: a part moved to Transfers no longer counts as everyday spending.
+
+ - 2026-11-24
 
 ### Added
 - Split a transaction across categories. Open a posted transaction and tap "Split across categories", then move part of it (say $30 of a $100 Target run) to another category. The rest stays in the transaction's own category, so the parts always add up. Budgets, safe to spend, category history and the category's transaction list all follow the split. "Remove split" puts it back.

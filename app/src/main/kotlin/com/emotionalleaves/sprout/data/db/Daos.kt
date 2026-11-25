@@ -411,10 +411,18 @@ interface RecurringDao {
     /** Everyday spending (EXPENSE, not part of a bill, not excluded, visible accounts) since [from], positive cents. */
     @Query(
         """
-        SELECT COALESCE(-SUM(t.amountMinor), 0) FROM transactions t
-        JOIN categories c ON c.id = t.categoryId JOIN accounts a ON a.id = t.accountId
-        WHERE t.occurredAt >= :from AND t.occurredAt < :to AND c.kind = 'EXPENSE' AND t.recurringChargeId IS NULL
-          AND t.excludedFromBudget = 0 AND a.hidden = 0
+        SELECT COALESCE(-SUM(amt), 0) FROM (
+            SELECT t.amountMinor - COALESCE((SELECT SUM(s.amountMinor) FROM transaction_splits s WHERE s.transactionId = t.id), 0) AS amt
+            FROM transactions t JOIN categories c ON c.id = t.categoryId JOIN accounts a ON a.id = t.accountId
+            WHERE t.occurredAt >= :from AND t.occurredAt < :to AND c.kind = 'EXPENSE' AND t.recurringChargeId IS NULL
+              AND t.excludedFromBudget = 0 AND a.hidden = 0
+            UNION ALL
+            SELECT s.amountMinor AS amt
+            FROM transaction_splits s JOIN transactions t ON t.id = s.transactionId
+            JOIN categories c ON c.id = s.categoryId JOIN accounts a ON a.id = t.accountId
+            WHERE t.occurredAt >= :from AND t.occurredAt < :to AND c.kind = 'EXPENSE' AND t.recurringChargeId IS NULL
+              AND t.excludedFromBudget = 0 AND a.hidden = 0
+        )
         """,
     )
     suspend fun everydaySpending(from: Long, to: Long): Long

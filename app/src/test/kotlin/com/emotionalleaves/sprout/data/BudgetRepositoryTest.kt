@@ -162,4 +162,19 @@ class BudgetRepositoryTest {
         assertNull(cats.setSplits(id, emptyList()))
         assertEquals(0L, repo.observeMonth(nov).first().budgeted.first { it.category.id == h }.spentMinor)
     }
+
+    @Test fun everydaySpendingFollowsSplits() = runBlocking {
+        syncTx(Triple("1", "KROGER #1|-100.00", at(11, 5)))
+        val id = env.db.backup().transactions().single().id
+        val from = at(11, 1); val to = at(11, 30)
+        assertEquals(10_000L, env.db.recurring().everydaySpending(from, to))
+        val p2p = cat(DefaultCategories.P2P)
+        val transfer = env.db.categories().getAll().first { it.kind == com.emotionalleaves.sprout.domain.categorize.CategoryKind.TRANSFER }.id
+        val cats = com.emotionalleaves.sprout.data.categories.CategoryRepository(env.db, env.clock)
+        // Moving part to another spending category keeps the total; moving it to a transfer removes it.
+        assertNull(cats.setSplits(id, listOf(com.emotionalleaves.sprout.domain.split.SplitPart(p2p, 2_000))))
+        assertEquals(10_000L, env.db.recurring().everydaySpending(from, to))
+        assertNull(cats.setSplits(id, listOf(com.emotionalleaves.sprout.domain.split.SplitPart(transfer, 2_000))))
+        assertEquals(8_000L, env.db.recurring().everydaySpending(from, to))
+    }
 }
