@@ -106,7 +106,10 @@ fun ChallengesScreen(onBack: () -> Unit) {
                 groceries?.let { Triple("Groceries under \$100 this week", ChallengeType.UNDER_AMOUNT, it.id) },
                 Triple("3 no-spend days this week", ChallengeType.NO_SPEND_DAYS, null),
             )
-            items(templates, key = { it.first }) { (title, type, cat) ->
+            // Don't offer what's already running.
+            val running = progress.filter { it.status == com.emotionalleaves.sprout.domain.challenge.ChallengeStatus.ON_TRACK }
+                .map { it.challenge.type to it.challenge.categoryId }.toSet()
+            items(templates.filter { (_, type, cat) -> (type to cat) !in running }, key = { it.first }) { (title, type, cat) ->
                 SoftCard(onClick = {
                     scope.launch {
                         when (type) {
@@ -115,7 +118,19 @@ fun ChallengesScreen(onBack: () -> Unit) {
                             ChallengeType.NO_SPEND_DAYS -> c.challengeRepository.add(type, title, 7, goal = 3)
                         }
                     }
-                }) { Text(title, style = MaterialTheme.typography.titleSmall); Text("Tap to start today", style = MaterialTheme.typography.labelMedium) }
+                }) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        val catEntity = cats.firstOrNull { it.id == cat }
+                        com.emotionalleaves.sprout.ui.common.IconBadge(
+                            if (catEntity != null) com.emotionalleaves.sprout.ui.common.CategoryIcons.forKey(catEntity.iconKey) else Icons.Rounded.EmojiEvents,
+                            catEntity?.let { androidx.compose.ui.graphics.Color(it.colorArgb) } ?: MaterialTheme.colorScheme.primary,
+                        )
+                        Column(Modifier.padding(start = 12.dp)) {
+                            Text(title, style = MaterialTheme.typography.titleSmall)
+                            Text("Tap to start now", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
             }
             item { TextButton(onClick = { custom = true }, modifier = Modifier.padding(horizontal = 16.dp).heightIn(min = 48.dp)) { Text("Make your own…") } }
         }

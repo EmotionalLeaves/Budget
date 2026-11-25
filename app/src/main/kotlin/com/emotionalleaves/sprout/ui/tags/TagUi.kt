@@ -236,3 +236,22 @@ fun TagsScreen(onBack: () -> Unit, onOpen: (Long) -> Unit) {
         )
     }
 }
+
+/** The top of one tag's page: back, "#Trip", and what it all added up to. */
+@Composable
+fun TagHeader(id: Long?, onBack: () -> Unit) {
+    val c = com.emotionalleaves.sprout.ui.common.appContainer()
+    val summaries by remember { c.db.tags().observeSummaries() }.collectAsStateWithLifecycle(emptyList())
+    val t = summaries.firstOrNull { it.id == id }
+    Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 20.dp, top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") }
+        Column(Modifier.weight(1f)) {
+            Text("#" + (t?.name ?: "Tag"), style = MaterialTheme.typography.titleLarge)
+            if (t != null) {
+                Text("${t.count} transaction${if (t.count == 1) "" else "s"}", style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        if (t != null) Text(com.emotionalleaves.sprout.ui.common.money(kotlin.math.abs(t.total), whole = true), style = MaterialTheme.typography.titleLarge)
+    }
+}

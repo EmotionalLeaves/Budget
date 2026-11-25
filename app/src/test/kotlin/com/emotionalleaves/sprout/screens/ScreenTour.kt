@@ -263,7 +263,7 @@ class ScreenTour {
                 fun t(n: String, block: () -> Unit) = runCatching(block).onFailure { System.err.println("TOUR $n: " + it.toString().take(200)) }
                 t("goals") { tap("More"); tap("Savings goals"); s("60-goals"); back() }
                 t("challenges") { tap("More"); tap("Challenges"); s("61-challenges"); back() }
-                t("tags") { tap("More"); tap("Tags"); s("62-tags"); tap("Gifts"); s("63-tag"); back(); back() }
+                t("tags") { tap("More"); tap("Tags"); s("62-tags"); tap("#Gifts"); s("63-tag"); back(); back() }
                 t("debt") { tap("More"); tap("Debt payoff plan"); s("64-debt"); back() }
                 return@use
             }

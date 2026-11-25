@@ -326,7 +326,7 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
             composable("tag/{id}") { entry ->
                 val id = entry.arguments?.getString("id")?.toLongOrNull()
                 androidx.compose.foundation.layout.Column(Modifier.fillMaxSize()) {
-                    androidx.compose.material3.TextButton(onClick = { nav.popBackStack() }, modifier = Modifier.padding(start = 8.dp)) { Text("← Tags") }
+                    com.emotionalleaves.sprout.ui.tags.TagHeader(id, onBack = { nav.popBackStack() })
                     TransactionsScreen(snackbar, onReview = { nav.navigate("review") }, initialTagId = id)
                 }
             }

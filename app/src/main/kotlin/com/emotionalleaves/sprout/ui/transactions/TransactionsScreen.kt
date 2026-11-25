@@ -363,10 +363,10 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
         }
         val inbox by remember { vm.inboxCount }.collectAsStateWithLifecycle(0)
         val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
-        if (inbox > 0) {
+        if (inbox > 0 && initialTagId == null) {
             Banner("$inbox new to review", actionLabel = "Review", onAction = { navigate("inbox") }, warning = false)
         }
-        if (uncategorized > 0) {
+        if (uncategorized > 0 && initialTagId == null) {
             Banner(
                 "$uncategorized uncategorized transaction${if (uncategorized == 1) "" else "s"}",
                 actionLabel = "Review",

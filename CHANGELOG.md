@@ -2,6 +2,14 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.17.0] - 2026-11-25
+
+Round 18: tidier pages.
+
+### Polish
+- **A tag's page** has a real header: "#Gifts", how many transactions, and the total. The review and uncategorized banners stay on Activity, where they belong.
+- **Challenges**: ideas you're already doing aren't offered again, and each idea shows its category icon.
+
 ## [2.16.0] - 2026-11-25
 
 Round 17: fairness fixes and steadier releases.
@@ -27,7 +35,7 @@ Round 16: Sprout works with big text.
 
 ## [2.14.0] - 2026-11-25
 
-(2.13.0's release page couldn't be published because GitHub was briefly down; everything in 2.13.0 is included here.)
+(GitHub was briefly down, so the 2.13.0 and 2.14.0 release pages couldn't be published. Everything in them arrived with 2.15.0.)
 
 Round 15: big cleanups and your own order.
 
