@@ -52,13 +52,14 @@ fun openUrl(context: Context, url: String) {
 }
 
 @Composable
-fun SectionTitle(text: String, modifier: Modifier = Modifier) {
+fun SectionTitle(text: String, modifier: Modifier = Modifier, inRow: Boolean = false) {
     Text(
         text.uppercase(),
         style = MaterialTheme.typography.labelLarge,
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.primary,
-        modifier = modifier.padding(start = 20.dp, end = 16.dp, top = 20.dp, bottom = 6.dp).semantics { heading() },
+        // In a row with buttons, the row supplies the vertical space so the title lines up with them.
+        modifier = modifier.padding(start = 20.dp, end = 16.dp, top = if (inRow) 0.dp else 20.dp, bottom = if (inRow) 0.dp else 6.dp).semantics { heading() },
     )
 }
 
@@ -99,9 +100,9 @@ fun CategoryChip(name: String, color: Int, iconKey: String? = null) {
             .padding(horizontal = 8.dp, vertical = 2.dp),
     ) {
         if (iconKey != null) {
-            Icon(CategoryIcons.forKey(iconKey), contentDescription = null, tint = Color(color), modifier = Modifier.size(14.dp))
+            Icon(CategoryIcons.forKey(iconKey), contentDescription = null, tint = Color(color).readable(), modifier = Modifier.size(14.dp))
         } else {
-            Box(Modifier.size(8.dp).clip(CircleShape).background(Color(color)))
+            Box(Modifier.size(8.dp).clip(CircleShape).background(Color(color).readable()))
         }
         Spacer(Modifier.width(6.dp))
         Text(name, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)

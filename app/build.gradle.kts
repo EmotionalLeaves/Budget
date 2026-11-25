@@ -122,6 +122,10 @@ tasks.withType<Test>().configureEach {
         systemProperty("robolectric.offline", "true")
         systemProperty("robolectric.dependency.dir", dir.absolutePath)
     }
+    // Screenshot tour (ScreenTour): ./gradlew :app:testDebugUnitTest --tests '*ScreenTour*' -Psprout.screens=/some/dir
+    providers.gradleProperty("sprout.screens").orNull?.let { systemProperty("sprout.screens", it) }
+    providers.gradleProperty("sprout.dark").orNull?.let { systemProperty("sprout.dark", it) }
+    providers.gradleProperty("sprout.only").orNull?.let { systemProperty("sprout.only", it) }
 }
 
 ksp {

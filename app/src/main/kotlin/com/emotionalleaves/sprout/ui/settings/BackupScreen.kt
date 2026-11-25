@@ -230,14 +230,14 @@ private fun PasswordDialog(title: String, confirmTwice: Boolean, onDismiss: () -
                 OutlinedTextField(
                     value = first, onValueChange = { first = it }, label = { Text("Password") }, singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false), modifier = Modifier.fillMaxWidth()
                 )
                 if (confirmTwice) {
                     OutlinedTextField(
                         value = second, onValueChange = { second = it }, label = { Text("Type it again") }, singleLine = true,
                         isError = second.isNotEmpty() && !matches,
                         visualTransformation = PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false), modifier = Modifier.fillMaxWidth()
                     )
                     Text("At least ${BackupCrypto.MIN_PASSWORD_LENGTH} characters.", style = MaterialTheme.typography.bodySmall)
                 }

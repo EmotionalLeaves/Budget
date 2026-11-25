@@ -100,13 +100,19 @@ fun InboxScreen(snackbar: SnackbarHostState, onBack: () -> Unit) {
                     state = state,
                     enableDismissFromEndToStart = false,
                     backgroundContent = {
-                        Row(Modifier.fillMaxSize().padding(horizontal = 24.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            Text("  Reviewed", color = MaterialTheme.colorScheme.primary)
+                        // Only while swiping: otherwise the label would show through the row.
+                        if (state.dismissDirection == SwipeToDismissBoxValue.StartToEnd) {
+                            Row(
+                                Modifier.fillMaxSize().background(MaterialTheme.colorScheme.primaryContainer).padding(horizontal = 24.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                                Text("  Reviewed", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.labelLarge)
+                            }
                         }
                     },
                 ) {
-                    Row(Modifier.fillMaxWidth().padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) { TransactionItem(r) { openId = r.id } }
                         IconButton(onClick = { markSeen(listOf(r)) }) { Icon(Icons.Rounded.Check, contentDescription = "Mark ${r.description} reviewed") }
                     }

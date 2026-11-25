@@ -223,9 +223,9 @@ fun TransactionDetailSheet(transactionId: String, onDismiss: () -> Unit, onMessa
                         title = { Text("Edit transaction") },
                         text = {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                OutlinedTextField(amt, { amt = it.take(12) }, label = { Text("Amount") }, prefix = { Text("$") }, singleLine = true, isError = parsed == null)
-                                OutlinedTextField(name, { name = it.take(120) }, label = { Text("What was it") }, singleLine = true)
-                                OutlinedTextField(dateText, { dateText = it.take(10) }, label = { Text("Date (YYYY-MM-DD)") }, singleLine = true, isError = date == null)
+                                OutlinedTextField(amt, { amt = it.take(12) }, label = { Text("Amount") }, prefix = { Text("$") }, singleLine = true, isError = parsed == null, modifier = Modifier.fillMaxWidth())
+                                OutlinedTextField(name, { name = it.take(120) }, label = { Text("What was it") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                                OutlinedTextField(dateText, { dateText = it.take(10) }, label = { Text("Date (YYYY-MM-DD)") }, singleLine = true, isError = date == null, modifier = Modifier.fillMaxWidth())
                             }
                         },
                         confirmButton = {

@@ -30,6 +30,8 @@ class ForecastRepository(
     private val recurring: RecurringRepository,
     private val clock: Clock,
     private val zone: () -> ZoneId = { ZoneId.systemDefault() },
+    /** The income you picked as "payday" (by name), if any. */
+    private val paydaySource: suspend () -> String? = { null },
 ) {
     suspend fun outlook(): HomeOutlook = withContext(Dispatchers.IO) {
         val z = zone()
@@ -53,7 +55,9 @@ class ForecastRepository(
             val bills = (recurring.expectedCharges(month).first().filter { !it.matchedThisMonth } + recurring.expectedCharges(month.plusMonths(1)).first())
                 .map { Expected(it.name, date(it.dueAt, z), it.amountMinor) }
                 .distinctBy { it.name to it.date }
-            com.emotionalleaves.sprout.domain.forecast.PaydayPlan.compute(today, cashAccounts.sumOf { it.balanceMinor }, income, bills)
+            // Spending money only: savings isn't meant to last you until payday.
+            val spendable = cashAccounts.filter { it.type != com.emotionalleaves.sprout.domain.accounts.AccountType.SAVINGS }
+            com.emotionalleaves.sprout.domain.forecast.PaydayPlan.compute(today, spendable.takeIf { it.isNotEmpty() }?.sumOf { it.balanceMinor }, income, bills, paydaySource())
         }.getOrNull()
         val forecast = if (cashAccounts.isEmpty()) null else {
             val monthBudget = budgets.observeMonth(month).first()

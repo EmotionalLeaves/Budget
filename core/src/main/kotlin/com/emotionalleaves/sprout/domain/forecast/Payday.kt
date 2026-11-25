@@ -18,20 +18,25 @@ data class PaydayPlan(
     val leftMinor: Long,
     /** Per day until payday (today counts); 0 when there's nothing left. */
     val perDayMinor: Long,
+    /** Every repeating income seen, so you can pick which one is "payday". */
+    val sources: List<String> = emptyList(),
 ) {
     val short: Boolean get() = leftMinor < 0
 
     companion object {
         /** Null when no income repeats (nothing to plan to) or there's no cash account. */
-        fun compute(today: LocalDate, cashMinor: Long?, income: List<Expected>, bills: List<Expected>): PaydayPlan? {
+        fun compute(today: LocalDate, cashMinor: Long?, income: List<Expected>, bills: List<Expected>, preferred: String? = null): PaydayPlan? {
             if (cashMinor == null) return null
-            val next = income.filter { !it.date.isBefore(today) && it.amountMinor > 0 }.minByOrNull { it.date } ?: return null
+            val upcoming = income.filter { !it.date.isBefore(today) && it.amountMinor > 0 }
+            val sources = upcoming.map { it.name }.distinct()
+            val pool = upcoming.filter { it.name == preferred }.ifEmpty { upcoming }
+            val next = pool.minByOrNull { it.date } ?: return null
             // Bills due today up to the day before payday (payday bills usually come out of the new paycheck).
             val due = bills.filter { !it.date.isBefore(today) && it.date.isBefore(next.date) }.sortedBy { it.date }
             val billsMinor = due.sumOf { kotlin.math.abs(it.amountMinor) }
             val left = cashMinor - billsMinor
             val days = maxOf(1, ChronoUnit.DAYS.between(today, next.date).toInt())
-            return PaydayPlan(next.date, next.name, next.amountMinor, days, cashMinor, due, billsMinor, left, if (left > 0) left / days else 0)
+            return PaydayPlan(next.date, next.name, next.amountMinor, days, cashMinor, due, billsMinor, left, if (left > 0) left / days else 0, sources)
         }
     }
 }

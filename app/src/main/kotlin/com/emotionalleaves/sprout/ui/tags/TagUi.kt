@@ -147,7 +147,9 @@ fun TagsScreen(onBack: () -> Unit, onOpen: (Long) -> Unit) {
         )
         if (tags.isEmpty() && rules.isEmpty()) {
             EmptyState("No tags yet", "Open any transaction and tap \"Add tag\" to group spending across categories, like a trip or a project. " +
-                "Or tap Auto-tag to tag everything containing a word, like DELTA → #Travel.")
+                "Or let Sprout tag everything containing a word, like DELTA → #Travel.") {
+                androidx.compose.material3.Button(onClick = { addingRule = true }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Make an auto-tag rule") }
+            }
             return@Column
         }
         LazyColumn {
@@ -196,7 +198,7 @@ fun TagsScreen(onBack: () -> Unit, onOpen: (Long) -> Unit) {
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Every transaction whose description contains this word gets the tag — old ones now, new ones after each sync.")
-                    OutlinedTextField(word, { word = it.take(60) }, singleLine = true, label = { Text("Contains") })
+                    OutlinedTextField(word, { word = it.take(60) }, singleLine = true, label = { Text("Contains") }, modifier = Modifier.fillMaxWidth())
                     var matches by remember { mutableStateOf<Int?>(null) }
                     androidx.compose.runtime.LaunchedEffect(word) {
                         kotlinx.coroutines.delay(300)
@@ -206,7 +208,7 @@ fun TagsScreen(onBack: () -> Unit, onOpen: (Long) -> Unit) {
                         Text(if (n == 0) "No transactions match yet." else "Would tag $n transaction${if (n == 1) "" else "s"}.",
                             style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                     }
-                    OutlinedTextField(tag, { tag = it.take(40) }, singleLine = true, label = { Text("Tag") })
+                    OutlinedTextField(tag, { tag = it.take(40) }, singleLine = true, label = { Text("Tag") }, modifier = Modifier.fillMaxWidth())
                     if (tags.isNotEmpty()) {
                         @OptIn(ExperimentalLayoutApi::class)
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -226,7 +228,7 @@ fun TagsScreen(onBack: () -> Unit, onOpen: (Long) -> Unit) {
         AlertDialog(
             onDismissRequest = { editing = null },
             title = { Text("Edit tag") },
-            text = { OutlinedTextField(name, { name = it.take(40) }, singleLine = true, label = { Text("Name") }) },
+            text = { OutlinedTextField(name, { name = it.take(40) }, singleLine = true, label = { Text("Name") }, modifier = Modifier.fillMaxWidth()) },
             confirmButton = { TextButton(onClick = { vm.rename(t.id, name); editing = null }) { Text("Save") } },
             dismissButton = {
                 TextButton(onClick = { vm.delete(t.id); editing = null }) { Text("Delete tag", color = MaterialTheme.colorScheme.error) }

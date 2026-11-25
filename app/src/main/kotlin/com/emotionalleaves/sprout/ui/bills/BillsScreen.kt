@@ -6,6 +6,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -101,6 +106,32 @@ class BillsViewModel(private val c: AppContainer) : ViewModel() {
     fun add(name: String, amount: Long, cadence: Cadence, next: LocalDate, category: Long) =
         viewModelScope.launch { c.recurringRepository.addManual(name, amount, cadence, next, category) }
     fun today(): LocalDate = LocalDate.now(c.clock.withZone(ZoneId.systemDefault()))
+    val cancelIds = com.emotionalleaves.sprout.work.CancelReminders.observe(c.appContext)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+    fun setCancel(id: Long, on: Boolean) = viewModelScope.launch { com.emotionalleaves.sprout.work.CancelReminders.set(c.appContext, id, on) }
+
+    /** Writes every active bill as a repeating calendar event and opens the share sheet ("Add to calendar"). */
+    fun exportCalendar(context: android.content.Context) = viewModelScope.launch {
+        val zone = ZoneId.systemDefault()
+        val bills = all.value.filter { it.status != RecurringStatus.DISMISSED }.map {
+            com.emotionalleaves.sprout.domain.calendar.BillIcs.Bill(it.id, it.displayName,
+                Money.format(kotlin.math.abs(it.typicalAmountMinor)), Instant.ofEpochSecond(it.nextDueAt).atZone(zone).toLocalDate(), it.cadence)
+        }
+        if (bills.isEmpty()) return@launch
+        val stamp = java.time.ZonedDateTime.now(java.time.ZoneOffset.UTC).format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'"))
+        val file = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val dir = java.io.File(context.cacheDir, "reports").apply { mkdirs() }
+            java.io.File(dir, "sprout-bills.ics").apply { writeText(com.emotionalleaves.sprout.domain.calendar.BillIcs.build(bills, stamp)) }
+        }
+        val uri = androidx.core.content.FileProvider.getUriForFile(context, context.packageName + ".updates", file)
+        val view = android.content.Intent(android.content.Intent.ACTION_VIEW).setDataAndType(uri, "text/calendar")
+            .addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        val send = android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/calendar")
+            .putExtra(android.content.Intent.EXTRA_STREAM, uri).addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        val chooser = android.content.Intent.createChooser(send, "Add bills to a calendar")
+            .putExtra(android.content.Intent.EXTRA_INITIAL_INTENTS, arrayOf(view))
+        runCatching { context.startActivity(chooser) }
+    }
 
     private val _calMonth = kotlinx.coroutines.flow.MutableStateFlow(java.time.YearMonth.from(today()))
     val calMonth: StateFlow<java.time.YearMonth> = _calMonth
@@ -136,17 +167,27 @@ fun BillsScreen() {
     var editing by remember { mutableStateOf<RecurringRow?>(null) }
     var adding by remember { mutableStateOf(false) }
     var calendarView by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val cancelIds by vm.cancelIds.collectAsStateWithLifecycle()
 
     Box(Modifier.fillMaxSize()) {
         val list = upcoming
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 96.dp)) {
             item { com.emotionalleaves.sprout.ui.insights.SubscriptionsSummary() }
             item {
-                Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
                     androidx.compose.material3.FilterChip(!calendarView, { calendarView = false }, label = { Text("List") },
                         modifier = Modifier.heightIn(min = 48.dp))
                     androidx.compose.material3.FilterChip(calendarView, { calendarView = true }, label = { Text("Calendar") },
                         modifier = Modifier.heightIn(min = 48.dp))
+                    if (all.isNotEmpty()) {
+                        Spacer(Modifier.weight(1f))
+                        androidx.compose.material3.TextButton(onClick = { vm.exportCalendar(context) }, modifier = Modifier.heightIn(min = 48.dp)) {
+                            Icon(Icons.Filled.Event, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Text("  To calendar")
+                        }
+                    }
                 }
             }
             if (calendarView) {
@@ -163,18 +204,22 @@ fun BillsScreen() {
             }
             if (!list.isNullOrEmpty()) {
                 item {
-                    Card(Modifier.fillMaxWidth().padding(16.dp)) {
-                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text("Next 30 days", style = MaterialTheme.typography.labelLarge)
-                            Text(Money.format(list.sumOf { it.charge.typicalAmountMinor }), style = MaterialTheme.typography.headlineMedium)
-                            val remaining = thisMonth.filter { !it.matchedThisMonth }.sumOf { it.amountMinor }
-                            Text("Still due this month: ${Money.format(remaining)}", style = MaterialTheme.typography.bodyMedium)
-                        }
+                    com.emotionalleaves.sprout.ui.common.HeroCard(LocalSproutColors.current.hero) {
+                        val white = LocalSproutColors.current.onHero
+                        Text("Bills in the next 30 days", style = MaterialTheme.typography.labelLarge, color = white.copy(alpha = 0.8f))
+                        Text(com.emotionalleaves.sprout.ui.common.money(list.sumOf { it.charge.typicalAmountMinor }),
+                            style = MaterialTheme.typography.displaySmall, color = white)
+                        val remaining = thisMonth.filter { !it.matchedThisMonth }.sumOf { it.amountMinor }
+                        Text(
+                            "${list.size} bill${if (list.size == 1) "" else "s"} · " +
+                                if (remaining > 0) "${com.emotionalleaves.sprout.ui.common.money(remaining)} still due this month" else "nothing else due this month",
+                            style = MaterialTheme.typography.bodyMedium, color = white.copy(alpha = 0.85f),
+                        )
                     }
                 }
-                item { SectionTitle("Upcoming (next 30 days)") }
+                item { SectionTitle("Upcoming") }
                 items(list, key = { "u-${it.charge.id}-${it.dueAt}" }) { u ->
-                    BillRow(u.charge, dueText(u.dueAt)) { editing = u.charge }
+                    BillRow(u.charge, dueText(u.dueAt) + if (u.charge.id in cancelIds) " · cancel reminder on" else "") { editing = u.charge }
                 }
             }
             val paid = thisMonth.filter { it.matchedThisMonth }
@@ -224,6 +269,8 @@ fun BillsScreen() {
             onDismiss = { editing = null },
             onSave = { _, amount, cadence, next, cat -> vm.edit(r.id, amount, cadence, next, cat); editing = null },
             onRemove = { vm.dismiss(r.id); editing = null },
+            cancelReminder = r.id in cancelIds,
+            onCancelReminder = { vm.setCancel(r.id, it) },
         )
     }
     if (adding) {
@@ -283,11 +330,29 @@ private fun BillCalendar(vm: BillsViewModel) {
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         if (day != null) {
-                            Text(
-                                day.dayOfMonth.toString(),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = if (day == today) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                            )
+                            val isToday = day == today
+                            val isSel = day == selected
+                            Box(
+                                Modifier.size(32.dp).background(
+                                    when {
+                                        isToday -> MaterialTheme.colorScheme.primary
+                                        isSel -> MaterialTheme.colorScheme.primaryContainer
+                                        else -> androidx.compose.ui.graphics.Color.Transparent
+                                    },
+                                    androidx.compose.foundation.shape.CircleShape,
+                                ),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    day.dayOfMonth.toString(),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = when {
+                                        isToday -> MaterialTheme.colorScheme.onPrimary
+                                        isSel -> MaterialTheme.colorScheme.onPrimaryContainer
+                                        else -> MaterialTheme.colorScheme.onSurface
+                                    },
+                                )
+                            }
                             if (dayBills.isNotEmpty()) {
                                 Text(Money.formatWhole(total), style = MaterialTheme.typography.labelSmall,
                                     color = if (dayBills.all { it.paid }) LocalSproutColors.current.ok else MaterialTheme.colorScheme.tertiary)
@@ -308,12 +373,17 @@ private fun BillCalendar(vm: BillsViewModel) {
         )
         if (shown.isEmpty()) Text("No bills.", Modifier.padding(8.dp))
         shown.forEach { b ->
-            Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(b.name + if (b.paid) " · Paid ✓" else "", style = MaterialTheme.typography.bodyLarge)
-                    Text(b.date.format(dueFormat), style = MaterialTheme.typography.labelSmall)
+            Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    if (b.paid) Icons.Filled.CheckCircle else Icons.Filled.Schedule, contentDescription = if (b.paid) "Paid" else "Due",
+                    tint = if (b.paid) LocalSproutColors.current.ok else MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(20.dp),
+                )
+                Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                    Text(b.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    Text((if (b.paid) "Paid · " else "Due ") + b.date.format(dueFormat), style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Text(Money.format(b.amountMinor))
+                Text(Money.format(b.amountMinor), color = if (b.paid) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface)
             }
         }
         Text("Total this month: ${Money.format(bills.sumOf { it.amountMinor })}", Modifier.padding(8.dp), style = MaterialTheme.typography.labelLarge)
@@ -379,6 +449,8 @@ private fun BillDialog(
     onDismiss: () -> Unit,
     onSave: (name: String?, amount: Long, cadence: Cadence, next: LocalDate, categoryId: Long) -> Unit,
     onRemove: (() -> Unit)?,
+    cancelReminder: Boolean? = null,
+    onCancelReminder: (Boolean) -> Unit = {},
 ) {
     var name by remember { mutableStateOf(initialName) }
     var amountText by remember { mutableStateOf(initialAmount?.let { Money.format(it).removePrefix("$").replace(",", "") } ?: "") }
@@ -394,12 +466,12 @@ private fun BillDialog(
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (name != null) {
-                    OutlinedTextField(value = name ?: "", onValueChange = { name = it.take(60) }, label = { Text("Name") }, singleLine = true)
+                    OutlinedTextField(value = name ?: "", onValueChange = { name = it.take(60) }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 }
                 OutlinedTextField(
                     value = amountText, onValueChange = { amountText = it.take(10) }, label = { Text("Amount") }, prefix = { Text("$") },
                     singleLine = true, isError = amountText.isNotBlank() && amount == null,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth()
                 )
                 Text("How often", style = MaterialTheme.typography.labelLarge)
                 Cadence.entries.forEach { c ->
@@ -417,6 +489,16 @@ private fun BillDialog(
                 Text("Category", style = MaterialTheme.typography.labelLarge)
                 CategoryGrid(categories, category) { category = it.id }
                 if (onRemove != null) {
+                    if (cancelReminder != null) {
+                        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable { onCancelReminder(!cancelReminder) }, verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text("Remind me to cancel", style = MaterialTheme.typography.bodyLarge)
+                                Text("A notification 3 days before it renews. Sprout can't cancel for you — it reminds you to do it.",
+                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            androidx.compose.material3.Switch(checked = cancelReminder, onCheckedChange = null)
+                        }
+                    }
                     TextButton(onClick = onRemove, modifier = Modifier.heightIn(min = 48.dp)) { Text("Not a bill — dismiss") }
                 }
             }

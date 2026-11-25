@@ -2,6 +2,37 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.9.0] - 2026-11-24
+
+Round 10 — plus a full visual and functional polish pass, screen by screen, in light and dark.
+
+### Auto-update
+- Background downloads show a quiet progress bar in the notification shade.
+- "While charging" is remembered across restarts, and the update card has a Cancel for it.
+
+### Polish (every main screen was reviewed from real screenshots)
+- **Fixed:** in the review inbox, the swipe label "Reviewed" showed through every row. Swipe labels now only appear while you swipe.
+- Dark mode: deep category colors (brown, teal, purple) were hard to see on dark backgrounds; they're now lifted automatically.
+- Stat tiles in a row are always the same height. The Home "Spent" note is shorter so it fits on one line.
+- Home: the month-end forecast matches the other cards. The backup reminder moved below your money (with an icon). If you have accounts but no bank connected, the header says so instead of "No bank connected".
+- Until payday counts checking and cash only, not savings, so the daily number is realistic. It shows a calm day count instead of a nearly-empty ring.
+- Bills: a summary card in the same style as Home, a tidier "To calendar" button, today circled in the calendar, and paid/due icons in the bill list.
+- Flex budgets: no more confusing negative "safe to spend" when no flex amount is set. It explains what to do, and says "Over by" when you're over.
+- More: every row has an icon, sections no longer have stray dividers, and "No bank connected" is a proper card.
+- Reports: range labels fit; "same" instead of "$0 (0%)"; a legend for the comparison bars; Year in review uses ranked cards.
+- Year view opens on your latest months, and long category names wrap at hyphens instead of mid-word.
+- Budgets: the section header lines up with its buttons. Goals and Tags have a button right in their empty state.
+- Text fields in dialogs use the full width.
+- Activity's search hint fits on one line.
+
+### New features
+- **Remind me to cancel**: on any bill, turn it on and get a notification 3 days before it renews. Sprout never cancels anything itself; it reminds you.
+- **To calendar**: add every bill to your phone's calendar as repeating events (an .ics file, made on the phone).
+- **Saved searches** in Activity: set filters, tap "☆ Save search", and it becomes a one-tap chip.
+- **Compare months**: Reports → Compare. This month vs last, by category, biggest change first.
+- **Pick your payday**: if more than one income repeats, choose which one "Until payday" counts to.
+- **Category icons**: choose from 37 icons for any category (Categories → tap one). Icons show in the category list too.
+
 ## [2.8.0] - 2026-11-24
 
 Round 9 — the biggest yet.

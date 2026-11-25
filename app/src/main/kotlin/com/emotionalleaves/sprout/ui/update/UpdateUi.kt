@@ -81,17 +81,21 @@ private fun UpdateBody(updates: UpdateRepository, state: UpdateState, showLater:
                     Text("%.1f MB download".format(state.release.sizeBytes / 1_048_576.0), style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                var queued by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+                val queued by androidx.compose.runtime.remember {
+                    com.emotionalleaves.sprout.work.UpdateWhenChargingWorker.observeQueued(context)
+                }.collectAsState(initial = false)
                 if (queued) {
-                    Text("Sprout will update itself the next time your phone is charging. Nothing else to do.",
-                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Sprout will update itself the next time your phone is charging. Nothing else to do.",
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f))
+                        TextButton(onClick = { com.emotionalleaves.sprout.work.UpdateWhenChargingWorker.cancel(context) }) { Text("Cancel") }
+                    }
                 }
                 androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = { scope.launch { updates.download(state.release) } }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Update now") }
                     if (updates.hasKey && !queued) {
                         OutlinedButton(onClick = {
                             com.emotionalleaves.sprout.work.UpdateWhenChargingWorker.schedule(context)
-                            queued = true
                         }, modifier = Modifier.heightIn(min = 48.dp)) { Text("While charging") }
                     }
                     if (showLater) TextButton(onClick = { scope.launch { updates.dismiss(state.release.version) } }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Later") }

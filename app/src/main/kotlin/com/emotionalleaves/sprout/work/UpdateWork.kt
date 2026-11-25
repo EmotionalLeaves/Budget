@@ -11,6 +11,7 @@ import androidx.work.WorkerParameters
 import com.emotionalleaves.sprout.SproutApp
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 /** Once a day on an unmetered-or-any network: is there a newer Sprout? Quiet on every failure. */
 class UpdateCheckWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
@@ -22,7 +23,7 @@ class UpdateCheckWorker(context: Context, params: WorkerParameters) : CoroutineW
             val unmetered = cm != null && !cm.isActiveNetworkMetered
             val s = c.updates.state.value
             if (unmetered && c.updates.hasKey && c.updates.autoDownload.first() && s is com.emotionalleaves.sprout.data.update.UpdateState.Available) {
-                c.updates.download(s.release)
+                downloadWithProgress(c, s.release)
             }
             val ready = c.updates.state.value as? com.emotionalleaves.sprout.data.update.UpdateState.ReadyToInstall
             if (ready != null && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S && c.updates.autoInstall.first() && c.updates.canInstall()) {
@@ -59,7 +60,7 @@ class UpdateWhenChargingWorker(context: Context, params: WorkerParameters) : Cor
         runCatching {
             if (c.updates.state.value !is com.emotionalleaves.sprout.data.update.UpdateState.ReadyToInstall) {
                 c.updates.check(quiet = true)
-                (c.updates.state.value as? com.emotionalleaves.sprout.data.update.UpdateState.Available)?.let { c.updates.download(it.release) }
+                (c.updates.state.value as? com.emotionalleaves.sprout.data.update.UpdateState.Available)?.let { downloadWithProgress(c, it.release) }
             }
             val ready = c.updates.state.value as? com.emotionalleaves.sprout.data.update.UpdateState.ReadyToInstall ?: return@runCatching
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S && c.updates.canInstall() &&
@@ -79,5 +80,30 @@ class UpdateWhenChargingWorker(context: Context, params: WorkerParameters) : Cor
                 .build()
             WorkManager.getInstance(context).enqueueUniqueWork(NAME, androidx.work.ExistingWorkPolicy.REPLACE, req)
         }
+
+        fun cancel(context: Context) { WorkManager.getInstance(context).cancelUniqueWork(NAME) }
+
+        /** True while a "while charging" update is waiting (survives restarts: WorkManager keeps it). */
+        fun observeQueued(context: Context): kotlinx.coroutines.flow.Flow<Boolean> =
+            WorkManager.getInstance(context).getWorkInfosForUniqueWorkFlow(NAME)
+                .let { f -> kotlinx.coroutines.flow.flow { f.collect { list -> emit(list.any { it.state == androidx.work.WorkInfo.State.ENQUEUED || it.state == androidx.work.WorkInfo.State.BLOCKED }) } } }
     }
 }
+
+/** Background download with a silent progress notification (updated every 5%), cleared when done. */
+internal suspend fun downloadWithProgress(c: com.emotionalleaves.sprout.AppContainer, release: com.emotionalleaves.sprout.update.ReleaseInfo) =
+    kotlinx.coroutines.coroutineScope {
+        val watcher = launch {
+            var last = -5
+            c.updates.state.collect { st ->
+                if (st is com.emotionalleaves.sprout.data.update.UpdateState.Downloading && st.percent >= last + 5) {
+                    last = st.percent
+                    c.notifier.showUpdateProgress(release.version, st.percent)
+                }
+            }
+        }
+        try { c.updates.download(release) } finally {
+            watcher.cancel()
+            c.notifier.showUpdateProgress(release.version, null)
+        }
+    }

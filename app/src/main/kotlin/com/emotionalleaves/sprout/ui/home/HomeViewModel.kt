@@ -98,7 +98,8 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
         c.budgetRepository.todayFlow(),
         c.db.transactions().observeCount(),
         c.db.accounts().observeAll(),
-    ) { _, _, _ -> Unit }
+        c.settings.settings.map { it.paydaySource }.distinctUntilChanged(),
+    ) { _, _, _, _ -> Unit }
         .mapLatest { runCatching { c.forecastRepository.outlook() }.getOrNull() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
@@ -134,6 +135,7 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
             if (today.dayOfMonth > 7 || dismissed == month.toString()) null else runCatching { c.insightsRepository.recap(month) }.getOrNull()
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    fun setPaydaySource(name: String?) = viewModelScope.launch { c.settings.setPaydaySource(name) }
     fun snoozeBackup() = viewModelScope.launch { c.settings.snoozeBackupNudge(System.currentTimeMillis() / 1000 + 14 * 86_400) }
     fun dismissRecap() = viewModelScope.launch { recap.value?.let { c.settings.setRecapDismissed(it.month.toString()) } }
 

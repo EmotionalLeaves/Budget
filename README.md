@@ -135,8 +135,10 @@ Decisions made while building, one per line:
 - Age of Money uses checking, savings and cash accounts counted in your total, first-in-first-out, averaged over your last 10 outflows.
 
 - Auto-tag rules apply to existing transactions when created, then to transactions added or changed after each sync/import. A tag removed by hand stays removed unless the bank changes that transaction.
-- "Until payday" uses the soonest repeating income as payday. Bills due on payday itself are treated as paid from the new paycheck.
+- "Until payday" counts checking and cash accounts (not savings), and uses the soonest repeating income as payday unless you pick another. Bills due on payday itself are treated as paid from the new paycheck.
 - Keyword rules with an amount condition are tried before rules without one, so "Venmo $500+ → Rent" beats "Venmo → Transfers".
+- Cancel reminders fire 3 days before the renewal date, whether or not general bill reminders are on, because you turned each one on yourself.
+- The screenshot tour (`ScreenTour`) is a review tool, not a test: it runs only when `-Psprout.screens=<dir>` is given.
 - The backup reminder only nudges; it never uploads anything. First nudge a week after the first account, then 30 days after each backup.
 
 ## For developers

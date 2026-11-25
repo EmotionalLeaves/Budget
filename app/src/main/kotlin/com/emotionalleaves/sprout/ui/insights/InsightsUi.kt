@@ -35,6 +35,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import kotlinx.coroutines.flow.first
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
@@ -128,7 +129,7 @@ fun NetWorthScreen(onBack: () -> Unit) {
                 }
             }
             item {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.fillMaxWidth().height(androidx.compose.foundation.layout.IntrinsicSize.Min).padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     val c1 = now - lastMonth
                     val c2 = now - first
                     StatTile("This month", (if (c1 >= 0) "+" else "") + money(c1, whole = true), Modifier.weight(1f),
@@ -167,6 +168,11 @@ fun YearScreen(onBack: () -> Unit, onCategory: (Long) -> Unit) {
         val totals = months.indices.map { i -> rows.sumOf { it.byMonth[i] } }
         val maxCell = rows.maxOf { r -> r.byMonth.max() }.coerceAtLeast(1)
         val scroll = rememberScrollState()
+        // Open on the latest months (the right end), where the data is.
+        androidx.compose.runtime.LaunchedEffect(months.size) {
+            val max = androidx.compose.runtime.snapshotFlow { scroll.maxValue }.first { it in 1 until Int.MAX_VALUE }
+            scroll.scrollTo(max)
+        }
         val heat = MaterialTheme.colorScheme.primary
         LazyColumn {
             item {
@@ -187,7 +193,8 @@ fun YearScreen(onBack: () -> Unit, onCategory: (Long) -> Unit) {
                     Row(Modifier.width(132.dp), verticalAlignment = Alignment.CenterVertically) {
                         IconBadge(CategoryIcons.forKey(r.iconKey), Color(r.colorArgb), 28.dp)
                         Spacer(Modifier.width(6.dp))
-                        Text(r.name, style = MaterialTheme.typography.labelMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        // A zero-width space after each hyphen lets "Person-to-Person" wrap at the hyphens, not mid-word.
+                        Text(r.name.replace("-", "-\u200B"), style = MaterialTheme.typography.labelMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
                     Row(Modifier.horizontalScroll(scroll)) {
                         r.byMonth.forEach { v ->

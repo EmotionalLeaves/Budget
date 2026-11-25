@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.insights
 
+import androidx.compose.foundation.layout.height
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -69,7 +70,7 @@ fun MerchantScreen(merchantKey: String, snackbar: androidx.compose.material3.Sna
         )
         LazyColumn {
             item {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.fillMaxWidth().height(androidx.compose.foundation.layout.IntrinsicSize.Min).padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     StatTile("This year", money(stats.thisYearMinor, whole = true), Modifier.weight(1f))
                     StatTile("Per visit", money(stats.averageMinor), Modifier.weight(1f))
                     StatTile("Visits", stats.visits.toString(), Modifier.weight(1f))
@@ -117,7 +118,7 @@ fun RenameMerchantDialog(merchantKey: String, onDismiss: () -> Unit) {
         text = {
             Column {
                 Text("Shown everywhere in Sprout instead of \"$merchantKey\".", style = MaterialTheme.typography.bodySmall)
-                androidx.compose.material3.OutlinedTextField(text, { text = it.take(60) }, singleLine = true, label = { Text("Name") })
+                androidx.compose.material3.OutlinedTextField(text, { text = it.take(60) }, singleLine = true, label = { Text("Name") }, modifier = Modifier.fillMaxWidth())
             }
         },
         confirmButton = {

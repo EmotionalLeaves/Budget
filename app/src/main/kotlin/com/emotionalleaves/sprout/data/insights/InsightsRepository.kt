@@ -159,6 +159,20 @@ class InsightsRepository(private val db: SproutDatabase, private val clock: Cloc
     )
 
     /** Reports for the last [months] months: cash flow per month, and spending by category and by account. */
+    /** Spending by category in [month] next to [against] (the month before, by default). */
+    suspend fun compare(month: YearMonth, against: YearMonth = month.minusMonths(1)): List<com.emotionalleaves.sprout.domain.insights.CompareRow> =
+        withContext(Dispatchers.IO) {
+            val z = zone()
+            val expense = db.categories().getAll().filter { it.kind == CategoryKind.EXPENSE }.associateBy { it.id }
+            suspend fun byCat(m: YearMonth): Map<String, Long> {
+                val w = MonthWindow.of(m, z)
+                return db.budgets().spendRows(w.start, w.end).filter { it.categoryId in expense }
+                    .groupBy { it.categoryId }.mapValues { (_, l) -> maxOf(0L, -l.sumOf { it.amountMinor }) }
+                    .mapKeys { expense.getValue(it.key).name }
+            }
+            com.emotionalleaves.sprout.domain.insights.MonthCompare.compare(byCat(month), byCat(against))
+        }
+
     suspend fun reports(months: Int): Reports = withContext(Dispatchers.IO) {
         val z = zone()
         val current = YearMonth.from(today())

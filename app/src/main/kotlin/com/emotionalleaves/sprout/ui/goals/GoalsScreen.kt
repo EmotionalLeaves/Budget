@@ -140,7 +140,11 @@ fun GoalsScreen(onBack: () -> Unit) {
             }
             val list = goals
             if (list != null && list.isEmpty()) {
-                item { EmptyState("No goals yet", "Saving for something? Add a goal and Sprout shows how much to put aside each month.") }
+                item {
+                    EmptyState("No goals yet", "Saving for something? Add a goal and Sprout shows how much to put aside each month.") {
+                        androidx.compose.material3.Button(onClick = { adding = true }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Add your first goal") }
+                    }
+                }
             }
             items(list.orEmpty(), key = { it.goal.id }) { v ->
                 Card(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
@@ -182,7 +186,7 @@ fun GoalsScreen(onBack: () -> Unit) {
             title = { Text("Add money to ${v.goal.name}") },
             text = {
                 OutlinedTextField(value = text, onValueChange = { text = it.take(10) }, prefix = { Text("$") }, singleLine = true,
-                    label = { Text("Amount (use - to take out)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text))
+                    label = { Text("Amount (use - to take out)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text), modifier = Modifier.fillMaxWidth())
             },
             confirmButton = { TextButton(onClick = { amount?.let { vm.addMoney(v.goal.id, it) }; adjusting = null }, enabled = amount != null) { Text("Save") } },
             dismissButton = { TextButton(onClick = { adjusting = null }) { Text("Cancel") } },
@@ -226,10 +230,10 @@ private fun GoalDialog(
                     Text("For a known future cost (car registration, holidays, insurance). Sprout sets aside a little each month " +
                         "and keeps it out of safe to spend.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                OutlinedTextField(value = name, onValueChange = { name = it.take(60) }, label = { Text("Name") }, singleLine = true)
+                OutlinedTextField(value = name, onValueChange = { name = it.take(60) }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(value = targetText, onValueChange = { targetText = it.take(10) }, label = { Text("Target amount") },
                     prefix = { Text("$") }, singleLine = true, isError = targetText.isNotBlank() && target == null,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth())
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     OutlinedButton(onClick = { picking = true }, modifier = Modifier.heightIn(min = 48.dp)) {
                         Text(date?.let { "By ${it.format(dateFmt)}" } ?: if (planned) "When is it due?" else "Add a target date (optional)")
@@ -251,7 +255,7 @@ private fun GoalDialog(
                 }
                 if (account == null) {
                     OutlinedTextField(value = savedText, onValueChange = { savedText = it.take(10) }, label = { Text("Saved so far") },
-                        prefix = { Text("$") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                        prefix = { Text("$") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth())
                 }
                 if (onDelete != null) TextButton(onClick = onDelete, modifier = Modifier.heightIn(min = 48.dp)) { Text("Delete goal") }
             }

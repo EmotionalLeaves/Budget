@@ -85,7 +85,26 @@ data class TxFilter(
     val accountId: String? = null,
     val categoryId: Long? = null,
     val tagId: Long? = null,
-)
+) {
+    companion object {
+        private const val SEP = '\u001F'
+
+        /** "Name␟query␟account␟category␟tag␟uncategorized␟pending": one saved search, stored as a string. */
+        fun encode(name: String, f: TxFilter): String = listOf(
+            name.replace(SEP, ' ').take(30), f.query.replace(SEP, ' '), f.accountId.orEmpty(), f.categoryId?.toString().orEmpty(),
+            f.tagId?.toString().orEmpty(), if (f.uncategorizedOnly) "1" else "", if (f.pendingOnly) "1" else "",
+        ).joinToString(SEP.toString())
+
+        fun decode(s: String): Pair<String, TxFilter>? {
+            val p = s.split(SEP)
+            if (p.size != 7 || p[0].isBlank()) return null
+            return p[0] to TxFilter(
+                query = p[1], accountId = p[2].ifEmpty { null }, categoryId = p[3].toLongOrNull(), tagId = p[4].toLongOrNull(),
+                uncategorizedOnly = p[5] == "1", pendingOnly = p[6] == "1",
+            )
+        }
+    }
+}
 
 class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
     /** Swipe right → pick a category (just this one). Returns an undo. */
@@ -137,6 +156,11 @@ class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
     fun setAccount(id: String?) { _filter.value = _filter.value.copy(accountId = id) }
     fun setCategory(id: Long?) { _filter.value = _filter.value.copy(categoryId = id, uncategorizedOnly = false) }
     fun setTag(id: Long?) { _filter.value = _filter.value.copy(tagId = id) }
+    fun apply(f: TxFilter) { _filter.value = f }
+    val saved = c.settings.settings.map { s -> s.savedSearches.mapNotNull { e -> TxFilter.decode(e)?.let { Triple(e, it.first, it.second) } }.sortedBy { it.second.lowercase() } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    fun saveSearch(name: String) = viewModelScope.launch { c.settings.saveSearch(TxFilter.encode(name, _filter.value), true) }
+    fun forgetSearch(encoded: String) = viewModelScope.launch { c.settings.saveSearch(encoded, false) }
     val inboxCount = c.db.transactions().observeInboxCount()
     /** Per-day totals (out, in) for the last 400 days, for the day headers. */
     val dayTotals: StateFlow<Map<LocalDate, Pair<Long, Long>>> = c.db.transactions()
@@ -212,7 +236,7 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
         OutlinedTextField(
             value = filter.query,
             onValueChange = vm::setQuery,
-            placeholder = { Text("Search, or an amount like 42.10 or >100") },
+            placeholder = { Text("Search or amount, like >100", maxLines = 1) },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
             trailingIcon = {
                 if (filter.query.isNotEmpty()) {
@@ -245,6 +269,28 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
             Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            val saved by vm.saved.collectAsStateWithLifecycle()
+            var naming by remember { mutableStateOf(false) }
+            val current = saved.firstOrNull { it.third == filter }
+            saved.forEach { (enc, name, f) ->
+                FilterChip(f == filter, onClick = { if (f == filter) vm.apply(TxFilter()) else vm.apply(f) },
+                    label = { Text("★ $name") }, modifier = Modifier.heightIn(min = 48.dp))
+            }
+            if (current != null) {
+                androidx.compose.material3.AssistChip(onClick = { vm.forgetSearch(current.first) }, label = { Text("Unsave") }, modifier = Modifier.heightIn(min = 48.dp))
+            } else if (filter != TxFilter()) {
+                androidx.compose.material3.AssistChip(onClick = { naming = true }, label = { Text("☆ Save search") }, modifier = Modifier.heightIn(min = 48.dp))
+            }
+            if (naming) {
+                var name by remember { mutableStateOf(filter.query.take(30)) }
+                androidx.compose.material3.AlertDialog(
+                    onDismissRequest = { naming = false },
+                    title = { Text("Save this search") },
+                    text = { OutlinedTextField(name, { name = it.take(30) }, singleLine = true, label = { Text("Name") }, modifier = Modifier.fillMaxWidth()) },
+                    confirmButton = { androidx.compose.material3.TextButton(enabled = name.isNotBlank(), onClick = { vm.saveSearch(name.trim()); naming = false }) { Text("Save") } },
+                    dismissButton = { androidx.compose.material3.TextButton(onClick = { naming = false }) { Text("Cancel") } },
+                )
+            }
             FilterChip(filter.uncategorizedOnly, vm::toggleUncategorized, label = { Text("Uncategorized") }, modifier = Modifier.heightIn(min = 48.dp))
             FilterChip(filter.pendingOnly, vm::togglePending, label = { Text("Pending only") }, modifier = Modifier.heightIn(min = 48.dp))
             if (accounts.size > 1) {
@@ -346,6 +392,7 @@ private fun SwipeRow(onRight: () -> Unit, onLeft: () -> Unit, content: @Composab
     androidx.compose.material3.SwipeToDismissBox(
         state = state,
         backgroundContent = {
+            if (state.dismissDirection == androidx.compose.material3.SwipeToDismissBoxValue.Settled) return@SwipeToDismissBox
             val toRight = state.dismissDirection == androidx.compose.material3.SwipeToDismissBoxValue.StartToEnd
             val bg = if (toRight) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.tertiaryContainer
             val fg = if (toRight) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onTertiaryContainer
@@ -357,7 +404,7 @@ private fun SwipeRow(onRight: () -> Unit, onLeft: () -> Unit, content: @Composab
                 Text(if (toRight) "Change category" else "Leave out of budget", color = fg, style = MaterialTheme.typography.labelLarge)
             }
         },
-    ) { Box(Modifier.background(MaterialTheme.colorScheme.surface)) { content() } }
+    ) { Box(Modifier.background(MaterialTheme.colorScheme.background)) { content() } }
 }
 
 @Composable

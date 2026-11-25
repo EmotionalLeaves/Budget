@@ -109,6 +109,40 @@ class AndroidNotifier(private val context: Context) : Notifier {
         }
     }
 
+    /** "Cancel Netflix before it renews on Dec 3" — only for subscriptions you marked. Opens Sprout. */
+    fun showCancelReminder(key: String, text: String): Boolean {
+        if (!canPost()) return false
+        val id = key.hashCode()
+        val intent = Intent(context, MainActivity::class.java).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP }
+        val pending = PendingIntent.getActivity(context, id, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        val n = NotificationCompat.Builder(context, CH_BILLS)
+            .setSmallIcon(R.drawable.ic_stat_sprout)
+            .setContentTitle("Planned cancellation")
+            .setContentText(text)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setContentIntent(pending)
+            .setAutoCancel(true)
+            .build()
+        return try { NotificationManagerCompat.from(context).notify(id, n); true } catch (e: SecurityException) { false }
+    }
+
+    /** A quiet, silent progress bar while an update downloads in the background. Pass null to clear it. */
+    fun showUpdateProgress(version: String, percent: Int?) {
+        val id = "u-progress".hashCode()
+        if (percent == null) { runCatching { NotificationManagerCompat.from(context).cancel(id) }; return }
+        if (!canPost()) return
+        val n = NotificationCompat.Builder(context, CH_UPDATES)
+            .setSmallIcon(R.drawable.ic_stat_sprout)
+            .setContentTitle("Downloading Sprout $version")
+            .setContentText("$percent% · your data stays")
+            .setProgress(100, percent, percent <= 0)
+            .setOnlyAlertOnce(true)
+            .setSilent(true)
+            .setOngoing(true)
+            .build()
+        try { NotificationManagerCompat.from(context).notify(id, n) } catch (_: SecurityException) {}
+    }
+
     /** "Netflix is due tomorrow · $15.49". Amount hidden on the lock screen. */
     fun showBillReminder(key: String, name: String, amountText: String): Boolean {
         if (!canPost()) return false

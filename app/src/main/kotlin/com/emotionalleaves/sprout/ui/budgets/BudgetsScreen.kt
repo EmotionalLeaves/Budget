@@ -123,9 +123,26 @@ fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit, onGoals:
                 item {
                     val sc = com.emotionalleaves.sprout.ui.theme.LocalSproutColors.current
                     com.emotionalleaves.sprout.ui.common.HeroCard(sc.hero) {
-                        Text("Safe to spend", style = MaterialTheme.typography.labelLarge, color = sc.onHero.copy(alpha = 0.8f))
-                        Text(Money.format(fs.month.safeMinor), style = MaterialTheme.typography.displayMedium, color = sc.onHero)
-                        fs.month.perDayMinor?.let { Text("≈ ${Money.format(it)} a day", style = MaterialTheme.typography.titleMedium, color = sc.onHero) }
+                        val safe = fs.month.safeMinor
+                        when {
+                            fs.month.flexBudgetMinor <= 0 -> {
+                                Text("Flex budgeting", style = MaterialTheme.typography.labelLarge, color = sc.onHero.copy(alpha = 0.8f))
+                                Text("One number for everything", style = MaterialTheme.typography.headlineSmall, color = sc.onHero)
+                                Text("Set your flex amount below, and this shows what's safe to spend.",
+                                    style = MaterialTheme.typography.bodyMedium, color = sc.onHero.copy(alpha = 0.85f))
+                            }
+                            safe < 0 -> {
+                                Text("Over your flex amount by", style = MaterialTheme.typography.labelLarge, color = sc.onHero.copy(alpha = 0.8f))
+                                Text(com.emotionalleaves.sprout.ui.common.money(-safe), style = MaterialTheme.typography.displayMedium,
+                                    color = androidx.compose.ui.graphics.Color(0xFFFFB4A9))
+                                Text("It happens. Next month starts fresh.", style = MaterialTheme.typography.bodyMedium, color = sc.onHero.copy(alpha = 0.85f))
+                            }
+                            else -> {
+                                Text("Safe to spend", style = MaterialTheme.typography.labelLarge, color = sc.onHero.copy(alpha = 0.8f))
+                                Text(com.emotionalleaves.sprout.ui.common.animatedMoney(safe), style = MaterialTheme.typography.displayMedium, color = sc.onHero)
+                                fs.month.perDayMinor?.let { Text("≈ ${com.emotionalleaves.sprout.ui.common.money(it)} a day", style = MaterialTheme.typography.titleMedium, color = sc.onHero) }
+                            }
+                        }
                     }
                 }
                 item { FlexSection(fs, today, isCurrent, vm::setFlex, vm::setFixed) }
@@ -143,12 +160,12 @@ fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit, onGoals:
                 com.emotionalleaves.sprout.ui.common.SoftCard {
                     Text("Your month costs ${Money.formatWhole(m.totalBudgetMinor + bills)}", style = MaterialTheme.typography.titleSmall)
                     Text("Budgets ${Money.formatWhole(m.totalBudgetMinor)}" + (if (bills > 0) " + bills outside budgets ${Money.formatWhole(bills)}" else "") +
-                        ". What it takes to be you, each month.", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        " — what a normal month takes.", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             item {
-                Row(Modifier.fillMaxWidth().padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    SectionTitle("Budgets", Modifier.weight(1f))
+                Row(Modifier.fillMaxWidth().padding(top = 12.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    SectionTitle("Budgets", Modifier.weight(1f), inRow = true)
                     TextButton(onClick = onGoals, modifier = Modifier.heightIn(min = 48.dp)) { Text("Goals") }
                     TextButton(onClick = onQuickSetup, modifier = Modifier.heightIn(min = 48.dp)) { Text("Quick setup") }
                 }

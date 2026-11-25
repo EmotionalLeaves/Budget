@@ -48,7 +48,7 @@ class AppContainer(context: Context) {
         db, settings, budgetRepository, recurringRepository::expectedCharges, { goalRepository.observePlannedSetAside() },
     )
     val alertRepository = AlertRepository(db, settings, budgetRepository, notifier, clock)
-    val forecastRepository = ForecastRepository(db, budgetRepository, recurringRepository, clock)
+    val forecastRepository = ForecastRepository(db, budgetRepository, recurringRepository, clock, paydaySource = { settings.current().paydaySource })
 
     /** After every sync: refresh recurring charges first (they feed safe to spend), then alerts. */
     private val postSync = object : AlertSink {

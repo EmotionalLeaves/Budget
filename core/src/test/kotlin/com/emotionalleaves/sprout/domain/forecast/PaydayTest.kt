@@ -27,6 +27,15 @@ class PaydayTest {
         assertEquals(listOf("Phone", "Rent"), p.bills.map { it.name })
     }
 
+    @Test fun youCanPickWhichIncomeIsPayday() {
+        val income = listOf(Expected("Side gig", today.plusDays(2), 5_000), Expected("Acme", today.plusDays(10), 150_000))
+        assertEquals("Side gig", PaydayPlan.compute(today, 1_000, income, emptyList())!!.payName)
+        val p = PaydayPlan.compute(today, 1_000, income, emptyList(), preferred = "Acme")!!
+        assertEquals("Acme", p.payName)
+        assertEquals(listOf("Side gig", "Acme"), p.sources)
+        assertEquals("Side gig", PaydayPlan.compute(today, 1_000, income, emptyList(), preferred = "Gone")!!.payName)
+    }
+
     @Test fun shortWhenBillsExceedCash() {
         val p = PaydayPlan.compute(today, 10_000, listOf(Expected("Pay", today.plusDays(3), 50_000)), listOf(Expected("Rent", today.plusDays(1), -20_000)))!!
         assertTrue(p.short)

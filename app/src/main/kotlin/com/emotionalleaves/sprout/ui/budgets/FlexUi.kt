@@ -98,7 +98,7 @@ fun FlexSection(state: FlexState, today: LocalDate, isCurrent: Boolean, onSetFle
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("One amount for groceries, eating out, shopping and everything else that isn't fixed.", style = MaterialTheme.typography.bodySmall)
                     OutlinedTextField(text, { text = it.take(10) }, prefix = { Text("$") }, singleLine = true, isError = text.isNotBlank() && parsed == null,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth())
                 }
             },
             confirmButton = { TextButton(onClick = { parsed?.let(onSetFlex); editing = false }, enabled = parsed != null) { Text("Save") } },

@@ -1,5 +1,7 @@
 package com.emotionalleaves.sprout.ui.home
 
+import androidx.compose.material.icons.rounded.CloudUpload
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -142,12 +145,12 @@ fun SafeToSpendHero(m: BudgetMonth?, netWorthMinor: Long, onSetBudget: () -> Uni
 @Composable
 fun StatsRow(netWorthMinor: Long, trend: CashFlow.Trend?, forecastEndMinor: Long?, onNetWorth: () -> Unit = {}) {
     val c = LocalSproutColors.current
-    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(Modifier.fillMaxWidth().height(androidx.compose.foundation.layout.IntrinsicSize.Min).padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         StatTile("Net worth", money(netWorthMinor, whole = true), Modifier.weight(1f).clickable(onClick = onNetWorth), note = "see trend ›")
         val p = trend?.percent
         StatTile(
             "Spent", money(trend?.thisMonthMinor ?: 0, whole = true), Modifier.weight(1f),
-            note = p?.let { if (it > 0) "↑ $it% vs last month" else if (it < 0) "↓ ${-it}% vs last month" else "Same as last month" },
+            note = p?.let { if (it > 0) "↑ $it% vs last mo." else if (it < 0) "↓ ${-it}% vs last mo." else "Same as last mo." },
             noteColor = if ((p ?: 0) > 10) c.warning else if ((p ?: 0) < 0) c.ok else Color.Unspecified,
         )
         if (forecastEndMinor != null) {
@@ -374,7 +377,7 @@ fun CustomizeHomeDialog(hidden: Set<String>, onToggle: (String, Boolean) -> Unit
 
 /** "Until payday": cash now, bills due before the next paycheck, and what's left per day. Tap for the bill list. */
 @Composable
-fun PaydayCard(p: com.emotionalleaves.sprout.domain.forecast.PaydayPlan) {
+fun PaydayCard(p: com.emotionalleaves.sprout.domain.forecast.PaydayPlan, onPickSource: (String?) -> Unit = {}) {
     var open by remember { mutableStateOf(false) }
     val colors = com.emotionalleaves.sprout.ui.theme.LocalSproutColors.current
     com.emotionalleaves.sprout.ui.common.SoftCard(onClick = { open = !open }) {
@@ -393,21 +396,33 @@ fun PaydayCard(p: com.emotionalleaves.sprout.domain.forecast.PaydayPlan) {
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            com.emotionalleaves.sprout.ui.common.ProgressRing(
-                fraction = if (p.cashMinor <= 0) 1f else (p.billsMinor.toFloat() / p.cashMinor).coerceIn(0f, 1f),
-                color = if (p.short) MaterialTheme.colorScheme.error else colors.income,
-                track = MaterialTheme.colorScheme.surfaceVariant,
-                modifier = Modifier.size(56.dp),
-                stroke = 6.dp,
-            ) { Text("${p.daysUntil}d", style = MaterialTheme.typography.labelLarge) }
+            val tone = if (p.short) MaterialTheme.colorScheme.error else colors.income
+            androidx.compose.foundation.layout.Box(
+                Modifier.size(56.dp).background(tone.copy(alpha = 0.14f), androidx.compose.foundation.shape.CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("${p.daysUntil}", style = MaterialTheme.typography.titleMedium, color = tone)
+                    Text(if (p.daysUntil == 1) "day" else "days", style = MaterialTheme.typography.labelSmall, color = tone)
+                }
+            }
         }
         androidx.compose.animation.AnimatedVisibility(open) {
             Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                PaydayLine("Cash now", p.cashMinor)
+                PaydayLine("Spending money now", p.cashMinor)
                 p.bills.forEach { b -> PaydayLine(b.name + " · " + b.date.format(java.time.format.DateTimeFormatter.ofPattern("MMM d")), -kotlin.math.abs(b.amountMinor)) }
                 androidx.compose.material3.HorizontalDivider()
                 PaydayLine("Left until payday", p.leftMinor, bold = true)
-                Text("Bills come from the ones Sprout found repeating. Payday's own bills come out of the new paycheck.",
+                if (p.sources.size > 1) {
+                    Text("Which paycheck is payday?", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 4.dp))
+                    @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        p.sources.forEach { name ->
+                            androidx.compose.material3.FilterChip(selected = name == p.payName, onClick = { onPickSource(name) }, label = { Text(name) })
+                        }
+                    }
+                }
+                Text("Checking and cash, not savings. Bills are the ones Sprout found repeating; payday's own bills come out of the new paycheck.",
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -426,7 +441,10 @@ private fun PaydayLine(label: String, minor: Long, bold: Boolean = false) {
 @Composable
 fun BackupNudge(lastAt: Long?, onBackup: () -> Unit, onLater: () -> Unit) {
     com.emotionalleaves.sprout.ui.common.SoftCard {
-        Text("Back up your budget", style = MaterialTheme.typography.titleSmall)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            com.emotionalleaves.sprout.ui.common.IconBadge(androidx.compose.material.icons.Icons.Rounded.CloudUpload, MaterialTheme.colorScheme.primary)
+            Text("Back up your budget", Modifier.padding(start = 12.dp), style = MaterialTheme.typography.titleSmall)
+        }
         Text(
             if (lastAt == null) "Save an encrypted copy to Drive or your Files, so a lost phone doesn't mean lost history."
             else "Your last backup was ${java.time.Instant.ofEpochSecond(lastAt).atZone(java.time.ZoneId.systemDefault()).toLocalDate()

@@ -223,7 +223,7 @@ fun EditBudgetDialog(
                     prefix = { Text("$") },
                     singleLine = true,
                     isError = text.isNotBlank() && parsed == null,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth()
                 )
                 listOf(false to "Every month", true to "This month only").forEach { (value, label) ->
                     Row(

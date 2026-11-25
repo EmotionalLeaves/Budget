@@ -1,5 +1,22 @@
 package com.emotionalleaves.sprout.ui.settings
 
+import androidx.compose.material.icons.rounded.EmojiEvents
+import androidx.compose.material.icons.rounded.BarChart
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.ShowChart
+import androidx.compose.material.icons.rounded.GridView
+import androidx.compose.material.icons.rounded.Tag
+import androidx.compose.material.icons.rounded.CreditCard
+import androidx.compose.material.icons.rounded.Savings
+import androidx.compose.material.icons.rounded.Category
+import androidx.compose.material.icons.rounded.Rule
+import androidx.compose.material.icons.rounded.FileUpload
+import androidx.compose.material.icons.rounded.FileDownload
+import androidx.compose.material.icons.rounded.Backup
+import androidx.compose.material.icons.rounded.DeleteForever
+import androidx.compose.material.icons.rounded.AccountBalance
+import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.foundation.clickable
@@ -146,17 +163,28 @@ fun SettingsScreen(
 
     LazyColumn(Modifier.fillMaxSize()) {
         item { SectionTitle("Explore") }
-        item { NavRow("Challenges", "Small spending challenges, like no eating out for a week", { onRoute("challenges") }) }
-        item { NavRow("Reports", "Cash flow, spending by category and by account, any range", { onRoute("reports") }) }
-        item { NavRow("Year in review", "Your year's totals, top categories and places", { onRoute("year-review") }) }
-        item { NavRow("Net worth over time", "How your total has changed month by month", { onRoute("networth") }) }
-        item { NavRow("Year view", "Every category, every month, at a glance", { onRoute("year") }) }
-        item { NavRow("Tags", "Spending you've tagged, like a trip or a project", { onRoute("tags") }) }
-        item { NavRow("Debt payoff plan", "When you'll be debt-free, and the fastest or cheapest way there", { onRoute("debt") }) }
-        item { NavRow("Savings goals", "Track what you're saving for", { onRoute("goals") }) }
+        item { NavRow(icon = Icons.Rounded.EmojiEvents, title = "Challenges", subtitle = "Small spending challenges, like no eating out for a week", onClick = { onRoute("challenges") }) }
+        item { NavRow(icon = Icons.Rounded.BarChart, title = "Reports", subtitle = "Cash flow, spending by category and by account, any range", onClick = { onRoute("reports") }) }
+        item { NavRow(icon = Icons.Rounded.AutoAwesome, title = "Year in review", subtitle = "Your year's totals, top categories and places", onClick = { onRoute("year-review") }) }
+        item { NavRow(icon = Icons.Rounded.ShowChart, title = "Net worth over time", subtitle = "How your total has changed month by month", onClick = { onRoute("networth") }) }
+        item { NavRow(icon = Icons.Rounded.GridView, title = "Year view", subtitle = "Every category, every month, at a glance", onClick = { onRoute("year") }) }
+        item { NavRow(icon = Icons.Rounded.Tag, title = "Tags", subtitle = "Spending you've tagged, like a trip or a project", onClick = { onRoute("tags") }) }
+        item { NavRow(icon = Icons.Rounded.CreditCard, title = "Debt payoff plan", subtitle = "When you'll be debt-free, and the fastest or cheapest way there", onClick = { onRoute("debt") }) }
+        item { NavRow(icon = Icons.Rounded.Savings, title = "Savings goals", subtitle = "Track what you're saving for", onClick = { onRoute("goals") }) }
         item { SectionTitle("Bank connections") }
         if (!state.connected) {
-            item { Text("No bank connected.", Modifier.padding(horizontal = 16.dp)) }
+            item {
+                com.emotionalleaves.sprout.ui.common.SoftCard {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        com.emotionalleaves.sprout.ui.common.IconBadge(Icons.Rounded.AccountBalance, MaterialTheme.colorScheme.primary)
+                        Column(Modifier.weight(1f).padding(start = 14.dp)) {
+                            Text("No bank connected", style = MaterialTheme.typography.titleSmall)
+                            Text("Connect with SimpleFIN to sync automatically. Sprout only reads; it can never move money.",
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
         }
         items(state.connections, key = { "c-" + it.connId }) { conn ->
             Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
@@ -180,19 +208,16 @@ fun SettingsScreen(
             }
         }
 
-        item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
         item { SectionTitle("Categories") }
-        item { NavRow("Categories", "Add, rename, recolor or archive", onCategories) }
-        item { NavRow("Category rules", "What Sprout learned from your changes, plus keyword rules", onRules) }
+        item { NavRow(icon = Icons.Rounded.Category, title = "Categories", subtitle = "Add, rename, recolor or archive", onClick = onCategories) }
+        item { NavRow(icon = Icons.Rounded.Rule, title = "Category rules", subtitle = "What Sprout learned from your changes, plus keyword rules", onClick = onRules) }
 
-        item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
         item { SectionTitle("Your data") }
-        item { NavRow("Import CSV", "Add transactions from a bank's CSV export", onImport) }
-        item { NavRow("Export CSV", "Transactions, accounts, categories, budgets, rules or bills", onExport) }
-        item { NavRow("Backup and restore", "A password-protected file with all your data, for a new phone", onBackup) }
-        item { NavRow("Delete all data", "Erase everything Sprout stored on this phone", { deleteStep = 1 }) }
+        item { NavRow(icon = Icons.Rounded.FileUpload, title = "Import CSV", subtitle = "Add transactions from a bank's CSV export", onClick = onImport) }
+        item { NavRow(icon = Icons.Rounded.FileDownload, title = "Export CSV", subtitle = "Transactions, accounts, categories, budgets, rules or bills", onClick = onExport) }
+        item { NavRow(icon = Icons.Rounded.Backup, title = "Backup and restore", subtitle = "A password-protected file with all your data, for a new phone", onClick = onBackup) }
+        item { NavRow(icon = Icons.Rounded.DeleteForever, title = "Delete all data", subtitle = "Erase everything Sprout stored on this phone", onClick = { deleteStep = 1 }) }
 
-        item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
         item { SectionTitle("Notifications") }
         item {
             Column(Modifier.padding(horizontal = 16.dp)) {
@@ -218,7 +243,6 @@ fun SettingsScreen(
             }
         }
 
-        item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
         item { SectionTitle("Sync") }
         item {
             Column(Modifier.padding(horizontal = 16.dp)) {
@@ -255,8 +279,7 @@ fun SettingsScreen(
         }
 
         if (state.accounts.isNotEmpty()) {
-            item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
-            item { SectionTitle("Accounts") }
+                item { SectionTitle("Accounts") }
             items(state.accounts, key = { "a-" + it.id }) { a ->
                 Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -272,7 +295,6 @@ fun SettingsScreen(
             }
         }
 
-        item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
         item { SectionTitle("Privacy") }
         item {
             Column(Modifier.padding(horizontal = 16.dp)) {
@@ -374,7 +396,7 @@ fun SettingsScreen(
             title = { Text("Edit account") },
             text = {
                 Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
-                    OutlinedTextField(value = name, onValueChange = { name = it.take(60) }, label = { Text("Name") }, singleLine = true)
+                    OutlinedTextField(value = name, onValueChange = { name = it.take(60) }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     AccountType.entries.forEach { t ->
                         Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).selectable(type == t, role = Role.RadioButton) { type = t },
                             verticalAlignment = Alignment.CenterVertically) {
@@ -433,7 +455,7 @@ private fun ThresholdRow(currentMinor: Long, onSave: (Long) -> Unit) {
                 OutlinedTextField(
                     value = text, onValueChange = { text = it.take(8) }, prefix = { Text("$") }, singleLine = true,
                     isError = parsed == null,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth()
                 )
             },
             confirmButton = { TextButton(onClick = { parsed?.let(onSave); editing = false }, enabled = parsed != null) { Text("Save") } },
@@ -443,13 +465,18 @@ private fun ThresholdRow(currentMinor: Long, onSave: (Long) -> Unit) {
 }
 
 @Composable
-private fun NavRow(title: String, subtitle: String, onClick: () -> Unit) {
+private fun NavRow(title: String, subtitle: String, onClick: () -> Unit, icon: androidx.compose.ui.graphics.vector.ImageVector? = null) {
     androidx.compose.material3.Surface(
         shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 3.dp),
     ) {
         Row(Modifier.clickable(onClick = onClick).heightIn(min = 60.dp).padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (icon != null) {
+                val danger = title.startsWith("Delete")
+                com.emotionalleaves.sprout.ui.common.IconBadge(icon, if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary, 36.dp)
+                androidx.compose.foundation.layout.Spacer(Modifier.width(14.dp))
+            }
             Column(Modifier.weight(1f)) {
                 Text(title, style = MaterialTheme.typography.titleSmall)
                 Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

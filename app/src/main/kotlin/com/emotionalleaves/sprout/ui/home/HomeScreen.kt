@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.rounded.Insights
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
@@ -179,9 +180,6 @@ fun HomeScreen(
             if (fx != null && fx.month.flexBudgetMinor > 0) item { FlexHero(fx) } else item { SafeToSpendHero(m, state.totals.totalMinor, onSetBudgets) }
             if (inbox > 0) item { com.emotionalleaves.sprout.ui.transactions.InboxCard(inbox) { navigate("inbox") } }
             recap?.let { r -> item { com.emotionalleaves.sprout.ui.insights.RecapCard(r, vm::dismissRecap) } }
-            if (state.backupDue) item {
-                BackupNudge(state.settings.lastBackupAt, onBackup = { navigate("backup") }, onLater = vm::snoozeBackup)
-            }
             val off = state.settings.homeHidden
             fun on(k: String) = k !in off
             if (on("stats")) item { StatsRow(state.totals.totalMinor, outlook?.trend, outlook?.forecast?.endMinor, onNetWorth) }
@@ -199,8 +197,12 @@ fun HomeScreen(
                 item { com.emotionalleaves.sprout.ui.common.SectionHeader("Insights") }
                 item { com.emotionalleaves.sprout.ui.insights.InsightsStrip(insights, onCategory) }
             }
-            if (on("payday")) outlook?.payday?.let { p -> item { PaydayCard(p) } }
+            if (on("payday")) outlook?.payday?.let { p -> item { PaydayCard(p, vm::setPaydaySource) } }
             if (on("forecast")) outlook?.forecast?.let { f -> item { ForecastCard(f) } }
+            // Housekeeping goes below the money: it matters, but it's never the first thing to see.
+            if (state.backupDue) item {
+                BackupNudge(state.settings.lastBackupAt, onBackup = { navigate("backup") }, onLater = vm::snoozeBackup)
+            }
             if (on("where") && m != null) item { WhereItWentCard(m, onCategory, onSeeBudgets) }
             if (on("months")) item { MonthsCard(months) }
             if (on("calendar")) calendar?.let { cal -> item { com.emotionalleaves.sprout.ui.insights.SpendCalendarCard(cal) } }
@@ -240,22 +242,28 @@ private fun ForecastCard(f: com.emotionalleaves.sprout.domain.forecast.Forecast)
     var details by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     val monthEnd = java.time.format.DateTimeFormatter.ofPattern("MMM d", java.util.Locale.US)
     val end = java.time.LocalDate.now().let { it.withDayOfMonth(it.lengthOfMonth()) }
-    Card(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-        Column(
-            Modifier.fillMaxWidth().clickable(onClickLabel = "Show forecast details") { details = true }.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text("Cash by ${end.format(monthEnd)}", style = MaterialTheme.typography.labelLarge)
-            Text(
-                "≈ ${Money.format(f.endMinor)}",
-                style = MaterialTheme.typography.headlineSmall,
-                color = if (f.endMinor < 0) LocalSproutColors.current.danger else MaterialTheme.colorScheme.onSurface,
-            )
-            if (f.lowMinor < 0 && f.lowMinor < f.endMinor) {
-                Text("Could dip to ${Money.format(f.lowMinor)} around ${f.lowDate.format(monthEnd)} before payday",
-                    style = MaterialTheme.typography.bodySmall, color = LocalSproutColors.current.warning)
+    com.emotionalleaves.sprout.ui.common.SoftCard(onClick = { details = true }) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text("Cash by ${end.format(monthEnd)}", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    "≈ ${com.emotionalleaves.sprout.ui.common.money(f.endMinor, whole = true)}",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = if (f.endMinor < 0) LocalSproutColors.current.danger else MaterialTheme.colorScheme.onSurface,
+                )
+                if (f.lowMinor < 0 && f.lowMinor < f.endMinor) {
+                    Text("Could dip to ${Money.format(f.lowMinor)} around ${f.lowDate.format(monthEnd)} before payday",
+                        style = MaterialTheme.typography.bodySmall, color = LocalSproutColors.current.warning)
+                }
+                f.nextIncome?.let {
+                    Text("Next paycheck ${it.date.format(monthEnd)} · ${com.emotionalleaves.sprout.ui.common.money(it.amountMinor, whole = true)}",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
-            f.nextIncome?.let { Text("Next paycheck: ${it.date.format(monthEnd)} · ${Money.format(it.amountMinor)}", style = MaterialTheme.typography.bodySmall) }
+            com.emotionalleaves.sprout.ui.common.IconBadge(
+                androidx.compose.material.icons.Icons.Rounded.Insights,
+                if (f.endMinor < 0) LocalSproutColors.current.danger else MaterialTheme.colorScheme.primary,
+            )
         }
     }
     if (details) {
@@ -302,6 +310,8 @@ private fun SyncStatusLine(state: HomeState, now: Long) {
     val log = state.lastLog
     val last = state.settings.lastSuccessfulSyncAt
     val text = when {
+        !state.connected && state.accounts.isNotEmpty() ->
+            "${state.accounts.count { !it.hidden }} account${if (state.accounts.count { !it.hidden } == 1) "" else "s"} · added by hand or imported"
         !state.connected -> "No bank connected"
         !state.online && last != null -> "Offline – showing data from ${Format.ago(last, now)}"
         !state.online -> "Offline – will sync when you're back online"

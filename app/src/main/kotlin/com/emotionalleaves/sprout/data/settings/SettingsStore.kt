@@ -61,6 +61,10 @@ data class Settings(
     /** Epoch seconds of the last saved encrypted backup, and until when the "back up" nudge is snoozed. */
     val lastBackupAt: Long? = null,
     val backupNudgeUntil: Long = 0,
+    /** Which repeating income counts as payday (its display name); null = the soonest one. */
+    val paydaySource: String? = null,
+    /** Activity searches you saved (encoded by TxFilter.encode). */
+    val savedSearches: Set<String> = emptySet(),
 )
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -99,6 +103,8 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
             homeHidden = p[HOME_HIDDEN] ?: emptySet(),
             lastBackupAt = p[LAST_BACKUP],
             backupNudgeUntil = p[BACKUP_NUDGE] ?: 0,
+            paydaySource = p[PAYDAY_SOURCE],
+            savedSearches = p[SAVED_SEARCHES] ?: emptySet(),
         )
     }
 
@@ -134,6 +140,11 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
     suspend fun setRecapDismissed(month: String) = dataStore.edit { it[RECAP_DISMISSED] = month }
     suspend fun setLastBackupAt(epoch: Long) = dataStore.edit { it[LAST_BACKUP] = epoch }
     suspend fun snoozeBackupNudge(until: Long) = dataStore.edit { it[BACKUP_NUDGE] = until }
+    suspend fun saveSearch(encoded: String, on: Boolean) = dataStore.edit {
+        val cur = it[SAVED_SEARCHES] ?: emptySet()
+        it[SAVED_SEARCHES] = if (on) (cur + encoded).toList().takeLast(8).toSet() else cur - encoded
+    }
+    suspend fun setPaydaySource(name: String?) = dataStore.edit { if (name == null) it.remove(PAYDAY_SOURCE) else it[PAYDAY_SOURCE] = name }
     suspend fun setNotifyBills(on: Boolean) = dataStore.edit { it[NOTIFY_BILLS] = on }
     suspend fun setPrivacyMode(on: Boolean) = dataStore.edit { it[PRIVACY_MODE] = on }
     suspend fun setUsePurchaseDate(on: Boolean) = dataStore.edit { it[PURCHASE_DATE] = on }
@@ -171,6 +182,8 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         val RECAP_DISMISSED = stringPreferencesKey("recap_dismissed")
         val LAST_BACKUP = androidx.datastore.preferences.core.longPreferencesKey("last_backup_at")
         val BACKUP_NUDGE = androidx.datastore.preferences.core.longPreferencesKey("backup_nudge_until")
+        val PAYDAY_SOURCE = stringPreferencesKey("payday_source")
+        val SAVED_SEARCHES = androidx.datastore.preferences.core.stringSetPreferencesKey("saved_searches")
         val BUDGET_MODE = intPreferencesKey("budget_mode")
         val FLEX_BUDGET = longPreferencesKey("flex_budget_minor")
         val FIXED_IDS = androidx.datastore.preferences.core.stringSetPreferencesKey("fixed_category_ids")

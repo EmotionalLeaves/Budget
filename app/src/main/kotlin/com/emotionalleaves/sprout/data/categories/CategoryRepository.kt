@@ -166,17 +166,18 @@ class CategoryRepository(private val db: SproutDatabase, private val clock: Cloc
 
     // --- Categories ---
 
-    suspend fun addCategory(name: String, kind: CategoryKind, colorArgb: Int): Long = withContext(Dispatchers.IO) {
+    suspend fun addCategory(name: String, kind: CategoryKind, colorArgb: Int, iconKey: String = "custom"): Long = withContext(Dispatchers.IO) {
         val clean = Sanitize.text(name, 40).ifBlank { "New category" }
         db.categories().insert(
-            CategoryEntity(key = null, name = clean, kind = kind, iconKey = "custom", colorArgb = colorArgb,
+            CategoryEntity(key = null, name = clean, kind = kind, iconKey = Sanitize.text(iconKey, 40).ifBlank { "custom" }, colorArgb = colorArgb,
                 sortOrder = db.categories().maxSortOrder() + 1, archived = false),
         )
     }
 
-    suspend fun updateCategory(id: Long, name: String, colorArgb: Int) = withContext(Dispatchers.IO) {
+    suspend fun updateCategory(id: Long, name: String, colorArgb: Int, iconKey: String? = null) = withContext(Dispatchers.IO) {
         val c = db.categories().getById(id) ?: return@withContext
-        db.categories().update(c.copy(name = Sanitize.text(name, 40).ifBlank { c.name }, colorArgb = colorArgb))
+        db.categories().update(c.copy(name = Sanitize.text(name, 40).ifBlank { c.name }, colorArgb = colorArgb,
+            iconKey = iconKey?.let { Sanitize.text(it, 40) }?.ifBlank { null } ?: c.iconKey))
     }
 
     /** Archiving hides a category from pickers; it's never deleted, so its transactions keep it. */

@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.common
 
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -103,11 +104,23 @@ fun SectionHeader(title: String, action: String? = null, onAction: (() -> Unit)?
     }
 }
 
+/**
+ * Category colors are picked for a light background; on a dark one, deep colors (brown, teal, purple) nearly vanish.
+ * In dark themes this lifts any color that's too dark toward white, keeping its hue.
+ */
+@Composable
+fun Color.readable(): Color {
+    val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    if (!dark || luminance() >= 0.30f) return this
+    return androidx.compose.ui.graphics.lerp(this, Color.White, 0.45f)
+}
+
 /** A round tinted badge holding an icon. */
 @Composable
 fun IconBadge(icon: ImageVector, tint: Color, size: Dp = 40.dp) {
-    Box(Modifier.size(size).clip(CircleShape).background(tint.copy(alpha = 0.16f)), contentAlignment = Alignment.Center) {
-        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(size * 0.52f))
+    val t = tint.readable()
+    Box(Modifier.size(size).clip(CircleShape).background(t.copy(alpha = 0.18f)), contentAlignment = Alignment.Center) {
+        Icon(icon, contentDescription = null, tint = t, modifier = Modifier.size(size * 0.52f))
     }
 }
 
@@ -192,7 +205,8 @@ fun BarChart(values: List<Long>, labels: List<String>, color: Color, modifier: M
 /** A small label–value tile for stat rows. */
 @Composable
 fun StatTile(label: String, value: String, modifier: Modifier = Modifier, note: String? = null, noteColor: Color = Color.Unspecified) {
-    Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = modifier) {
+    // fillMaxHeight: tiles in one row share the tallest one's height (the row uses IntrinsicSize.Min).
+    Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = modifier.fillMaxHeight()) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
             Text(value, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)

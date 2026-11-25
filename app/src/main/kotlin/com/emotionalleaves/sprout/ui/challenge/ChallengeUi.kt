@@ -137,7 +137,7 @@ fun ChallengesScreen(onBack: () -> Unit) {
                     Text("For", style = MaterialTheme.typography.labelLarge)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { listOf(7, 14, 30).forEach { d -> FilterChip(days == d, { days = d }, label = { Text("$d days") }) } }
                     OutlinedTextField(amount, { amount = it.take(8) }, label = { Text("Limit (empty = spend nothing)") }, prefix = { Text("$") }, singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth())
                 }
             },
             confirmButton = {

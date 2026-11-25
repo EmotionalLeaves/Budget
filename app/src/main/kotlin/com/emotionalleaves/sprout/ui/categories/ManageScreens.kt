@@ -65,8 +65,8 @@ class ManageCategoriesViewModel(private val c: AppContainer) : ViewModel() {
     val rules: StateFlow<List<RuleRow>> =
         c.db.merchantRules().observeRows().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    fun add(name: String, color: Int) = viewModelScope.launch { c.categoryRepository.addCategory(name, CategoryKind.EXPENSE, color) }
-    fun update(id: Long, name: String, color: Int) = viewModelScope.launch { c.categoryRepository.updateCategory(id, name, color) }
+    fun add(name: String, color: Int, icon: String = "custom") = viewModelScope.launch { c.categoryRepository.addCategory(name, CategoryKind.EXPENSE, color, icon) }
+    fun update(id: Long, name: String, color: Int, icon: String? = null) = viewModelScope.launch { c.categoryRepository.updateCategory(id, name, color, icon) }
     fun setArchived(id: Long, archived: Boolean) = viewModelScope.launch { c.categoryRepository.setArchived(id, archived) }
     fun addKeywordRule(keyword: String, categoryId: Long, min: Long? = null, max: Long? = null) =
         viewModelScope.launch { c.categoryRepository.addContainsRule(keyword, categoryId, min, max) }
@@ -102,7 +102,9 @@ fun CategoriesScreen(onBack: () -> Unit) {
                     Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable { editing = c }.padding(horizontal = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Box(Modifier.size(16.dp).clip(CircleShape).background(Color(c.colorArgb)))
+                    Box(Modifier.size(32.dp).clip(CircleShape).background(Color(c.colorArgb).copy(alpha = 0.16f)), contentAlignment = Alignment.Center) {
+                        Icon(com.emotionalleaves.sprout.ui.common.CategoryIcons.forKey(c.iconKey), contentDescription = null, tint = Color(c.colorArgb), modifier = Modifier.size(18.dp))
+                    }
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Text(c.name, style = MaterialTheme.typography.bodyLarge)
@@ -120,13 +122,15 @@ fun CategoriesScreen(onBack: () -> Unit) {
 
     if (adding) {
         CategoryDialog(title = "New category", initialName = "", initialColor = CategoryRepository.PALETTE.first(), archived = null,
-            onDismiss = { adding = false }, onSave = { name, color, _ -> vm.add(name, color); adding = false })
+            initialIcon = "custom",
+            onDismiss = { adding = false }, onSave = { name, color, _, icon -> vm.add(name, color, icon); adding = false })
     }
     editing?.let { c ->
         CategoryDialog(title = "Edit category", initialName = c.name, initialColor = c.colorArgb, archived = c.archived,
+            initialIcon = c.iconKey,
             onDismiss = { editing = null },
-            onSave = { name, color, archived ->
-                vm.update(c.id, name, color)
+            onSave = { name, color, archived, icon ->
+                vm.update(c.id, name, color, icon)
                 if (archived != null && archived != c.archived) vm.setArchived(c.id, archived)
                 editing = null
             })
@@ -141,10 +145,11 @@ private fun kindLabel(kind: CategoryKind) = when (kind) {
 
 @Composable
 private fun CategoryDialog(
-    title: String, initialName: String, initialColor: Int, archived: Boolean?,
-    onDismiss: () -> Unit, onSave: (String, Int, Boolean?) -> Unit,
+    title: String, initialName: String, initialColor: Int, archived: Boolean?, initialIcon: String,
+    onDismiss: () -> Unit, onSave: (String, Int, Boolean?, String) -> Unit,
 ) {
     var name by remember { mutableStateOf(initialName) }
+    var icon by remember { mutableStateOf(initialIcon) }
     var color by remember { mutableStateOf(initialColor) }
     var isArchived by remember { mutableStateOf(archived) }
     val palette = (listOf(initialColor) + CategoryRepository.PALETTE).distinct()
@@ -153,8 +158,9 @@ private fun CategoryDialog(
         title = { Text(title) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
-                OutlinedTextField(value = name, onValueChange = { name = it.take(40) }, label = { Text("Name") }, singleLine = true)
+                OutlinedTextField(value = name, onValueChange = { name = it.take(40) }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 Labeled("Color") { ColorPicker(palette, color) { color = it } }
+                Labeled("Icon") { IconPicker(icon, Color(color)) { icon = it } }
                 if (isArchived != null) {
                     TextButton(onClick = { isArchived = !(isArchived ?: false) }, modifier = Modifier.heightIn(min = 48.dp)) {
                         Text(if (isArchived == true) "Unarchive (show in pickers again)" else "Archive (hide from pickers)")
@@ -162,7 +168,7 @@ private fun CategoryDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { onSave(name, color, isArchived) }, enabled = name.isNotBlank()) { Text("Save") } },
+        confirmButton = { TextButton(onClick = { onSave(name, color, isArchived, icon) }, enabled = name.isNotBlank()) { Text("Save") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }
@@ -226,7 +232,7 @@ fun RulesScreen(onBack: () -> Unit) {
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Any transaction whose description contains this word gets the category you pick.")
-                    OutlinedTextField(value = keyword, onValueChange = { keyword = it.take(60) }, label = { Text("Keyword") }, singleLine = true)
+                    OutlinedTextField(value = keyword, onValueChange = { keyword = it.take(60) }, label = { Text("Keyword") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     Text("Only for amounts (optional)", style = MaterialTheme.typography.labelMedium)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(atLeast, { atLeast = it.filter { ch -> ch.isDigit() || ch == '.' }.take(10) }, Modifier.weight(1f),
@@ -273,5 +279,25 @@ internal fun ruleAmountText(min: Long?, max: Long?): String {
         min != null -> " · ${d(min)} or more"
         max != null -> " · up to ${d(max)}"
         else -> ""
+    }
+}
+
+/** A grid of icons; the picked one is ringed in the category's color. */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun IconPicker(selected: String, tint: Color, onPick: (String) -> Unit) {
+    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        com.emotionalleaves.sprout.ui.common.CategoryIcons.pickable.forEach { key ->
+            val on = key == selected
+            Box(
+                Modifier.size(44.dp).clip(CircleShape)
+                    .background(if (on) tint.copy(alpha = 0.22f) else MaterialTheme.colorScheme.surfaceVariant)
+                    .clickable(onClickLabel = "Use this icon") { onPick(key) },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(com.emotionalleaves.sprout.ui.common.CategoryIcons.forKey(key), contentDescription = null,
+                    tint = if (on) tint else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(22.dp))
+            }
+        }
     }
 }
