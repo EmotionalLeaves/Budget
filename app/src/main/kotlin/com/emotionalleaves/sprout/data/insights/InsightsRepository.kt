@@ -97,6 +97,27 @@ class InsightsRepository(private val db: SproutDatabase, private val clock: Cloc
         com.emotionalleaves.sprout.domain.insights.AgeOfMoney.days(moves)
     }
 
+    /** Money health: savings rate (last 3 full months), emergency fund, Age of Money and this month's pace. */
+    suspend fun health(): com.emotionalleaves.sprout.domain.challenge.HealthScore.Result = withContext(Dispatchers.IO) {
+        val z = zone()
+        val current = YearMonth.from(today())
+        val months = (1..3).map { current.minusMonths(it.toLong()) }
+        val (_, grid) = yearGrid(4)
+        val spentPrev = grid.sumOf { r -> r.byMonth.dropLast(1).sum() }
+        val incomePrev = months.sumOf { m -> MonthWindow.of(m, z).let { w -> db.insights().income(w.start, w.end) } }
+        val rate = if (incomePrev > 0) (((incomePrev - spentPrev) * 100) / incomePrev).toInt() else null
+        val cash = db.accounts().getAll().filter { it.includeInTotals && !it.hidden && AccountTypes.isUsd(it.currency) && AccountTypes.isCashLike(it.type) }
+            .sumOf { it.balanceMinor }
+        val avgSpend = spentPrev / 3
+        val emergency = if (avgSpend > 0) maxOf(0.0, cash.toDouble() / avgSpend) else null
+        val spentNow = grid.sumOf { it.byMonth.last() }
+        val t = today()
+        val pace = com.emotionalleaves.sprout.domain.budget.Pace.of(spentNow, avgSpend.takeIf { it > 0 }, t.dayOfMonth, t.lengthOfMonth())
+        com.emotionalleaves.sprout.domain.challenge.HealthScore.compute(
+            rate?.coerceIn(-100, 100), emergency, ageOfMoney(), if (avgSpend > 0 && !pace.tooEarly) pace.onTrack else null,
+        )
+    }
+
     /** Repeating charges whose latest price differs from the one before. */
     suspend fun priceChanges(): List<com.emotionalleaves.sprout.domain.insights.PriceChange> = withContext(Dispatchers.IO) {
         db.recurring().getAll().filter { it.status != RecurringStatus.DISMISSED }.mapNotNull { r ->

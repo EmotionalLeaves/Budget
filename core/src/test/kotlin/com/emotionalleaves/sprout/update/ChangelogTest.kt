@@ -37,4 +37,11 @@ class ChangelogTest {
         assertEquals(1, Changelog.section(md, "2.0.0-debug").size)
         assertTrue(Changelog.section(md, "9.9.9").isEmpty())
     }
+
+    @Test fun betweenVersions() {
+        val r = Changelog.between(md, "1.9.0", "2.1.0")
+        assertEquals(listOf("2.1.0", "2.0.0"), r.map { it.first })
+        assertEquals(listOf("2.1.0"), Changelog.between(md, "2.0.0", "2.1.0").map { it.first })
+        assertTrue(Changelog.between(md, "2.1.0", "2.1.0").isEmpty())
+    }
 }

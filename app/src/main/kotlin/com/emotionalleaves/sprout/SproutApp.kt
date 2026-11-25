@@ -62,6 +62,8 @@ class AppContainer(context: Context) {
     val connectRepository = ConnectRepository(client, secureStore, settings)
     val categoryRepository = CategoryRepository(db, clock)
     val tagRepository = com.emotionalleaves.sprout.data.tags.TagRepository(db, clock)
+    val manualRepository = com.emotionalleaves.sprout.data.manual.ManualRepository(db, clock)
+    val challengeRepository = com.emotionalleaves.sprout.data.challenge.ChallengeRepository(appContext, db)
     val receiptRepository = com.emotionalleaves.sprout.data.receipts.ReceiptRepository(appContext, db, clock)
     val insightsRepository = com.emotionalleaves.sprout.data.insights.InsightsRepository(db, clock)
     val exportRepository = ExportRepository(db)

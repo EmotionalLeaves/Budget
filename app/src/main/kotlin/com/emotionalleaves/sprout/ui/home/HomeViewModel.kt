@@ -147,6 +147,18 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
         .mapLatest { runCatching { c.insightsRepository.watch(it) }.getOrDefault(emptyList()) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val health: StateFlow<com.emotionalleaves.sprout.domain.challenge.HealthScore.Result?> =
+        combine(c.budgetRepository.todayFlow(), c.db.transactions().observeCount()) { _, _ -> Unit }
+            .mapLatest { runCatching { c.insightsRepository.health() }.getOrNull() }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val challenges: StateFlow<List<com.emotionalleaves.sprout.domain.challenge.ChallengeProgress>> =
+        combine(c.challengeRepository.challenges, c.db.transactions().observeCount(), c.budgetRepository.todayFlow()) { _, _, _ -> Unit }
+            .mapLatest { runCatching { c.challengeRepository.progress() }.getOrDefault(emptyList()) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     val privacy: StateFlow<Boolean> = c.settings.settings.map { it.privacyMode }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
     fun togglePrivacy() = viewModelScope.launch { c.settings.setPrivacyMode(!privacy.value) }

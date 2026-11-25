@@ -24,7 +24,13 @@ class UpdateCheckWorker(context: Context, params: WorkerParameters) : CoroutineW
             if (unmetered && c.updates.hasKey && c.updates.autoDownload.first() && s is com.emotionalleaves.sprout.data.update.UpdateState.Available) {
                 c.updates.download(s.release)
             }
-            c.notifier.showUpdate(v, ready = c.updates.state.value is com.emotionalleaves.sprout.data.update.UpdateState.ReadyToInstall)
+            val ready = c.updates.state.value as? com.emotionalleaves.sprout.data.update.UpdateState.ReadyToInstall
+            if (ready != null && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S && c.updates.autoInstall.first() && c.updates.canInstall()) {
+                // Hands-free: Android installs it without asking when Sprout installed the current version itself;
+                // otherwise the receiver shows a "tap to finish" notification.
+                if (com.emotionalleaves.sprout.data.update.UpdateInstaller.install(applicationContext, ready.file)) return@runCatching
+            }
+            c.notifier.showUpdate(v, ready = ready != null)
         }
         return Result.success()
     }

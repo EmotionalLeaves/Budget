@@ -50,6 +50,7 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [x] (2.1.0) Welcome screen redesign
 - [ ] Redesign Bills, Goals, Settings and the detail sheet in the new style — *why: consistency*
 - [ ] Swipe actions on transactions (swipe to recategorize or tag) — *why: faster corrections*
+- [ ] Home layout editor: hide or reorder Home cards — *why: keep Home calm*
 
 ## 6. Performance and battery
 - [ ] Baseline profile for faster cold start — *why: opens instantly*
@@ -75,11 +76,14 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [ ] Budget templates (50/30/20, zero-based) in quick setup — *why: a starting point*
 - [x] (2.1.0) Merchant pages
 - [x] (2.2.0) Bill reminders
-- [ ] Spending challenges ("No eating out this week") with a streak — *why: motivation*
+- [x] (2.5.0) Spending challenges
 - [ ] Paycheck planner: split each paycheck into bills, budgets and savings — *why: give every dollar a job*
 - [x] (2.3.0) 50/30/20 template
 - [x] (2.3.0) Monthly recap card
 - [x] (2.4.0) Compared with leading apps: see "Compared with leading apps" below
+- [x] (2.5.0) Manual cash transactions; money health score
+- [ ] Edit manual transactions (amount, date) after adding — *why: fix typos*
+- [ ] Recurring income calendar (paydays) on the bill calendar — *why: see money in and out together*
 
 ## Compared with leading apps (2026-11-24)
 

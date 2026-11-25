@@ -109,7 +109,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
     suspend fun setNotificationsAsked() = dataStore.edit { it[NOTIFY_ASKED] = true }
     suspend fun setAppLock(on: Boolean) = dataStore.edit { it[APP_LOCK] = on }
     suspend fun setHideInRecents(on: Boolean) = dataStore.edit { it[HIDE_RECENTS] = on }
-    suspend fun setThemeMode(mode: Int) = dataStore.edit { it[THEME_MODE] = mode.coerceIn(0, 2) }
+    suspend fun setThemeMode(mode: Int) = dataStore.edit { it[THEME_MODE] = mode.coerceIn(0, 3) }
     suspend fun setDynamicColor(on: Boolean) = dataStore.edit { it[DYNAMIC_COLOR] = on }
     suspend fun setBudgetMode(mode: Int) = dataStore.edit { it[BUDGET_MODE] = mode.coerceIn(0, 1) }
     suspend fun setFlexBudget(minor: Long) = dataStore.edit { it[FLEX_BUDGET] = minor.coerceAtLeast(0) }

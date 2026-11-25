@@ -150,12 +150,18 @@ val LocalSproutColors = staticCompositionLocalOf {
 
 @Composable
 fun SproutTheme(themeMode: Int = 0, dynamicColor: Boolean = false, content: @Composable () -> Unit) {
-    val dark = when (themeMode) { 1 -> false; 2 -> true; else -> isSystemInDarkTheme() }
+    val dark = when (themeMode) { 1 -> false; 2, 3 -> true; else -> isSystemInDarkTheme() }
     val context = LocalContext.current
     val scheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         dark -> DarkColors
         else -> LightColors
+    }.let { s ->
+        // "Black": true black surfaces, kind to OLED screens and to your eyes at night.
+        if (themeMode == 3) s.copy(
+            background = Color.Black, surface = Color.Black, surfaceContainerLowest = Color.Black,
+            surfaceContainerLow = Color(0xFF0B0F0D), surfaceContainer = Color(0xFF101512), surfaceContainerHigh = Color(0xFF161C19),
+        ) else s
     }
     val semantic = if (dark) {
         SproutColors(

@@ -7,7 +7,7 @@
 Phase 2 – improve forever. v1.0.0 published.
 
 ## Current task
-Round 6 (must be bigger than 2.4.0). User (2026-11-24): each of the next 10 releases must be the biggest yet; one release per round (update + visuals + features); never stop.
+Round 7 (bigger than 2.5.0). User (2026-11-24): each of the next 10 releases must be the biggest yet (2.4.0 was #1, 2.5.0 #2); one release per round (update + visuals + features); never stop.
 
 ## v1.0 checklist (verified 2026-11-24)
 - [x] F1–F9 acceptance criteria pass, with unit tests where specified (core: token/URL/parser/client, 60+ categorization tests, budget math, alerts, recurring, CSV 6 formats + round trip; app: sync, categories, budgets, alerts, recurring, import, export, connect, 20k-row data).
@@ -22,21 +22,21 @@ Round 6 (must be bigger than 2.4.0). User (2026-11-24): each of the next 10 rele
 - [x] GitHub Release v1.0.0 published with the APK and marked latest (this push).
 
 ## Recent changes
-1. 2026-11-24 – v2.4.0 (round 5, competitor round): beta channel; reports, year in review; review inbox, flex budgeting, pace, planned expenses, age of money, price changes, receipts, watchlist, cost to be me (schema 6).
-2. 2026-11-24 – v2.3.0 (round 4): in-app PackageInstaller updates + pasted key + retry states; review/haptics/quick-setup visuals; 50/30/20, monthly recap.
-3. 2026-11-24 – v2.2.0 (round 3): Wi-Fi background update download + restart-safe ready state; category hero ring, bill cards, search pill; spending calendar, bill reminders.
-4. 2026-11-24 – v2.1.0 (round 2): update notifications + What's new + cleanup; redesigned welcome/sheet/budgets/goals/settings/empty states; Glance widget, merchant pages, debt planner.
-5. 2026-11-24 – v2.0.0 (round 1 of the overhaul): self-updater, new design system + Home, tags (schema 5), insights, net worth, year view, amount search, subscriptions total, CSV overflow fix.
-6. 2026-11-24 – v1.15.0: CSV comma decimals + bank Category column (CsvCategories); backlog refilled.
-7. 2026-11-24 – v1.14.0: category icons (CategoryIcons, TransactionRow.categoryIcon).
-8. 2026-11-24 – v1.13.0: battery-saver skip for periodic sync (SyncWorker.skipForBatterySaver + tests).
-9. 2026-11-24 – v1.12.1: Compose UI tests (CorrectionUiTest: budget dialog, split dialog, list row).
-10. 2026-11-24 – v1.12.0: split label in lists (TransactionRow.splitCount), rollover breakdown on category screen.
-11. 2026-11-24 – v1.11.1: split-aware everydaySpending query (forecast) + test.
-12. 2026-11-24 – v1.11.0: split transactions (Splits domain rules, transaction_splits table, MIGRATION_3_4, split-aware spending queries, backup).
-13. 2026-11-24 – v1.10.0: budget rollover (BudgetMath.rolloverCarry, budget_rollovers table, MIGRATION_2_3 + tests, backup support).
-14. 2026-11-24 – v1.9.1: SyncWorker tests (work-testing, worker test seam); certificate pinning decided against.
-15. 2026-11-24 – v1.9.0: purchase-date option (SyncMerger.usePurchaseDate, redatePosted DAO, tests); 10k merge test.
+1. 2026-11-24 – v2.5.0 (round 6): hands-free background installs, multi-version What's new; count-up amounts, skeletons, Black theme; manual cash transactions, challenges, money health.
+2. 2026-11-24 – v2.4.0 (round 5, competitor round): beta channel; reports, year in review; review inbox, flex budgeting, pace, planned expenses, age of money, price changes, receipts, watchlist, cost to be me (schema 6).
+3. 2026-11-24 – v2.3.0 (round 4): in-app PackageInstaller updates + pasted key + retry states; review/haptics/quick-setup visuals; 50/30/20, monthly recap.
+4. 2026-11-24 – v2.2.0 (round 3): Wi-Fi background update download + restart-safe ready state; category hero ring, bill cards, search pill; spending calendar, bill reminders.
+5. 2026-11-24 – v2.1.0 (round 2): update notifications + What's new + cleanup; redesigned welcome/sheet/budgets/goals/settings/empty states; Glance widget, merchant pages, debt planner.
+6. 2026-11-24 – v2.0.0 (round 1 of the overhaul): self-updater, new design system + Home, tags (schema 5), insights, net worth, year view, amount search, subscriptions total, CSV overflow fix.
+7. 2026-11-24 – v1.15.0: CSV comma decimals + bank Category column (CsvCategories); backlog refilled.
+8. 2026-11-24 – v1.14.0: category icons (CategoryIcons, TransactionRow.categoryIcon).
+9. 2026-11-24 – v1.13.0: battery-saver skip for periodic sync (SyncWorker.skipForBatterySaver + tests).
+10. 2026-11-24 – v1.12.1: Compose UI tests (CorrectionUiTest: budget dialog, split dialog, list row).
+11. 2026-11-24 – v1.12.0: split label in lists (TransactionRow.splitCount), rollover breakdown on category screen.
+12. 2026-11-24 – v1.11.1: split-aware everydaySpending query (forecast) + test.
+13. 2026-11-24 – v1.11.0: split transactions (Splits domain rules, transaction_splits table, MIGRATION_3_4, split-aware spending queries, backup).
+14. 2026-11-24 – v1.10.0: budget rollover (BudgetMath.rolloverCarry, budget_rollovers table, MIGRATION_2_3 + tests, backup support).
+15. 2026-11-24 – v1.9.1: SyncWorker tests (work-testing, worker test seam); certificate pinning decided against.
 
 ## Known issues
 - The repo is private, so GitHub Actions minutes are limited (2,000/month free). Keep pushes meaningful.

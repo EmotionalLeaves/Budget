@@ -47,7 +47,11 @@ fun WhatsNewAfterUpdate(updates: UpdateRepository) {
     val context = LocalContext.current
     var notes by remember { mutableStateOf<List<Changelog.Group>>(emptyList()) }
     LaunchedEffect(Unit) {
-        if (updates.consumeJustUpdatedFrom() != null) notes = bundledNotes(context)
+        val from = updates.consumeJustUpdatedFrom() ?: return@LaunchedEffect
+        val md = withContext(Dispatchers.IO) { runCatching { context.assets.open("CHANGELOG.md").bufferedReader().use { it.readText() } }.getOrDefault("") }
+        val all = Changelog.between(md, from, BuildConfig.VERSION_NAME)
+        // Several versions at once: each version's notes under its own heading.
+        notes = if (all.size <= 1) bundledNotes(context) else all.flatMap { (v, groups) -> listOf(Changelog.Group("Version $v", emptyList())) + groups }
     }
     if (notes.isEmpty()) return
     ModalBottomSheet(onDismissRequest = { notes = emptyList() }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
@@ -65,7 +69,9 @@ fun WhatsNewAfterUpdate(updates: UpdateRepository) {
 @Composable
 fun WhatsNewList(notes: List<Changelog.Group>) {
     notes.forEach { g ->
-        if (g.heading.isNotBlank()) Text(g.heading, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+        if (g.heading.isNotBlank()) Text(g.heading,
+            style = if (g.heading.startsWith("Version ")) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary)
         g.items.forEach { Text("• $it", style = MaterialTheme.typography.bodyMedium) }
     }
 }

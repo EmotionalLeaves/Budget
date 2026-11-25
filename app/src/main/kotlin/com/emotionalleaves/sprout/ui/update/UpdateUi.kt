@@ -164,6 +164,17 @@ fun UpdateSettings(updates: UpdateRepository, beta: Boolean = false, onBeta: (Bo
                 Text("Download updates on Wi-Fi in the background", Modifier.weight(1f))
                 Switch(checked = autoDl, enabled = auto, onCheckedChange = { scope.launch { updates.setAutoDownload(it) } })
             }
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                val autoIn by updates.autoInstall.collectAsState(initial = true)
+                Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Install updates by themselves")
+                        Text("After one update installed from Sprout, later ones install in the background.", style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Switch(checked = autoIn, enabled = auto && autoDl, onCheckedChange = { scope.launch { updates.setAutoInstall(it) } })
+                }
+            }
         }
         when (state) {
             UpdateState.Checking -> Text("Checking…", style = MaterialTheme.typography.bodySmall)

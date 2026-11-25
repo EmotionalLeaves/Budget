@@ -306,6 +306,7 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
             composable("inbox") { com.emotionalleaves.sprout.ui.transactions.InboxScreen(snackbar, onBack = { nav.popBackStack() }) }
             composable("reports") { com.emotionalleaves.sprout.ui.insights.ReportsScreen(onBack = { nav.popBackStack() }) }
             composable("year-review") { com.emotionalleaves.sprout.ui.insights.YearInReviewScreen(onBack = { nav.popBackStack() }) }
+            composable("challenges") { com.emotionalleaves.sprout.ui.challenge.ChallengesScreen(onBack = { nav.popBackStack() }) }
             composable("networth") { com.emotionalleaves.sprout.ui.insights.NetWorthScreen(onBack = { nav.popBackStack() }) }
             composable("year") { com.emotionalleaves.sprout.ui.insights.YearScreen(onBack = { nav.popBackStack() }, onCategory = { nav.navigate("category/$it") }) }
             composable("tags") { com.emotionalleaves.sprout.ui.tags.TagsScreen(onBack = { nav.popBackStack() }, onOpen = { nav.navigate("tag/$it") }) }

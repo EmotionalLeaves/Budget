@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.transactions
 
+import androidx.compose.material3.TextButton
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -208,6 +209,10 @@ fun TransactionDetailSheet(transactionId: String, onDismiss: () -> Unit, onMessa
             com.emotionalleaves.sprout.ui.tags.TransactionTags(vm.c, d.id)
             TransactionReceipts(vm.c, d.id)
             SwitchRow("Exclude from budget", d.excludedFromBudget) { vm.setExcluded(it) }
+            if (com.emotionalleaves.sprout.data.manual.ManualRepository.isManual(d.id)) {
+                TextButton(onClick = { scope.launch { vm.c.manualRepository.delete(d.id); vm.c.alertRepository.evaluateBudgets(); onDismiss() } },
+                    modifier = Modifier.heightIn(min = 48.dp)) { Text("Delete this transaction", color = MaterialTheme.colorScheme.error) }
+            }
             Text(" ", Modifier.heightIn(min = 16.dp))
         }
     }

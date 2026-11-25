@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -256,4 +257,25 @@ fun LineChart(values: List<Long>, color: Color, modifier: Modifier = Modifier) {
         drawPath(line, color, style = Stroke(3.dp.toPx(), cap = StrokeCap.Round))
         drawCircle(color, 5.dp.toPx(), pts[shown - 1])
     }
+}
+
+/** Money that counts up/down smoothly to a new value (the exact value once it settles). */
+@Composable
+fun animatedMoney(minor: Long, whole: Boolean = false): String {
+    val anim = remember { Animatable(minor.toFloat()) }
+    LaunchedEffect(minor) { anim.animateTo(minor.toFloat(), tween(700, easing = FastOutSlowInEasing)) }
+    val shown = if (anim.isRunning) kotlin.math.round(anim.value).toLong() else minor
+    return money(shown, whole)
+}
+
+/** Soft pulsing placeholder blocks while the first data loads. */
+@Composable
+fun SkeletonBlock(height: Dp, modifier: Modifier = Modifier) {
+    val t = androidx.compose.animation.core.rememberInfiniteTransition(label = "skeleton")
+    val a by t.animateFloat(
+        0.35f, 0.75f,
+        androidx.compose.animation.core.infiniteRepeatable(tween(800), androidx.compose.animation.core.RepeatMode.Reverse), label = "pulse",
+    )
+    Box(modifier.fillMaxWidth().height(height).padding(horizontal = 16.dp, vertical = 6.dp).clip(RoundedCornerShape(24.dp))
+        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = a)))
 }

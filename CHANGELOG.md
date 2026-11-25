@@ -2,7 +2,25 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
-## [2.4.0] - 2026-11-24
+## [2.5.0] - 2026-11-24
+
+Round 6, bigger again.
+
+### Auto-update
+- **Hands-free updates** (Android 12 and later): with the update key saved and "Install updates by themselves" on, Sprout downloads new versions on Wi-Fi and installs them in the background. You get a "Sprout updated" note afterwards. If Android ever needs a tap, a notification lets you finish in one.
+- Skipped a few versions? "What's new" now lists every version you missed, each under its own heading.
+
+### New look
+- Big amounts count up smoothly when they change.
+- Home shows soft placeholders while it loads instead of a blank screen.
+- A new **Black** theme (Settings → Appearance), easy on OLED screens and on your eyes at night.
+
+### New features
+- **Add transactions by hand**: the new "Add" button on Activity records cash spending (or money in) with amount, what it was, category, date and a note. It goes into a "Cash" wallet whose balance Sprout keeps. You can delete these entries; bank transactions stay as the bank sent them.
+- **Challenges**: start "No eating out for 7 days", "Groceries under $100 this week", "3 no-spend days this week" or your own, and watch the progress on Home. Win, or try again.
+- **Money health score** on Home: a 0–100 guide made of your savings rate, emergency fund (months of spending in cash), Age of Money and budget pace, each with a tip. Tap it for the breakdown.
+
+ - 2026-11-24
 
 Round 5, the biggest yet: the best ideas from the leading budgeting apps (YNAB, Monarch, Copilot, Rocket Money, PocketGuard), done Sprout's way: private, read-only, on your phone.
 

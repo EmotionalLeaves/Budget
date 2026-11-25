@@ -26,5 +26,14 @@ object Changelog {
         return groups
     }
 
+    /** Every version after [from] up to and including [to], newest first: for "What's new" after skipping versions. */
+    fun between(markdown: String, from: String, to: String): List<Pair<String, List<Group>>> =
+        Regex("""^## \[([0-9][0-9.]*)]""", RegexOption.MULTILINE).findAll(markdown).map { it.groupValues[1] }
+            .filter { v -> UpdateCheck.isNewer(v, from) && !UpdateCheck.isNewer(v, to) }
+            .take(10)
+            .map { it to section(markdown, it) }
+            .filter { it.second.isNotEmpty() }
+            .toList()
+
     private fun clean(s: String) = s.replace("**", "").replace("`", "").trim()
 }

@@ -136,6 +136,26 @@ class AndroidNotifier(private val context: Context) : Notifier {
         }
     }
 
+    /** "Tap to finish updating Sprout": wraps Android's install confirmation for when it can't open by itself. */
+    fun showFinishInstall(confirm: Intent): Boolean {
+        if (!canPost()) return false
+        val id = "finish-install".hashCode()
+        val pending = PendingIntent.getActivity(context, id, confirm, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        val n = NotificationCompat.Builder(context, CH_UPDATES)
+            .setSmallIcon(R.drawable.ic_stat_sprout)
+            .setContentTitle("Tap to finish updating Sprout")
+            .setContentText("The new version is downloaded. One tap to install; your data stays.")
+            .setContentIntent(pending)
+            .setAutoCancel(true)
+            .build()
+        return try {
+            NotificationManagerCompat.from(context).notify(id, n)
+            true
+        } catch (e: SecurityException) {
+            false
+        }
+    }
+
     /** "Sprout updated to X · tap to open" right after an in-app update installs. */
     fun showUpdated(version: String): Boolean {
         if (!canPost()) return false

@@ -98,7 +98,7 @@ fun SafeToSpendHero(m: BudgetMonth?, netWorthMinor: Long, onSetBudget: () -> Uni
     HeroCard(c.hero, onClick = if (safe != null) ({ breakdown = true }) else null) {
         if (m == null || safe == null) {
             Text("Total balance", style = MaterialTheme.typography.labelLarge, color = c.onHero.copy(alpha = 0.8f))
-            Text(money(netWorthMinor), style = MaterialTheme.typography.displayMedium, color = c.onHero)
+            Text(com.emotionalleaves.sprout.ui.common.animatedMoney(netWorthMinor), style = MaterialTheme.typography.displayMedium, color = c.onHero)
             Text("Set budgets to see what's safe to spend each day.", style = MaterialTheme.typography.bodyMedium, color = c.onHero.copy(alpha = 0.85f))
             Spacer(Modifier.size(4.dp))
             Button(
@@ -112,7 +112,7 @@ fun SafeToSpendHero(m: BudgetMonth?, netWorthMinor: Long, onSetBudget: () -> Uni
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text("Safe to spend", style = MaterialTheme.typography.labelLarge, color = c.onHero.copy(alpha = 0.8f))
                     Text(
-                        money(safe.amountMinor),
+                        com.emotionalleaves.sprout.ui.common.animatedMoney(safe.amountMinor),
                         style = MaterialTheme.typography.displayMedium,
                         color = if (safe.amountMinor < 0) Color(0xFFFFB4A9) else c.onHero,
                         maxLines = 1,
@@ -278,7 +278,7 @@ fun FlexHero(fx: com.emotionalleaves.sprout.data.budget.FlexState) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text("Safe to spend · Flex", style = MaterialTheme.typography.labelLarge, color = c.onHero.copy(alpha = 0.8f))
-                Text(money(m.safeMinor), style = MaterialTheme.typography.displayMedium, color = if (m.safeMinor < 0) Color(0xFFFFB4A9) else c.onHero, maxLines = 1)
+                Text(com.emotionalleaves.sprout.ui.common.animatedMoney(m.safeMinor), style = MaterialTheme.typography.displayMedium, color = if (m.safeMinor < 0) Color(0xFFFFB4A9) else c.onHero, maxLines = 1)
                 m.perDayMinor?.let { Text("≈ ${money(it)} a day", style = MaterialTheme.typography.titleMedium, color = c.onHero) }
                 Text("${money(m.flexSpentMinor)} of ${money(m.flexBudgetMinor)} flex spent", style = MaterialTheme.typography.bodySmall, color = c.onHero.copy(alpha = 0.8f))
             }
@@ -335,7 +335,7 @@ fun WatchStrip(items: List<Triple<String, String, Long>>, navigate: (String) -> 
 @Composable
 fun QuickLinks(navigate: (String) -> Unit) {
     LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        val links = listOf("Reports" to "reports", "Year in review" to "year-review", "Net worth" to "networth", "Tags" to "tags", "Debt plan" to "debt", "Goals" to "goals")
+        val links = listOf("Challenges" to "challenges", "Reports" to "reports", "Year in review" to "year-review", "Net worth" to "networth", "Tags" to "tags", "Debt plan" to "debt", "Goals" to "goals")
         items(links, key = { it.second }) { (label, route) ->
             androidx.compose.material3.AssistChip(onClick = { navigate(route) }, label = { Text(label) }, modifier = Modifier.heightIn(min = 44.dp))
         }

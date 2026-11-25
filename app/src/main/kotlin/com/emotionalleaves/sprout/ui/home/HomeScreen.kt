@@ -100,12 +100,20 @@ fun HomeScreen(
     val flex by vm.flex.collectAsStateWithLifecycle()
     val age by vm.ageOfMoney.collectAsStateWithLifecycle()
     val watch by vm.watch.collectAsStateWithLifecycle()
+    val health by vm.health.collectAsStateWithLifecycle()
+    val challenges by vm.challenges.collectAsStateWithLifecycle()
     val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
     val hidden by vm.privacy.collectAsStateWithLifecycle()
     androidx.compose.runtime.CompositionLocalProvider(com.emotionalleaves.sprout.ui.common.LocalHideAmounts provides hidden) {
     PullToRefreshBox(isRefreshing = syncing, onRefresh = vm::syncNow, modifier = Modifier.fillMaxSize()) {
         LazyColumn(Modifier.fillMaxSize()) {
             item { HomeHeader(hidden, vm::togglePrivacy) }
+            if (!state.loaded) {
+                item { com.emotionalleaves.sprout.ui.common.SkeletonBlock(190.dp) }
+                item { com.emotionalleaves.sprout.ui.common.SkeletonBlock(84.dp) }
+                item { com.emotionalleaves.sprout.ui.common.SkeletonBlock(170.dp) }
+                return@LazyColumn
+            }
             crash?.let { report ->
                 item {
                     CrashCard(
@@ -172,6 +180,10 @@ fun HomeScreen(
             if (inbox > 0) item { com.emotionalleaves.sprout.ui.transactions.InboxCard(inbox) { navigate("inbox") } }
             recap?.let { r -> item { com.emotionalleaves.sprout.ui.insights.RecapCard(r, vm::dismissRecap) } }
             item { StatsRow(state.totals.totalMinor, outlook?.trend, outlook?.forecast?.endMinor, onNetWorth) }
+            health?.let { h -> item { com.emotionalleaves.sprout.ui.challenge.HealthCard(h) } }
+            challenges.firstOrNull { it.status == com.emotionalleaves.sprout.domain.challenge.ChallengeStatus.ON_TRACK }?.let { p ->
+                item { com.emotionalleaves.sprout.ui.challenge.ChallengeCard(p, onClick = { navigate("challenges") }) }
+            }
             age?.let { a -> item { AgeOfMoneyRow(a) } }
             if (watch.isNotEmpty()) {
                 item { com.emotionalleaves.sprout.ui.common.SectionHeader("Watching") }

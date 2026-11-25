@@ -50,7 +50,12 @@ class UpdateInstallReceiver : BroadcastReceiver() {
                 @Suppress("DEPRECATION")
                 val confirm = if (Build.VERSION.SDK_INT >= 33) intent.getParcelableExtra(Intent.EXTRA_INTENT, Intent::class.java)
                 else intent.getParcelableExtra(Intent.EXTRA_INTENT)
-                confirm?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)?.let { runCatching { context.startActivity(it) } }
+                confirm?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)?.let { c ->
+                    // In the foreground this opens Android's confirmation over Sprout; from the background Android
+                    // may block it, so a notification lets you finish with one tap.
+                    runCatching { context.startActivity(c) }
+                    (context.applicationContext as SproutApp).container.notifier.showFinishInstall(c)
+                }
             }
             PackageInstaller.STATUS_SUCCESS -> Unit // Android restarts Sprout's process; MyPackageReplacedReceiver takes over.
             else -> updates.installFailed()

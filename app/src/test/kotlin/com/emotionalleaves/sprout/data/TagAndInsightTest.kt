@@ -166,4 +166,40 @@ class TagAndInsightTest {
         assertEquals(java.time.YearMonth.of(2026, 11), y.priciestMonth?.first)
         assertTrue(repo.watch(setOf("c:$rent", "m:TARGET")).isNotEmpty())
     }
+
+    @Test fun manualCashTransactions() = runBlocking {
+        val m = com.emotionalleaves.sprout.data.manual.ManualRepository(env.db, env.clock) { zone }
+        env.repo().ensureSeeded()
+        val cash = m.ensureCashAccount()
+        assertEquals(cash, m.ensureCashAccount()) // made once
+        val cat = env.db.categories().getByKey(DefaultCategories.EATING_OUT)!!.id
+        val id = m.add(cash, -1_250, "Farmers market", cat, java.time.LocalDate.of(2026, 11, 23), "tomatoes")
+        m.add(cash, 5_000, "", env.db.categories().getByKey(DefaultCategories.INCOME)!!.id, java.time.LocalDate.of(2026, 11, 22), null)
+        assertEquals(3_750L, env.db.accounts().getAll().single { it.id == cash }.balanceMinor)
+        val tx = env.db.transactions().getById(id)!!
+        assertEquals("tomatoes", tx.note)
+        assertTrue(tx.reviewedAt != null)
+        assertTrue(m.delete(id))
+        assertEquals(5_000L, env.db.accounts().getAll().single { it.id == cash }.balanceMinor)
+        // Synced transactions can't be deleted here.
+        sync(Triple("1", "KROGER|-10.00", at(11, 2)))
+        val synced = env.db.backup().transactions().first { it.description == "KROGER" }.id
+        assertTrue(!m.delete(synced))
+    }
+
+    @Test fun challengesAndHealth() = runBlocking {
+        sync(Triple("1", "ACME PAYROLL|3000.00", at(10, 1)), Triple("2", "TARGET|-200.00", at(10, 15)), Triple("3", "PIZZA HUT|-20.00", at(11, 23)))
+        val ch = com.emotionalleaves.sprout.data.challenge.ChallengeRepository(env.context, env.db) { zone }
+        env.db.categories().getAll().forEach { }
+        val eating = env.db.backup().transactions().first { it.description.startsWith("PIZZA") }.categoryId
+        ch.add(com.emotionalleaves.sprout.domain.challenge.ChallengeType.NO_SPEND_CATEGORY, "No pizza", 7, eating)
+        val p = ch.progress(java.time.LocalDate.of(2026, 11, 24)).first { it.challenge.title == "No pizza" }
+        assertEquals(com.emotionalleaves.sprout.domain.challenge.ChallengeStatus.ON_TRACK, p.status)
+        val missed = ch.progress(java.time.LocalDate.of(2026, 11, 24)).first { it.challenge.title == "No pizza" }
+        assertEquals(1, missed.daysIn)
+        ch.remove(p.challenge.id)
+        assertTrue(ch.progress().none { it.challenge.title == "No pizza" })
+        val h = InsightsRepository(env.db, env.clock) { zone }.health()
+        assertTrue(h.score != null && h.parts.any { it.name == "Savings rate" })
+    }
 }

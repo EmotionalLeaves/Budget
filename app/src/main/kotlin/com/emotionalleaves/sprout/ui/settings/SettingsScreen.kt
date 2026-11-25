@@ -146,6 +146,7 @@ fun SettingsScreen(
 
     LazyColumn(Modifier.fillMaxSize()) {
         item { SectionTitle("Explore") }
+        item { NavRow("Challenges", "Small spending challenges, like no eating out for a week", { onRoute("challenges") }) }
         item { NavRow("Reports", "Cash flow, spending by category and by account, any range", { onRoute("reports") }) }
         item { NavRow("Year in review", "Your year's totals, top categories and places", { onRoute("year-review") }) }
         item { NavRow("Net worth over time", "How your total has changed month by month", { onRoute("networth") }) }
@@ -295,11 +296,11 @@ fun SettingsScreen(
             Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("Theme", style = MaterialTheme.typography.labelLarge)
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                    listOf("Phone", "Light", "Dark").forEachIndexed { i, label ->
+                    listOf("Phone", "Light", "Dark", "Black").forEachIndexed { i, label ->
                         SegmentedButton(
                             selected = state.settings.themeMode == i,
                             onClick = { vm.setThemeMode(i) },
-                            shape = androidx.compose.material3.SegmentedButtonDefaults.itemShape(i, 3),
+                            shape = androidx.compose.material3.SegmentedButtonDefaults.itemShape(i, 4),
                         ) { Text(label) }
                     }
                 }

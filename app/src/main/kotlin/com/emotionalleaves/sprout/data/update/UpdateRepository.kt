@@ -99,6 +99,9 @@ class UpdateRepository(
     /** Download new versions in the background on Wi-Fi (or any unmetered network), so they're ready to install. */
     val autoDownload = context.updateStore.data.map { it[AUTO_DOWNLOAD] ?: true }
     suspend fun setAutoDownload(on: Boolean) { context.updateStore.edit { it[AUTO_DOWNLOAD] = on } }
+    /** Android 12+: install a background-downloaded update by itself (no taps once Sprout installed an update before). */
+    val autoInstall = context.updateStore.data.map { it[AUTO_INSTALL] ?: true }
+    suspend fun setAutoInstall(on: Boolean) { context.updateStore.edit { it[AUTO_INSTALL] = on } }
     val hasKey: Boolean get() = _hasKey.value
 
     suspend fun setAutoCheck(on: Boolean) { context.updateStore.edit { it[AUTO] = on } }
@@ -270,6 +273,7 @@ class UpdateRepository(
         private val DISMISSED = stringPreferencesKey("dismissed_version")
         private val NOTIFIED = stringPreferencesKey("notified_version")
         private val AUTO_DOWNLOAD = booleanPreferencesKey("auto_download")
+        private val AUTO_INSTALL = booleanPreferencesKey("auto_install")
         private val READY_VERSION = stringPreferencesKey("ready_version")
         private val READY_NOTES = stringPreferencesKey("ready_notes")
         private val LAST_SEEN = stringPreferencesKey("last_seen_version")

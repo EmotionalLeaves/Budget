@@ -1,5 +1,8 @@
 package com.emotionalleaves.sprout.ui.transactions
 
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.zIndex
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.runtime.LaunchedEffect
 import com.emotionalleaves.sprout.ui.common.showUndoable
 import androidx.compose.foundation.background
@@ -150,7 +153,16 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
     openId?.let { id ->
         TransactionDetailSheet(id, onDismiss = { openId = null }, onMessage = { msg, undo -> scope.showUndoable(snackbar, msg, undo) })
     }
+    var adding by rememberSaveable { mutableStateOf(false) }
+    if (adding) AddTransactionSheet(onDismiss = { adding = false }, onAdded = { adding = false; scope.launch { snackbar.showSnackbar("Added") } })
 
+    Box(Modifier.fillMaxSize()) {
+    androidx.compose.material3.ExtendedFloatingActionButton(
+        onClick = { adding = true },
+        icon = { Icon(androidx.compose.material.icons.Icons.Rounded.Add, contentDescription = null) },
+        text = { Text("Add") },
+        modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp).zIndex(1f),
+    )
     Column(Modifier.fillMaxSize()) {
         OutlinedTextField(
             value = filter.query,
@@ -247,6 +259,7 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
                 DayHeader(Format.dayHeader(d, today))
             }
         }
+    }
     }
 }
 
