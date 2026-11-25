@@ -54,6 +54,7 @@ class AppContainer(context: Context) {
     private val postSync = object : AlertSink {
         override suspend fun afterSync(newOutflowIds: List<String>, problems: List<SyncProblem>) {
             runCatching { recurringRepository.detect() }
+            runCatching { tagRepository.applyRulesToNew() }
             alertRepository.afterSync(newOutflowIds, problems)
             com.emotionalleaves.sprout.widget.SafeToSpendWidget.refresh(appContext)
             com.emotionalleaves.sprout.widget.BudgetsWidget.refresh(appContext)
@@ -73,6 +74,7 @@ class AppContainer(context: Context) {
     val dataManager = DataManager(appContext, db, settings, secureStore, syncRepository)
     val importRepository = ImportRepository(db, clock, afterImport = {
         recurringRepository.detect()
+        runCatching { tagRepository.applyRulesToNew() }
         alertRepository.evaluateBudgets()
     })
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)

@@ -2,6 +2,30 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.8.0] - 2026-11-24
+
+Round 9 — the biggest yet.
+
+### Auto-update
+- **Update while charging**: on the update card tap "While charging" and Sprout downloads and installs the new version by itself the next time your phone is plugged in (no tap needed on Android 12+).
+- Sprout now checks for updates **twice a day** instead of once, so fixes reach you the same day.
+- The install step says plainly that a safety copy of your data is saved first.
+
+### New look
+- **Swipe actions in Activity**: swipe a transaction right to change its category, or left to leave it out of budgets (swipe again to count it back). Both have Undo, and the row always springs back, so a stray swipe never loses anything.
+- A small celebration when your review inbox reaches zero.
+- New **Until payday** card on Home (turn it off in Customize Home).
+
+### New features
+- **Until payday** (paycheck planner): cash now, minus the bills due before your next paycheck, shown as "$X a day" until payday — or "Short $X" in red if the bills won't fit. Tap the card to see each bill.
+- **Rules by amount**: keyword rules can have "at least" and "at most" amounts. Example: Venmo $500 or more → Rent, every other Venmo → Transfers.
+- **Auto-tag rules**: Tags → Auto-tag. "Everything containing DELTA gets #Travel" — tags your old transactions right away, and new ones after every sync or import. Removing a tag from one transaction by hand sticks.
+- **Live preview** while you write a rule: "Matches 14 transactions" updates as you type.
+- **Backup reminder**: a calm Home card a week after you start (then monthly) offering to save an encrypted backup somewhere off the phone. "In 2 weeks" snoozes it.
+
+### Data safety
+- Database version 8 adds two optional amount columns to rules (your existing rules keep matching any amount) and a table for auto-tag rules. Updating keeps all your data (tested from every earlier version). Backups include both.
+
 ## [2.7.0] - 2026-11-24
 
 Round 8.
@@ -19,7 +43,7 @@ Round 8.
 ### Data safety
 - Database version 7 adds one table for your merchant names. Updating keeps all your data (tested from every earlier version). Backups include merchant names.
 
- - 2026-11-24
+## [2.6.0] - 2026-11-24
 
 Round 7.
 

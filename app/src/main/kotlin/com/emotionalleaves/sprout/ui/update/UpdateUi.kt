@@ -64,6 +64,7 @@ fun UpdateCard(updates: UpdateRepository) {
     }
 }
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun UpdateBody(updates: UpdateRepository, state: UpdateState, showLater: Boolean) {
     val context = LocalContext.current
@@ -80,8 +81,19 @@ private fun UpdateBody(updates: UpdateRepository, state: UpdateState, showLater:
                     Text("%.1f MB download".format(state.release.sizeBytes / 1_048_576.0), style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { scope.launch { updates.download(state.release) } }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Update") }
+                var queued by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+                if (queued) {
+                    Text("Sprout will update itself the next time your phone is charging. Nothing else to do.",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                }
+                androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { scope.launch { updates.download(state.release) } }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Update now") }
+                    if (updates.hasKey && !queued) {
+                        OutlinedButton(onClick = {
+                            com.emotionalleaves.sprout.work.UpdateWhenChargingWorker.schedule(context)
+                            queued = true
+                        }, modifier = Modifier.heightIn(min = 48.dp)) { Text("While charging") }
+                    }
                     if (showLater) TextButton(onClick = { scope.launch { updates.dismiss(state.release.version) } }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Later") }
                 }
             }
@@ -103,7 +115,8 @@ private fun UpdateBody(updates: UpdateRepository, state: UpdateState, showLater:
                     OutlinedButton(onClick = { open(context, updates.unknownSourcesIntent()) }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Allow updates") }
                 }
                 Button(onClick = { installNow(context, updates, state.file) }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Install") }
-                Text("Your data stays: the update installs over this version.", style = MaterialTheme.typography.labelSmall)
+                Text("Your data stays: the update installs over this version, and a safety copy is saved first (Settings → Backup).",
+                    style = MaterialTheme.typography.labelSmall)
             }
             is UpdateState.OpenReleasesPage -> {
                 Text(

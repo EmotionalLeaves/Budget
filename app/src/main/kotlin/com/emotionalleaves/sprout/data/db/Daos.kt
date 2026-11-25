@@ -278,6 +278,8 @@ data class RuleRow(
     val categoryName: String,
     val categoryColor: Int,
     val origin: RuleOrigin,
+    val minAbsMinor: Long? = null,
+    val maxAbsMinor: Long? = null,
 )
 
 @Dao
@@ -292,7 +294,8 @@ interface MerchantRuleDao {
     @Query("DELETE FROM merchant_rules WHERE id = :id") suspend fun delete(id: Long)
     @Query(
         """
-        SELECT r.id, r.matchType, r.pattern, r.categoryId, c.name AS categoryName, c.colorArgb AS categoryColor, r.origin
+        SELECT r.id, r.matchType, r.pattern, r.categoryId, c.name AS categoryName, c.colorArgb AS categoryColor, r.origin,
+            r.minAbsMinor, r.maxAbsMinor
         FROM merchant_rules r JOIN categories c ON c.id = r.categoryId
         ORDER BY r.matchType, r.pattern
         """,
@@ -611,6 +614,13 @@ interface TagDao {
     fun observeFor(transactionId: String): Flow<List<TagEntity>>
 
     @Insert suspend fun insert(tag: TagEntity): Long
+    @Query("SELECT * FROM tag_rules ORDER BY pattern") fun observeRules(): Flow<List<TagRuleEntity>>
+    @Query("SELECT * FROM tag_rules") suspend fun rules(): List<TagRuleEntity>
+    @Insert suspend fun insertRule(rule: TagRuleEntity): Long
+    @Query("DELETE FROM tag_rules WHERE id = :id") suspend fun deleteRule(id: Long)
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putRules(items: List<TagRuleEntity>)
+    @Query("DELETE FROM tag_rules") suspend fun wipeRules()
+    @Query("SELECT id, description, merchantKey FROM transactions WHERE updatedAt >= :since") suspend fun tagInputs(since: Long = 0): List<TagInput>
     @Query("UPDATE tags SET name = :name WHERE id = :id") suspend fun rename(id: Long, name: String)
     @Query("DELETE FROM tags WHERE id = :id") suspend fun delete(id: Long)
 
@@ -713,3 +723,5 @@ interface MerchantNameDao {
 }
 
 data class AmountAt(val amountMinor: Long, val occurredAt: Long)
+
+data class TagInput(val id: String, val description: String, val merchantKey: String)

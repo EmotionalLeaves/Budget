@@ -62,6 +62,37 @@ class TagAndInsightTest {
         assertEquals(0, env.db.backup().transactionTags().size)
     }
 
+    @Test fun autoTagRulesTagOldAndNewTransactions() = runBlocking {
+        sync(Triple("1", "DELTA AIR 0061|-300.00", at(11, 5)), Triple("2", "KROGER|-10.00", at(11, 6)))
+        val repo = TagRepository(env.db, env.clock)
+        val travel = repo.getOrCreate("Travel")!!
+        assertEquals(null, repo.addRule("x", travel))
+        assertEquals(1, repo.addRule("delta", travel))
+        sync(Triple("1", "DELTA AIR 0061|-300.00", at(11, 5)), Triple("3", "DELTA AIR 0099|-150.00", at(11, 20)))
+        repo.applyRulesToNew()
+        val tagged = env.db.backup().transactionTags().map { it.transactionId }.toSet()
+        val ids = env.db.backup().transactions().associate { it.description to it.id }
+        assertEquals(setOf(ids.getValue("DELTA AIR 0061"), ids.getValue("DELTA AIR 0099")), tagged)
+        assertEquals(1, env.db.tags().rules().size)
+        repo.delete(travel)
+        assertEquals(0, env.db.tags().rules().size) // rules go with their tag
+    }
+
+    @Test fun amountRulesSplitOneMerchantIntoTwoCategories() = runBlocking {
+        sync(Triple("1", "VENMO PAYMENT LANDLORD|-1200.00", at(11, 1)), Triple("2", "VENMO PAYMENT SAM|-20.00", at(11, 2)))
+        val cats = com.emotionalleaves.sprout.data.categories.CategoryRepository(env.db, env.clock)
+        val rent = env.db.categories().getAll().first { it.key == DefaultCategories.RENT }.id
+        assertEquals(1, cats.previewContains("venmo", 50_000, null))
+        assertEquals(2, cats.previewContains("venmo", null, null))
+        assertEquals(1, TagRepository(env.db, env.clock).previewRule("landlord"))
+        cats.addContainsRule("venmo", rent, minAbsMinor = 50_000)
+        val byDesc = env.db.backup().transactions().associate { it.description to it.categoryId }
+        assertEquals(rent, byDesc["VENMO PAYMENT LANDLORD"])
+        assertTrue(byDesc["VENMO PAYMENT SAM"] != rent)
+        val row = env.db.merchantRules().getAll().single()
+        assertEquals(50_000L, row.minAbsMinor)
+    }
+
     @Test fun insightsNetWorthYearAndSubscriptions() = runBlocking {
         sync(
             Triple("1", "ACME PAYROLL|2000.00", at(11, 1)),

@@ -18,7 +18,7 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [x] (1.1.0) FLAG_SECURE option to hide Sprout from screenshots and the recent-apps preview — *why: amounts visible in the app switcher*
 - [x] (1.2.0) Local encrypted backup and restore to a user-chosen file (password-protected) — *why: survive a phone change without cloud backup*
 - [x] (1.9.1) Certificate pinning: decided against (see README Assumptions); system-only trust anchors stay
-- [ ] Automatic encrypted backup reminder (monthly nudge, never automatic upload) — *why: phone loss is the main data risk*
+- [x] (2.8.0) Automatic encrypted backup reminder (monthly nudge, never automatic upload) — *why: phone loss is the main data risk*
 
 ## 3. Sync reliability
 - [x] (0.2.0/0.6.0) Per-connection problems on Home with a "Fix in Bridge" link — *why: quicker diagnosis*
@@ -49,7 +49,7 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [x] (2.0.0) Search by amount
 - [x] (2.1.0) Welcome screen redesign
 - [ ] Redesign Bills, Goals, Settings and the detail sheet in the new style — *why: consistency*
-- [ ] Swipe actions on transactions (swipe to recategorize or tag) — *why: faster corrections*
+- [x] (2.8.0) Swipe actions on transactions (swipe to recategorize or tag) — *why: faster corrections*
 - [x] (2.6.0) Customize Home (hide cards)
 
 ## 6. Performance and battery
@@ -77,7 +77,7 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [x] (2.1.0) Merchant pages
 - [x] (2.2.0) Bill reminders
 - [x] (2.5.0) Spending challenges
-- [ ] Paycheck planner: split each paycheck into bills, budgets and savings — *why: give every dollar a job*
+- [x] (2.8.0) Paycheck planner: split each paycheck into bills, budgets and savings — *why: give every dollar a job*
 - [x] (2.3.0) 50/30/20 template
 - [x] (2.3.0) Monthly recap card
 - [x] (2.4.0) Compared with leading apps: see "Compared with leading apps" below
@@ -85,7 +85,8 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [x] (2.6.0) Edit manual transactions
 - [x] (2.6.0) Paydays on the bill calendar
 - [x] (2.7.0) Merchant renaming; pre-update snapshots; budgets widget; day totals
-- [ ] Auto-tag rules (a rule can add a tag, e.g. everything at Delta → #Travel) — *why: less manual tagging*
+- [x] (2.8.0) Rules by amount (keyword rules with at-least/at-most)
+- [x] (2.8.0) Auto-tag rules (a rule can add a tag, e.g. everything at Delta → #Travel) — *why: less manual tagging*
 - [ ] Rule by amount (e.g. Venmo over $500 → Rent) — *why: smarter categorizing*
 - [ ] Demo mode with sample data (Copilot) — *why: explore before connecting*
 
@@ -106,3 +107,6 @@ What the leaders do well, and what Sprout takes from it. Never copied: anything 
 - [x] (2.4.0) Beta channel for updates: opt in to newer test builds
 - [ ] Demo mode (Copilot): explore Sprout with sample data before connecting
 - [x] (2.4.0) Cost to be me (YNAB): your total monthly obligations (bills + budgets) in one number
+- [ ] Update while charging: show "scheduled" state across restarts (WorkManager info) — *why: clarity*
+- [ ] Payday planner: let the user pick which income is "payday" when several repeat — *why: accuracy*
+- [ ] Demo mode with sample data for first-run exploration — *why: see the app before connecting*

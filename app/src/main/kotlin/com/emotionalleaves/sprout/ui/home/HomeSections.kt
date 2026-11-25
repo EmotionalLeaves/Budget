@@ -347,7 +347,7 @@ fun QuickLinks(navigate: (String) -> Unit) {
 /** The Home cards you can hide, in the order they appear. */
 val HomeCards = listOf(
     "stats" to "Quick stats", "health" to "Money health", "challenge" to "Challenge", "age" to "Age of money", "watch" to "Watchlist",
-    "links" to "Shortcuts", "insights" to "Insights", "forecast" to "Month-end forecast", "where" to "Where it went", "months" to "Last 6 months",
+    "links" to "Shortcuts", "insights" to "Insights", "payday" to "Until payday", "forecast" to "Month-end forecast", "where" to "Where it went", "months" to "Last 6 months",
     "calendar" to "Spending calendar", "bills" to "Coming up", "goals" to "Savings goals", "accounts" to "Accounts",
 )
 
@@ -370,4 +370,72 @@ fun CustomizeHomeDialog(hidden: Set<String>, onToggle: (String, Boolean) -> Unit
         },
         confirmButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Done") } },
     )
+}
+
+/** "Until payday": cash now, bills due before the next paycheck, and what's left per day. Tap for the bill list. */
+@Composable
+fun PaydayCard(p: com.emotionalleaves.sprout.domain.forecast.PaydayPlan) {
+    var open by remember { mutableStateOf(false) }
+    val colors = com.emotionalleaves.sprout.ui.theme.LocalSproutColors.current
+    com.emotionalleaves.sprout.ui.common.SoftCard(onClick = { open = !open }) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Until payday", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    if (p.short) "Short " + com.emotionalleaves.sprout.ui.common.money(-p.leftMinor, whole = true)
+                    else com.emotionalleaves.sprout.ui.common.money(p.perDayMinor, whole = true) + " a day",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = if (p.short) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    "${p.daysUntil} day${if (p.daysUntil == 1) "" else "s"} to ${p.payName} on " +
+                        p.payday.format(java.time.format.DateTimeFormatter.ofPattern("EEE, MMM d")),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            com.emotionalleaves.sprout.ui.common.ProgressRing(
+                fraction = if (p.cashMinor <= 0) 1f else (p.billsMinor.toFloat() / p.cashMinor).coerceIn(0f, 1f),
+                color = if (p.short) MaterialTheme.colorScheme.error else colors.income,
+                track = MaterialTheme.colorScheme.surfaceVariant,
+                modifier = Modifier.size(56.dp),
+                stroke = 6.dp,
+            ) { Text("${p.daysUntil}d", style = MaterialTheme.typography.labelLarge) }
+        }
+        androidx.compose.animation.AnimatedVisibility(open) {
+            Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                PaydayLine("Cash now", p.cashMinor)
+                p.bills.forEach { b -> PaydayLine(b.name + " · " + b.date.format(java.time.format.DateTimeFormatter.ofPattern("MMM d")), -kotlin.math.abs(b.amountMinor)) }
+                androidx.compose.material3.HorizontalDivider()
+                PaydayLine("Left until payday", p.leftMinor, bold = true)
+                Text("Bills come from the ones Sprout found repeating. Payday's own bills come out of the new paycheck.",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PaydayLine(label: String, minor: Long, bold: Boolean = false) {
+    Row(Modifier.fillMaxWidth()) {
+        Text(label, Modifier.weight(1f), style = if (bold) MaterialTheme.typography.titleSmall else MaterialTheme.typography.bodyMedium)
+        Text(com.emotionalleaves.sprout.ui.common.money(minor), style = if (bold) MaterialTheme.typography.titleSmall else MaterialTheme.typography.bodyMedium)
+    }
+}
+
+/** A calm monthly nudge to save an encrypted backup file somewhere outside the phone. */
+@Composable
+fun BackupNudge(lastAt: Long?, onBackup: () -> Unit, onLater: () -> Unit) {
+    com.emotionalleaves.sprout.ui.common.SoftCard {
+        Text("Back up your budget", style = MaterialTheme.typography.titleSmall)
+        Text(
+            if (lastAt == null) "Save an encrypted copy to Drive or your Files, so a lost phone doesn't mean lost history."
+            else "Your last backup was ${java.time.Instant.ofEpochSecond(lastAt).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+                .format(java.time.format.DateTimeFormatter.ofPattern("MMM d"))}. Save a fresh one?",
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            androidx.compose.material3.Button(onClick = onBackup, modifier = Modifier.heightIn(min = 44.dp)) { Text("Back up") }
+            androidx.compose.material3.TextButton(onClick = onLater, modifier = Modifier.heightIn(min = 44.dp)) { Text("In 2 weeks") }
+        }
+    }
 }

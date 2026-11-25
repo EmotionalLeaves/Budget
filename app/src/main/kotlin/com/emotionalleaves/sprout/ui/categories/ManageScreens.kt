@@ -68,7 +68,9 @@ class ManageCategoriesViewModel(private val c: AppContainer) : ViewModel() {
     fun add(name: String, color: Int) = viewModelScope.launch { c.categoryRepository.addCategory(name, CategoryKind.EXPENSE, color) }
     fun update(id: Long, name: String, color: Int) = viewModelScope.launch { c.categoryRepository.updateCategory(id, name, color) }
     fun setArchived(id: Long, archived: Boolean) = viewModelScope.launch { c.categoryRepository.setArchived(id, archived) }
-    fun addKeywordRule(keyword: String, categoryId: Long) = viewModelScope.launch { c.categoryRepository.addContainsRule(keyword, categoryId) }
+    fun addKeywordRule(keyword: String, categoryId: Long, min: Long? = null, max: Long? = null) =
+        viewModelScope.launch { c.categoryRepository.addContainsRule(keyword, categoryId, min, max) }
+    suspend fun preview(keyword: String, min: Long?, max: Long?) = c.categoryRepository.previewContains(keyword, min, max)
     fun changeRule(ruleId: Long, categoryId: Long) = viewModelScope.launch { c.categoryRepository.changeRuleCategory(ruleId, categoryId) }
     fun deleteRule(ruleId: Long) = viewModelScope.launch { c.categoryRepository.deleteRule(ruleId) }
 }
@@ -196,7 +198,7 @@ fun RulesScreen(onBack: () -> Unit) {
                             if (r.matchType == RuleType.EXACT) com.emotionalleaves.sprout.ui.common.merchantName(r.pattern) else "Contains \"${r.pattern}\"",
                             style = MaterialTheme.typography.bodyLarge,
                         )
-                        Text("→ ${r.categoryName}", style = MaterialTheme.typography.labelMedium)
+                        Text("→ ${r.categoryName}" + ruleAmountText(r.minAbsMinor, r.maxAbsMinor), style = MaterialTheme.typography.labelMedium)
                     }
                     IconButton(onClick = { vm.deleteRule(r.id) }) { Icon(Icons.Filled.Delete, contentDescription = "Delete rule") }
                 }
@@ -216,6 +218,8 @@ fun RulesScreen(onBack: () -> Unit) {
     if (adding) {
         var keyword by remember { mutableStateOf("") }
         var picked by remember { mutableStateOf<Long?>(null) }
+        var atLeast by remember { mutableStateOf("") }
+        var atMost by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { adding = false },
             title = { Text("Keyword rule") },
@@ -223,16 +227,51 @@ fun RulesScreen(onBack: () -> Unit) {
                 Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Any transaction whose description contains this word gets the category you pick.")
                     OutlinedTextField(value = keyword, onValueChange = { keyword = it.take(60) }, label = { Text("Keyword") }, singleLine = true)
+                    Text("Only for amounts (optional)", style = MaterialTheme.typography.labelMedium)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(atLeast, { atLeast = it.filter { ch -> ch.isDigit() || ch == '.' }.take(10) }, Modifier.weight(1f),
+                            label = { Text("At least $") }, singleLine = true,
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal))
+                        OutlinedTextField(atMost, { atMost = it.filter { ch -> ch.isDigit() || ch == '.' }.take(10) }, Modifier.weight(1f),
+                            label = { Text("At most $") }, singleLine = true,
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal))
+                    }
+                    var matches by remember { mutableStateOf<Int?>(null) }
+                    androidx.compose.runtime.LaunchedEffect(keyword, atLeast, atMost) {
+                        kotlinx.coroutines.delay(300)
+                        matches = if (keyword.trim().length < 2) null else vm.preview(keyword,
+                            com.emotionalleaves.sprout.domain.money.Money.parseMinor(atLeast), com.emotionalleaves.sprout.domain.money.Money.parseMinor(atMost))
+                    }
+                    matches?.let { n ->
+                        Text(if (n == 0) "No transactions match yet." else "Matches $n transaction${if (n == 1) "" else "s"}.",
+                            style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    }
+                    Text("Example: Venmo over $500 → Rent, everything else → Transfers.", style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                     CategoryGrid(categories, picked) { picked = it.id }
                 }
             },
             confirmButton = {
                 TextButton(
-                    onClick = { picked?.let { vm.addKeywordRule(keyword, it) }; adding = false },
+                    onClick = {
+                        picked?.let { vm.addKeywordRule(keyword, it, com.emotionalleaves.sprout.domain.money.Money.parseMinor(atLeast), com.emotionalleaves.sprout.domain.money.Money.parseMinor(atMost)) }
+                        adding = false
+                    },
                     enabled = keyword.trim().length >= 2 && picked != null,
                 ) { Text("Add") }
             },
             dismissButton = { TextButton(onClick = { adding = false }) { Text("Cancel") } },
         )
+    }
+}
+
+/** " · over $500", " · under $20", " · $20–$50", or "" for rules that apply to any amount. */
+internal fun ruleAmountText(min: Long?, max: Long?): String {
+    fun d(v: Long) = com.emotionalleaves.sprout.domain.money.Money.format(v).removeSuffix(".00")
+    return when {
+        min != null && max != null -> " · ${d(min)}–${d(max)}"
+        min != null -> " · ${d(min)} or more"
+        max != null -> " · up to ${d(max)}"
+        else -> ""
     }
 }

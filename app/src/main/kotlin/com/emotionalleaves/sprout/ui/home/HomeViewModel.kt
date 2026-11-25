@@ -42,6 +42,15 @@ data class HomeState(
 ) {
     val totals: Totals get() = computeTotals(accounts)
     val attention: List<ConnectionEntity> get() = connections.filter { it.status == ConnectionStatus.NEEDS_ATTENTION }
+    val backupDue: Boolean get() = backupDue(System.currentTimeMillis() / 1000)
+
+    /** A week after the first account (then monthly), unless snoozed. Quiet until there's something worth keeping. */
+    fun backupDue(now: Long): Boolean {
+        val first = accounts.minOfOrNull { it.createdAt } ?: return false
+        if (now < settings.backupNudgeUntil) return false
+        val last = settings.lastBackupAt
+        return if (last == null) now - first > 7 * 86_400 else now - last > 30 * 86_400
+    }
 
     companion object {
         fun computeTotals(accounts: List<AccountEntity>): Totals {
@@ -125,6 +134,7 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
             if (today.dayOfMonth > 7 || dismissed == month.toString()) null else runCatching { c.insightsRepository.recap(month) }.getOrNull()
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    fun snoozeBackup() = viewModelScope.launch { c.settings.snoozeBackupNudge(System.currentTimeMillis() / 1000 + 14 * 86_400) }
     fun dismissRecap() = viewModelScope.launch { recap.value?.let { c.settings.setRecapDismissed(it.month.toString()) } }
 
     val inboxCount: StateFlow<Int> = c.db.transactions().observeInboxCount()

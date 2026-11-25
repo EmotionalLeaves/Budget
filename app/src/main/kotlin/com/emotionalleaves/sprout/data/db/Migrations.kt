@@ -93,4 +93,18 @@ object Migrations {
             )
         }
     }
+
+    /** v8: rules by amount, and tag rules. Two optional columns (existing rules keep working for any amount) and a table. */
+    val MIGRATION_7_8 = object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE `merchant_rules` ADD COLUMN `minAbsMinor` INTEGER")
+            db.execSQL("ALTER TABLE `merchant_rules` ADD COLUMN `maxAbsMinor` INTEGER")
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `tag_rules` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `pattern` TEXT NOT NULL, " +
+                    "`tagId` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, " +
+                    "FOREIGN KEY(`tagId`) REFERENCES `tags`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_tag_rules_tagId` ON `tag_rules` (`tagId`)")
+        }
+    }
 }

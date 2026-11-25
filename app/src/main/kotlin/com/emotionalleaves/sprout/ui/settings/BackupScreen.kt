@@ -82,6 +82,7 @@ fun BackupScreen(snackbar: SnackbarHostState, onBack: () -> Unit) {
                 }
             }
             pw.fill('\u0000')
+            if (result.isSuccess) c.settings.setLastBackupAt(System.currentTimeMillis() / 1000)
             busy = false
             snackbar.showSnackbar(if (result.isSuccess) "Backup saved" else "Backup failed. Try a different folder.")
         }

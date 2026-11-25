@@ -26,6 +26,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.background
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -76,7 +80,7 @@ fun InboxScreen(snackbar: SnackbarHostState, onBack: () -> Unit) {
             },
         )
         if (rows.isEmpty()) {
-            EmptyState("You're all caught up", "New transactions show up here after each sync, so you can check their categories in one place.")
+            CaughtUp()
             return@Column
         }
         LazyColumn {
@@ -125,5 +129,30 @@ fun InboxCard(count: Int, onOpen: () -> Unit) {
             }
             Button(onClick = onOpen, modifier = Modifier.heightIn(min = 44.dp)) { Text("Review") }
         }
+    }
+}
+
+/** A small, quiet celebration when the inbox hits zero: the check pops in, then the message. */
+@Composable
+private fun CaughtUp() {
+    val scale = remember { androidx.compose.animation.core.Animatable(0.4f) }
+    LaunchedEffect(Unit) {
+        scale.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = 0.45f, stiffness = 300f))
+    }
+    Column(
+        Modifier.fillMaxSize().padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        androidx.compose.foundation.layout.Box(
+            Modifier.size(96.dp).graphicsLayer { scaleX = scale.value; scaleY = scale.value }
+                .background(MaterialTheme.colorScheme.primaryContainer, androidx.compose.foundation.shape.CircleShape),
+            contentAlignment = Alignment.Center,
+        ) { Icon(Icons.Rounded.DoneAll, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(48.dp)) }
+        androidx.compose.foundation.layout.Spacer(Modifier.size(16.dp))
+        Text("You're all caught up", style = MaterialTheme.typography.headlineSmall)
+        Text("New transactions show up here after each sync, so you can check their categories in one place.",
+            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
     }
 }

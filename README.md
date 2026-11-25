@@ -134,6 +134,11 @@ Decisions made while building, one per line:
 - Receipt photos aren't included in backups (backups stay small enough to email); they stay on the phone.
 - Age of Money uses checking, savings and cash accounts counted in your total, first-in-first-out, averaged over your last 10 outflows.
 
+- Auto-tag rules apply to existing transactions when created, then to transactions added or changed after each sync/import. A tag removed by hand stays removed unless the bank changes that transaction.
+- "Until payday" uses the soonest repeating income as payday. Bills due on payday itself are treated as paid from the new paycheck.
+- Keyword rules with an amount condition are tried before rules without one, so "Venmo $500+ → Rent" beats "Venmo → Transfers".
+- The backup reminder only nudges; it never uploads anything. First nudge a week after the first account, then 30 days after each backup.
+
 ## For developers
 
 - Build: `./gradlew :core:test testDebugUnitTest lintDebug assembleRelease`

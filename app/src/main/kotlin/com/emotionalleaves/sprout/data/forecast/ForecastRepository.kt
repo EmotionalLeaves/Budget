@@ -21,7 +21,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
-data class HomeOutlook(val forecast: Forecast?, val trend: CashFlow.Trend?)
+data class HomeOutlook(val forecast: Forecast?, val trend: CashFlow.Trend?, val payday: com.emotionalleaves.sprout.domain.forecast.PaydayPlan? = null)
 
 /** Builds the month-end cash forecast and the spending trend from what's stored. */
 class ForecastRepository(
@@ -41,6 +41,20 @@ class ForecastRepository(
         val cashAccounts = db.accounts().getAll().filter {
             it.includeInTotals && !it.hidden && AccountTypes.isUsd(it.currency) && AccountTypes.isCashLike(it.type)
         }
+        val payday = if (cashAccounts.isEmpty()) null else runCatching {
+            val incomeRows = db.recurring().inflowsSince(now - RecurringDetector.LOOKBACK_DAYS * 86_400)
+            val income = RecurringDetector.detectIncome(
+                incomeRows.map { ChargeTx(it.merchantKey, it.amountMinor, it.occurredAt, it.categoryId, it.accountId) }, now, z,
+            ).flatMap { r ->
+                val first = date(r.nextDueAt, z)
+                Schedule.occurrences(first, r.cadence, today, today.plusDays(45), first.dayOfMonth)
+                    .map { Expected(MerchantNormalizer.displayName(r.merchantKey), it, r.typicalAmountMinor) }
+            }
+            val bills = (recurring.expectedCharges(month).first().filter { !it.matchedThisMonth } + recurring.expectedCharges(month.plusMonths(1)).first())
+                .map { Expected(it.name, date(it.dueAt, z), it.amountMinor) }
+                .distinctBy { it.name to it.date }
+            com.emotionalleaves.sprout.domain.forecast.PaydayPlan.compute(today, cashAccounts.sumOf { it.balanceMinor }, income, bills)
+        }.getOrNull()
         val forecast = if (cashAccounts.isEmpty()) null else {
             val monthBudget = budgets.observeMonth(month).first()
             val budgetedIds = monthBudget.budgeted.map { it.category.id }.toSet()
@@ -79,7 +93,7 @@ class ForecastRepository(
         val hasLastMonth = (db.budgets().firstOccurredAt() ?: Long.MAX_VALUE) < lastStart + 86_400
         val trend = if (hasLastMonth) CashFlow.Trend(spent(thisStart, tomorrow), spent(lastStart, lastEnd)) else null
 
-        HomeOutlook(forecast, trend)
+        HomeOutlook(forecast, trend, payday)
     }
 
     private fun date(epoch: Long, z: ZoneId): LocalDate = Instant.ofEpochSecond(epoch).atZone(z).toLocalDate()

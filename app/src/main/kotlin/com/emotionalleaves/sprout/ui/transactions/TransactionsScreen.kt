@@ -7,6 +7,8 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.runtime.LaunchedEffect
 import com.emotionalleaves.sprout.ui.common.showUndoable
 import androidx.compose.foundation.background
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -86,6 +88,19 @@ data class TxFilter(
 )
 
 class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
+    /** Swipe right → pick a category (just this one). Returns an undo. */
+    suspend fun quickCategory(id: String, categoryId: Long): suspend () -> Unit =
+        c.categoryRepository.recategorizeWithUndo(id, categoryId, alwaysForMerchant = false).undo
+
+    /** Swipe left → leave it out of budgets (or count it again). Returns the message and an undo. */
+    suspend fun toggleExcluded(id: String): Pair<String, suspend () -> Unit>? {
+        val tx = c.db.transactions().getById(id) ?: return null
+        val now = System.currentTimeMillis() / 1000
+        c.db.transactions().setExcluded(id, !tx.excludedFromBudget, now)
+        val msg = if (tx.excludedFromBudget) "Counted in budgets again" else "Left out of budgets"
+        return msg to { c.db.transactions().setExcluded(id, tx.excludedFromBudget, System.currentTimeMillis() / 1000) }
+    }
+
     private val _filter = MutableStateFlow(TxFilter())
     val filter: StateFlow<TxFilter> = _filter.asStateFlow()
 
@@ -160,6 +175,25 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
     var openId by rememberSaveable { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
+    var quickFor by remember { mutableStateOf<com.emotionalleaves.sprout.data.db.TransactionRow?>(null) }
+    quickFor?.let { row ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { quickFor = null },
+            title = { Text(com.emotionalleaves.sprout.ui.common.merchantName(row.merchantKey).ifBlank { row.description }) },
+            text = {
+                Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+                    com.emotionalleaves.sprout.ui.categories.CategoryGrid(categories.filter { !it.archived }, row.categoryId) { cat ->
+                        quickFor = null
+                        scope.launch {
+                            val undo = vm.quickCategory(row.id, cat.id)
+                            scope.showUndoable(snackbar, "Moved to ${cat.name}", undo)
+                        }
+                    }
+                }
+            },
+            confirmButton = { androidx.compose.material3.TextButton(onClick = { quickFor = null }) { Text("Cancel") } },
+        )
+    }
 
     openId?.let { id ->
         TransactionDetailSheet(id, onDismiss = { openId = null }, onMessage = { msg, undo -> scope.showUndoable(snackbar, msg, undo) })
@@ -261,7 +295,10 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
                     val date = Format.localDate(row.occurredAt)
                     val prev = if (index > 0) items.peek(index - 1)?.let { Format.localDate(it.occurredAt) } else null
                     if (prev != date) DayHeader(Format.dayHeader(date, today), dayTotals[date])
-                    TransactionItem(row) { openId = row.id }
+                    SwipeRow(
+                        onRight = { quickFor = row },
+                        onLeft = { scope.launch { vm.toggleExcluded(row.id)?.let { (msg, undo) -> scope.showUndoable(snackbar, msg, undo) } } },
+                    ) { TransactionItem(row) { openId = row.id } }
 
                 }
             }
@@ -285,6 +322,42 @@ private fun <T> PickerChip(label: String, selected: Boolean, options: List<Pair<
             }
         }
     }
+}
+
+/**
+ * Swipe right to change the category, swipe left to leave it out of budgets. The row always springs back:
+ * the action happens in a dialog or with an Undo, so nothing is lost to a stray swipe.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SwipeRow(onRight: () -> Unit, onLeft: () -> Unit, content: @Composable () -> Unit) {
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val state = androidx.compose.material3.rememberSwipeToDismissBoxState(
+        confirmValueChange = { v ->
+            when (v) {
+                androidx.compose.material3.SwipeToDismissBoxValue.StartToEnd -> { haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress); onRight() }
+                androidx.compose.material3.SwipeToDismissBoxValue.EndToStart -> { haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress); onLeft() }
+                else -> Unit
+            }
+            false
+        },
+        positionalThreshold = { it * 0.35f },
+    )
+    androidx.compose.material3.SwipeToDismissBox(
+        state = state,
+        backgroundContent = {
+            val toRight = state.dismissDirection == androidx.compose.material3.SwipeToDismissBoxValue.StartToEnd
+            val bg = if (toRight) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.tertiaryContainer
+            val fg = if (toRight) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onTertiaryContainer
+            Row(
+                Modifier.fillMaxSize().background(bg).padding(horizontal = 24.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = if (toRight) Arrangement.Start else Arrangement.End,
+            ) {
+                Text(if (toRight) "Change category" else "Leave out of budget", color = fg, style = MaterialTheme.typography.labelLarge)
+            }
+        },
+    ) { Box(Modifier.background(MaterialTheme.colorScheme.surface)) { content() } }
 }
 
 @Composable

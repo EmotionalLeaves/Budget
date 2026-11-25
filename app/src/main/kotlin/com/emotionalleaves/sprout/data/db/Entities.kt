@@ -237,6 +237,24 @@ data class MerchantRuleEntity(
     val hitCount: Int,
     val createdAt: Long,
     val updatedAt: Long,
+    /** Schema 8: only for transactions of at least / at most this size (cents); null = any amount. */
+    val minAbsMinor: Long? = null,
+    val maxAbsMinor: Long? = null,
+) {
+    fun toUserRule() = com.emotionalleaves.sprout.domain.categorize.UserRule(id, matchType, pattern, categoryId, minAbsMinor, maxAbsMinor)
+}
+
+/** Schema 8: "everything containing DELTA gets #Travel". */
+@Entity(
+    tableName = "tag_rules",
+    foreignKeys = [ForeignKey(entity = TagEntity::class, parentColumns = ["id"], childColumns = ["tagId"], onDelete = ForeignKey.CASCADE)],
+    indices = [Index("tagId")],
+)
+data class TagRuleEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val pattern: String,
+    val tagId: Long,
+    val createdAt: Long,
 )
 
 @Entity(tableName = "recurring_charges", indices = [Index("merchantKey")])

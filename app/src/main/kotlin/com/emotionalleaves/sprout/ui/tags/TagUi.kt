@@ -119,6 +119,14 @@ class TagsViewModel(private val c: AppContainer) : ViewModel() {
     val tags: StateFlow<List<TagSummary>> = c.db.tags().observeSummaries().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     fun rename(id: Long, name: String) = viewModelScope.launch { c.tagRepository.rename(id, name) }
     fun delete(id: Long) = viewModelScope.launch { c.tagRepository.delete(id) }
+    val rules = c.tagRepository.observeRules().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val lastApplied = kotlinx.coroutines.flow.MutableStateFlow<Int?>(null)
+    fun addRule(pattern: String, tagName: String) = viewModelScope.launch {
+        val id = c.tagRepository.getOrCreate(tagName) ?: return@launch
+        lastApplied.value = c.tagRepository.addRule(pattern, id)
+    }
+    fun deleteRule(id: Long) = viewModelScope.launch { c.tagRepository.deleteRule(id) }
+    suspend fun preview(word: String) = c.tagRepository.previewRule(word)
 }
 
 /** Every tag with its total; tap to see its transactions. */
@@ -128,16 +136,38 @@ fun TagsScreen(onBack: () -> Unit, onOpen: (Long) -> Unit) {
     val vm = sproutViewModel { TagsViewModel(it) }
     val tags by vm.tags.collectAsStateWithLifecycle()
     var editing by remember { mutableStateOf<TagSummary?>(null) }
+    val rules by vm.rules.collectAsStateWithLifecycle()
+    val applied by vm.lastApplied.collectAsStateWithLifecycle()
+    var addingRule by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text("Tags") },
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
+            actions = { TextButton(onClick = { addingRule = true }) { Text("Auto-tag") } },
         )
-        if (tags.isEmpty()) {
-            EmptyState("No tags yet", "Open any transaction and tap \"Add tag\" to group spending across categories, like a trip or a project.")
+        if (tags.isEmpty() && rules.isEmpty()) {
+            EmptyState("No tags yet", "Open any transaction and tap \"Add tag\" to group spending across categories, like a trip or a project. " +
+                "Or tap Auto-tag to tag everything containing a word, like DELTA → #Travel.")
             return@Column
         }
         LazyColumn {
+            if (rules.isNotEmpty()) {
+                item {
+                    SoftCard {
+                        Text("Auto-tag rules", style = MaterialTheme.typography.titleSmall)
+                        applied?.let { Text("Tagged $it existing transaction${if (it == 1) "" else "s"}.", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary) }
+                        val names = tags.associate { it.id to it.name }
+                        rules.forEach { r ->
+                            Row(Modifier.fillMaxWidth().heightIn(min = 44.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text("Contains \"${r.pattern}\" → #${names[r.tagId] ?: "tag"}", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                                TextButton(onClick = { vm.deleteRule(r.id) }) { Text("Remove") }
+                            }
+                        }
+                        Text("New transactions get these tags after each sync or import.", style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
             items(tags, key = { it.id }) { t ->
                 SoftCard(onClick = { onOpen(t.id) }) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -156,6 +186,40 @@ fun TagsScreen(onBack: () -> Unit, onOpen: (Long) -> Unit) {
                 }
             }
         }
+    }
+    if (addingRule) {
+        var word by remember { mutableStateOf("") }
+        var tag by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { addingRule = false },
+            title = { Text("Auto-tag rule") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Every transaction whose description contains this word gets the tag — old ones now, new ones after each sync.")
+                    OutlinedTextField(word, { word = it.take(60) }, singleLine = true, label = { Text("Contains") })
+                    var matches by remember { mutableStateOf<Int?>(null) }
+                    androidx.compose.runtime.LaunchedEffect(word) {
+                        kotlinx.coroutines.delay(300)
+                        matches = if (word.trim().length < 2) null else vm.preview(word)
+                    }
+                    matches?.let { n ->
+                        Text(if (n == 0) "No transactions match yet." else "Would tag $n transaction${if (n == 1) "" else "s"}.",
+                            style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    }
+                    OutlinedTextField(tag, { tag = it.take(40) }, singleLine = true, label = { Text("Tag") })
+                    if (tags.isNotEmpty()) {
+                        @OptIn(ExperimentalLayoutApi::class)
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            tags.take(12).forEach { t -> FilterChip(selected = tag == t.name, onClick = { tag = t.name }, label = { Text("#" + t.name) }) }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(enabled = word.trim().length >= 2 && tag.isNotBlank(), onClick = { vm.addRule(word, tag); addingRule = false }) { Text("Add") }
+            },
+            dismissButton = { TextButton(onClick = { addingRule = false }) { Text("Cancel") } },
+        )
     }
     editing?.let { t ->
         var name by remember(t.id) { mutableStateOf(t.name) }

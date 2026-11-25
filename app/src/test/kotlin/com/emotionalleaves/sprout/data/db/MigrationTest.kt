@@ -149,6 +149,22 @@ class MigrationTest {
         }
     }
 
+    @Test fun migrate7To8KeepsRulesForAnyAmount() {
+        helper.createDatabase(name, 7).use { db ->
+            seedV1(db)
+            db.execSQL("INSERT INTO merchant_names (merchantKey, displayName, updatedAt) VALUES ('HY-VEE', 'Grocery', 1)")
+        }
+        helper.runMigrationsAndValidate(name, 8, true, Migrations.MIGRATION_7_8).use { db ->
+            db.query("SELECT pattern, categoryId, minAbsMinor, maxAbsMinor FROM merchant_rules WHERE id = 7").use { c ->
+                c.moveToFirst()
+                assertEquals("HY-VEE", c.getString(0)); assertEquals(2L, c.getLong(1))
+                assertEquals(true, c.isNull(2)); assertEquals(true, c.isNull(3))
+            }
+            db.query("SELECT displayName FROM merchant_names").use { c -> c.moveToFirst(); assertEquals("Grocery", c.getString(0)) }
+            db.query("SELECT COUNT(*) FROM tag_rules").use { c -> c.moveToFirst(); assertEquals(0, c.getInt(0)) }
+        }
+    }
+
     @Test fun migrate1ToLatestInOneGo() {
         helper.createDatabase(name, 1).use { seedV1(it) }
         helper.runMigrationsAndValidate(name, SproutDatabase.VERSION, true, *SproutDatabase.MIGRATIONS).close()

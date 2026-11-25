@@ -3,7 +3,35 @@ package com.emotionalleaves.sprout.domain.categorize
 enum class RuleType { EXACT, CONTAINS }
 
 /** A rule the user made. EXACT matches a merchant key; CONTAINS matches a keyword anywhere in the description. */
-data class UserRule(val id: Long, val type: RuleType, val pattern: String, val categoryId: Long)
+data class UserRule(
+    val id: Long,
+    val type: RuleType,
+    val pattern: String,
+    val categoryId: Long,
+    /** Only for transactions of at least / at most this size (cents, either sign); null = any amount. */
+    val minAbsMinor: Long? = null,
+    val maxAbsMinor: Long? = null,
+) {
+    fun fits(amountMinor: Long): Boolean {
+        val a = kotlin.math.abs(amountMinor)
+        return (minAbsMinor == null || a >= minAbsMinor) && (maxAbsMinor == null || a <= maxAbsMinor)
+    }
+}
+
+/** A tag rule: every transaction whose description or merchant contains [pattern] gets the tag. */
+data class TagRule(val id: Long, val pattern: String, val tagId: Long)
+
+object TagRules {
+    /** The tags that apply to a transaction. */
+    fun match(rules: List<TagRule>, description: String, merchantKey: String): Set<Long> {
+        if (rules.isEmpty()) return emptySet()
+        val hay = BuiltInRules.haystack(description) + " | " + BuiltInRules.haystack(merchantKey)
+        return rules.filter { r ->
+            val needle = BuiltInRules.haystack(r.pattern)
+            needle.isNotBlank() && Regex("(?<![A-Z0-9])" + Regex.escape(needle) + "(?![A-Z0-9])").containsMatchIn(hay)
+        }.map { it.tagId }.toSet()
+    }
+}
 
 data class Resolution(val categoryId: Long?, val source: CategorySource)
 
@@ -21,18 +49,20 @@ class CategoryResolver(
 
     private val contains: List<Pair<Regex, UserRule>> = userRules
         .filter { it.type == RuleType.CONTAINS && it.pattern.isNotBlank() }
-        .sortedWith(compareByDescending<UserRule> { it.pattern.length }.thenByDescending { it.id })
+        // Rules with an amount condition are more specific, so they're tried first.
+        .sortedWith(compareByDescending<UserRule> { it.minAbsMinor != null || it.maxAbsMinor != null }
+            .thenByDescending { it.pattern.length }.thenByDescending { it.id })
         .map { rule ->
             val needle = BuiltInRules.haystack(rule.pattern)
             Regex("(?<![A-Z0-9])" + Regex.escape(needle) + "(?![A-Z0-9])") to rule
         }
 
     fun resolve(description: String, merchantKey: String, amountMinor: Long): Resolution {
-        exact[merchantKey.uppercase()]?.let { return Resolution(it.categoryId, CategorySource.MERCHANT_RULE) }
+        exact[merchantKey.uppercase()]?.takeIf { it.fits(amountMinor) }?.let { return Resolution(it.categoryId, CategorySource.MERCHANT_RULE) }
 
         if (contains.isNotEmpty()) {
             val hay = BuiltInRules.haystack(description) + " | " + BuiltInRules.haystack(merchantKey)
-            contains.firstOrNull { (regex, _) -> regex.containsMatchIn(hay) }
+            contains.firstOrNull { (regex, rule) -> rule.fits(amountMinor) && regex.containsMatchIn(hay) }
                 ?.let { return Resolution(it.second.categoryId, CategorySource.MERCHANT_RULE) }
         }
 

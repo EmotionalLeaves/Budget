@@ -53,7 +53,7 @@ class ImportRepository(
             val existing = ids.chunked(500).flatMap { db.transactions().existingIds(it) }.toSet()
             val categories = db.categories().getAll()
             val idByKey = categories.mapNotNull { c -> c.key?.let { it to c.id } }.toMap()
-            val resolver = CategoryResolver(db.merchantRules().getAll().map { UserRule(it.id, it.matchType, it.pattern, it.categoryId) }, idByKey)
+            val resolver = CategoryResolver(db.merchantRules().getAll().map { it.toUserRule() }, idByKey)
             val fallback = idByKey[DefaultCategories.UNCATEGORIZED] ?: categories.first { it.kind == CategoryKind.EXPENSE }.id
             val byName = categories.filter { !it.archived }.associate { it.name to it.id }
             val fresh = result.rows.zip(ids).filter { (_, id) -> id !in existing }.distinctBy { it.second }.map { (row, id) ->

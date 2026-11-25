@@ -39,11 +39,45 @@ class UpdateCheckWorker(context: Context, params: WorkerParameters) : CoroutineW
         private const val NAME = "sprout-update-check"
 
         fun schedule(context: Context) {
-            val req = PeriodicWorkRequestBuilder<UpdateCheckWorker>(24, TimeUnit.HOURS)
+            // Twice a day, so a fix reaches the phone the same day it ships. UPDATE keeps the existing schedule's timing.
+            val req = PeriodicWorkRequestBuilder<UpdateCheckWorker>(12, TimeUnit.HOURS)
                 .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).setRequiresBatteryNotLow(true).build())
                 .setInitialDelay(3, TimeUnit.HOURS)
                 .build()
-            WorkManager.getInstance(context).enqueueUniquePeriodicWork(NAME, ExistingPeriodicWorkPolicy.KEEP, req)
+            WorkManager.getInstance(context).enqueueUniquePeriodicWork(NAME, ExistingPeriodicWorkPolicy.UPDATE, req)
+        }
+    }
+}
+
+/**
+ * "Update while charging": the next time the phone is plugged in and online, download (if needed) and install.
+ * On Android 12+ that happens without a tap; older phones get a "tap to finish" notification.
+ */
+class UpdateWhenChargingWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+    override suspend fun doWork(): Result {
+        val c = (applicationContext as SproutApp).container
+        runCatching {
+            if (c.updates.state.value !is com.emotionalleaves.sprout.data.update.UpdateState.ReadyToInstall) {
+                c.updates.check(quiet = true)
+                (c.updates.state.value as? com.emotionalleaves.sprout.data.update.UpdateState.Available)?.let { c.updates.download(it.release) }
+            }
+            val ready = c.updates.state.value as? com.emotionalleaves.sprout.data.update.UpdateState.ReadyToInstall ?: return@runCatching
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S && c.updates.canInstall() &&
+                com.emotionalleaves.sprout.data.update.UpdateInstaller.install(applicationContext, ready.file)
+            ) return@runCatching
+            c.notifier.showUpdate(ready.release.version, ready = true)
+        }
+        return Result.success()
+    }
+
+    companion object {
+        private const val NAME = "sprout-update-when-charging"
+
+        fun schedule(context: Context) {
+            val req = androidx.work.OneTimeWorkRequestBuilder<UpdateWhenChargingWorker>()
+                .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).setRequiresCharging(true).build())
+                .build()
+            WorkManager.getInstance(context).enqueueUniqueWork(NAME, androidx.work.ExistingWorkPolicy.REPLACE, req)
         }
     }
 }

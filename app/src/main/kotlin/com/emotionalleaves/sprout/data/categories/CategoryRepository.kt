@@ -94,14 +94,25 @@ class CategoryRepository(private val db: SproutDatabase, private val clock: Cloc
     }
 
     /** Adds a keyword rule ("contains"). Returns null if the keyword is unusable. */
-    suspend fun addContainsRule(keyword: String, categoryId: Long): Long? = withContext(Dispatchers.IO) {
+    suspend fun addContainsRule(keyword: String, categoryId: Long, minAbsMinor: Long? = null, maxAbsMinor: Long? = null): Long? = withContext(Dispatchers.IO) {
         val pattern = BuiltInRules.haystack(Sanitize.text(keyword, 60))
         if (pattern.length < 2) return@withContext null
+        val (lo, hi) = if (minAbsMinor != null && maxAbsMinor != null && minAbsMinor > maxAbsMinor) maxAbsMinor to minAbsMinor else minAbsMinor to maxAbsMinor
         db.withTransaction {
             val id = upsertRule(RuleType.CONTAINS, pattern, categoryId, RuleOrigin.USER_CREATED, now())
+            db.merchantRules().getById(id)?.let { db.merchantRules().update(it.copy(minAbsMinor = lo?.takeIf { v -> v > 0 }, maxAbsMinor = hi?.takeIf { v -> v > 0 })) }
             reapplyRulesLocked()
             id
         }
+    }
+
+    /** How many transactions a keyword rule would match (for the live preview while typing). */
+    suspend fun previewContains(keyword: String, minAbsMinor: Long?, maxAbsMinor: Long?): Int = withContext(Dispatchers.IO) {
+        val pattern = BuiltInRules.haystack(Sanitize.text(keyword, 60))
+        if (pattern.length < 2) return@withContext 0
+        val rule = UserRule(0, RuleType.CONTAINS, pattern, 0, minAbsMinor, maxAbsMinor)
+        val resolver = CategoryResolver(listOf(rule), emptyMap())
+        db.transactions().ruleInputs().count { resolver.resolve(it.description, it.merchantKey, it.amountMinor).source == CategorySource.MERCHANT_RULE }
     }
 
     suspend fun changeRuleCategory(ruleId: Long, categoryId: Long) = withContext(Dispatchers.IO) {
@@ -125,7 +136,7 @@ class CategoryRepository(private val db: SproutDatabase, private val clock: Cloc
     private suspend fun reapplyRulesLocked(): Int {
         val categories = db.categories().getAll()
         val idByKey = categories.mapNotNull { c -> c.key?.let { it to c.id } }.toMap()
-        val rules = db.merchantRules().getAll().map { UserRule(it.id, it.matchType, it.pattern, it.categoryId) }
+        val rules = db.merchantRules().getAll().map { it.toUserRule() }
         val resolver = CategoryResolver(rules, idByKey)
         val now = now()
         var changed = 0

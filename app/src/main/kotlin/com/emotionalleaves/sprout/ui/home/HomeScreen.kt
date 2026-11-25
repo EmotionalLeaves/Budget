@@ -179,6 +179,9 @@ fun HomeScreen(
             if (fx != null && fx.month.flexBudgetMinor > 0) item { FlexHero(fx) } else item { SafeToSpendHero(m, state.totals.totalMinor, onSetBudgets) }
             if (inbox > 0) item { com.emotionalleaves.sprout.ui.transactions.InboxCard(inbox) { navigate("inbox") } }
             recap?.let { r -> item { com.emotionalleaves.sprout.ui.insights.RecapCard(r, vm::dismissRecap) } }
+            if (state.backupDue) item {
+                BackupNudge(state.settings.lastBackupAt, onBackup = { navigate("backup") }, onLater = vm::snoozeBackup)
+            }
             val off = state.settings.homeHidden
             fun on(k: String) = k !in off
             if (on("stats")) item { StatsRow(state.totals.totalMinor, outlook?.trend, outlook?.forecast?.endMinor, onNetWorth) }
@@ -196,6 +199,7 @@ fun HomeScreen(
                 item { com.emotionalleaves.sprout.ui.common.SectionHeader("Insights") }
                 item { com.emotionalleaves.sprout.ui.insights.InsightsStrip(insights, onCategory) }
             }
+            if (on("payday")) outlook?.payday?.let { p -> item { PaydayCard(p) } }
             if (on("forecast")) outlook?.forecast?.let { f -> item { ForecastCard(f) } }
             if (on("where") && m != null) item { WhereItWentCard(m, onCategory, onSeeBudgets) }
             if (on("months")) item { MonthsCard(months) }

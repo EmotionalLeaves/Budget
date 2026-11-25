@@ -7,7 +7,7 @@
 Phase 2 – improve forever. v1.0.0 published.
 
 ## Current task
-Round 9 (bigger than 2.7.0). User (2026-11-24): each of the next 10 releases the biggest yet (#1 2.4.0 … #4 2.7.0); one release per round; never stop.
+Round 10 (bigger than 2.8.0). User (2026-11-24): each of the next 10 releases the biggest yet (#1 2.4.0 … #5 2.8.0); one release per round (update work → visuals → features); never stop.
 
 ## v1.0 checklist (verified 2026-11-24)
 - [x] F1–F9 acceptance criteria pass, with unit tests where specified (core: token/URL/parser/client, 60+ categorization tests, budget math, alerts, recurring, CSV 6 formats + round trip; app: sync, categories, budgets, alerts, recurring, import, export, connect, 20k-row data).
