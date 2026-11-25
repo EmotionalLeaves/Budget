@@ -8,7 +8,7 @@ one POST to claim a setup token (once), and GETs to read your accounts.
 
 ## Your data stays on your phone
 - No backend server, no analytics, no crash reporting, no ads, no cloud sync.
-- Financial data has one network destination: your SimpleFIN server. The only other host is api.github.com (and GitHub's download CDN) for the self-updater, which fetches release metadata and the APK and sends nothing about you. The optional read-only update key is sent only to api.github.com over HTTPS (unit-tested) and is stripped before following the CDN redirect. Downloads are checked against GitHub's SHA-256 digest, and Android refuses an APK signed with any other key.
+- Financial data has one network destination: your SimpleFIN server. The only other host is api.github.com (and GitHub's download CDN) for the self-updater, which fetches release metadata and the APK and sends nothing about you. The optional read-only update key is sent only to api.github.com over HTTPS (unit-tested) and is stripped before following the CDN redirect. Downloads are checked against GitHub's SHA-256 digest, and Android refuses an APK signed with any other key. Installs go through an Android PackageInstaller session (results come back to a non-exported receiver via an explicit PendingIntent). A key you paste in Settings is encrypted with its own Keystore key (alias sprout_update_key), separate from the bank key.
 - Android backups are turned off (`allowBackup="false"` plus rules that exclude everything), so your data isn't copied to Google's cloud or to a new phone.
 - HTTPS only: plain HTTP is blocked by the network security config.
 

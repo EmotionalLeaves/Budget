@@ -115,6 +115,18 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
         .mapLatest { runCatching { c.insightsRepository.calendar() }.getOrNull() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
+    /** Last month's recap during the first 7 days of a month, unless dismissed for that month. */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val recap: StateFlow<com.emotionalleaves.sprout.domain.insights.Recap?> = combine(
+        c.budgetRepository.todayFlow(), c.settings.settings.map { it.recapDismissed },
+    ) { today, dismissed -> today to dismissed }
+        .mapLatest { (today, dismissed) ->
+            val month = java.time.YearMonth.from(today).minusMonths(1)
+            if (today.dayOfMonth > 7 || dismissed == month.toString()) null else runCatching { c.insightsRepository.recap(month) }.getOrNull()
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    fun dismissRecap() = viewModelScope.launch { recap.value?.let { c.settings.setRecapDismissed(it.month.toString()) } }
+
     val privacy: StateFlow<Boolean> = c.settings.settings.map { it.privacyMode }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
     fun togglePrivacy() = viewModelScope.launch { c.settings.setPrivacyMode(!privacy.value) }

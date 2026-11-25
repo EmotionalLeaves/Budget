@@ -33,6 +33,19 @@
             </intent-filter>
         </activity>
 
+        <!-- In-app update results from Android's PackageInstaller (our own explicit PendingIntent). Not exported. -->
+        <receiver
+            android:name=".data.update.UpdateInstallReceiver"
+            android:exported="false" />
+        <!-- After an update installs: a "tap to open" notification. System broadcast to this app only. Not exported. -->
+        <receiver
+            android:name=".data.update.MyPackageReplacedReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
         <!-- Home-screen widget (safe to spend). Exported because the launcher must deliver widget updates. -->
         <receiver
             android:name=".widget.SafeToSpendWidgetReceiver"

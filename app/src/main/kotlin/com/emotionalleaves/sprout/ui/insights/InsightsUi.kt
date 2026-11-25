@@ -287,3 +287,34 @@ fun SpendCalendarCard(cal: com.emotionalleaves.sprout.domain.calendar.SpendCalen
         }
     }
 }
+
+private val recapMonth = DateTimeFormatter.ofPattern("MMMM", Locale.US)
+
+/** "Your October" — shown on Home during the first week of a month. Dismiss with ✕. */
+@Composable
+fun RecapCard(r: com.emotionalleaves.sprout.domain.insights.Recap, onDismiss: () -> Unit) {
+    if (r.spentMinor == 0L && r.incomeMinor == 0L) return
+    val sc = LocalSproutColors.current
+    com.emotionalleaves.sprout.ui.common.HeroCard(androidx.compose.ui.graphics.Brush.linearGradient(listOf(MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.primary))) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Your ${r.month.format(recapMonth)}", style = MaterialTheme.typography.titleLarge, color = sc.onHero, modifier = Modifier.weight(1f))
+            androidx.compose.material3.TextButton(onClick = onDismiss) { Text("✕", color = sc.onHero) }
+        }
+        Text(r.headline(), style = MaterialTheme.typography.bodyLarge, color = sc.onHero)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(Modifier.weight(1f)) {
+                Text("Spent", style = MaterialTheme.typography.labelMedium, color = sc.onHero.copy(alpha = 0.8f))
+                Text(money(r.spentMinor, whole = true), style = MaterialTheme.typography.titleLarge, color = sc.onHero)
+                r.changePercent?.let { Text(if (it > 0) "↑ $it% vs month before" else if (it < 0) "↓ ${-it}% vs month before" else "same as before",
+                    style = MaterialTheme.typography.labelSmall, color = sc.onHero.copy(alpha = 0.85f)) }
+            }
+            if (r.incomeMinor > 0) Column(Modifier.weight(1f)) {
+                Text("Came in", style = MaterialTheme.typography.labelMedium, color = sc.onHero.copy(alpha = 0.8f))
+                Text(money(r.incomeMinor, whole = true), style = MaterialTheme.typography.titleLarge, color = sc.onHero)
+            }
+        }
+        r.topCategories.firstOrNull()?.let { (n, v) -> Text("Most went to $n (${money(v, whole = true)})", style = MaterialTheme.typography.bodySmall, color = sc.onHero) }
+        r.biggest?.let { (n, v) -> Text("Biggest purchase: $n, ${money(v)}", style = MaterialTheme.typography.bodySmall, color = sc.onHero) }
+        Text("${r.noSpendDays} no-spend days", style = MaterialTheme.typography.bodySmall, color = sc.onHero)
+    }
+}

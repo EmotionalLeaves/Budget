@@ -61,7 +61,7 @@ class UpdateRepositoryTest {
         r.check()
         server.enqueue(MockResponse().setBody(Buffer().write(apk)))
         r.download((r.state.value as UpdateState.Available).release)
-        assertTrue(r.state.value is UpdateState.Failed)
+        assertTrue(r.state.value is UpdateState.DownloadFailed)
     }
 
     @Test fun sameVersionIsUpToDate() = runBlocking {
@@ -121,5 +121,28 @@ class UpdateRepositoryTest {
         val installed = UpdateRepository(ApplicationProvider.getApplicationContext(), "1.16.0", "EmotionalLeaves/Budget", "k", http, server.url("/").toString().trimEnd('/'))
         installed.consumeJustUpdatedFrom()
         assertTrue(!ready.file.exists())
+    }
+
+    @Test fun pastedKeyIsCheckedSavedAndUsed() = runBlocking {
+        var stored = ""
+        val r = UpdateRepository(
+            ApplicationProvider.getApplicationContext(), "1.15.0", "EmotionalLeaves/Budget", "", http, server.url("/").toString().trimEnd('/'),
+            storedKey = { stored }, saveStoredKey = { stored = it },
+        )
+        assertTrue(!r.hasKey)
+        // A rejected key is not kept.
+        server.enqueue(MockResponse().setResponseCode(401))
+        assertTrue(!r.saveKey("github_pat_" + "x".repeat(30)))
+        assertEquals("", stored)
+        assertTrue(!r.saveKey("short"))
+        // An accepted one is kept and lets the download happen in the app.
+        server.enqueue(MockResponse().setBody(release("1.18.0")))
+        assertTrue(r.saveKey("github_pat_" + "y".repeat(30)))
+        assertEquals("github_pat_" + "y".repeat(30), stored)
+        assertTrue(r.hasKey)
+        val rel = (r.state.value as UpdateState.Available).release
+        server.enqueue(MockResponse().setBody(Buffer().write(apk)))
+        r.download(rel)
+        assertTrue(r.state.value is UpdateState.ReadyToInstall)
     }
 }

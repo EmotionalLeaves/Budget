@@ -95,6 +95,7 @@ fun HomeScreen(
     val months by vm.months.collectAsStateWithLifecycle()
     val insights by vm.insights.collectAsStateWithLifecycle()
     val calendar by vm.calendar.collectAsStateWithLifecycle()
+    val recap by vm.recap.collectAsStateWithLifecycle()
     val hidden by vm.privacy.collectAsStateWithLifecycle()
     androidx.compose.runtime.CompositionLocalProvider(com.emotionalleaves.sprout.ui.common.LocalHideAmounts provides hidden) {
     PullToRefreshBox(isRefreshing = syncing, onRefresh = vm::syncNow, modifier = Modifier.fillMaxSize()) {
@@ -162,6 +163,7 @@ fun HomeScreen(
 
             val m = budget
             item { SafeToSpendHero(m, state.totals.totalMinor, onSetBudgets) }
+            recap?.let { r -> item { com.emotionalleaves.sprout.ui.insights.RecapCard(r, vm::dismissRecap) } }
             item { StatsRow(state.totals.totalMinor, outlook?.trend, outlook?.forecast?.endMinor, onNetWorth) }
             if (insights.isNotEmpty()) {
                 item { com.emotionalleaves.sprout.ui.common.SectionHeader("Insights") }

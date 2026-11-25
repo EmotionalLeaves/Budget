@@ -77,5 +77,6 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [x] (2.2.0) Bill reminders
 - [ ] Spending challenges ("No eating out this week") with a streak — *why: motivation*
 - [ ] Paycheck planner: split each paycheck into bills, budgets and savings — *why: give every dollar a job*
-- [ ] 50/30/20 budget template from average income in Quick setup — *why: a sensible start*
-- [ ] Monthly recap notification/screen on the 1st ("October: spent $X, saved $Y") — *why: reflection*
+- [x] (2.3.0) 50/30/20 template
+- [x] (2.3.0) Monthly recap card
+- [ ] **Compare with leading apps** (YNAB, Monarch, Copilot, Rocket Money, Simplifi, PocketGuard, EveryDollar, Goodbudget): list what works there and bring the best of it here (user request, 2026-11-24) — *why: be the best budgeting app*

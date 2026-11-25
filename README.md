@@ -18,7 +18,9 @@ Sprout is a private budgeting app for Android that reads your bank accounts (rea
 
 Sprout updates itself. When a new version is out, a card on Home says "Sprout X is ready": tap **Update**, then **Install**. The first time, Android asks you to allow Sprout to install updates (one switch, then come back). Settings → Updates has "Check for updates" and an automatic-check switch.
 
-This repo is private, so the in-app download needs a read-only key. Until it's set up, the card offers **Open Releases** instead (you're signed in to GitHub in your browser, so that works). To set up the key from your phone, once:
+Updates download and install **inside Sprout**: Android shows a short confirmation on top of the app (and from Android 12 on, Sprout can skip it once it installed the previous update itself). After installing, a notification offers to reopen Sprout.
+
+This repo is private, so in-app downloads need a read-only key, once. Easiest: Settings → Updates → **Update inside Sprout** → "Make a key", then paste it there (stored encrypted on the phone). Or, from your phone's browser:
 
 1. github.com → your picture → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token.
 2. Repository access: Only select repositories → **Budget**. Permissions → Contents: **Read-only**. Longest expiry.

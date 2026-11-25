@@ -91,4 +91,26 @@ class TagAndInsightTest {
         assertEquals(2, rows.size)
         assertEquals(-4_000L, rows.first().amountMinor) // newest first
     }
+
+    @Test fun recapCalendarAndTemplate() = runBlocking {
+        sync(
+            Triple("1", "ACME PAYROLL|3000.00", at(10, 1)),
+            Triple("2", "RENT CO|-1000.00", at(10, 2)),
+            Triple("3", "TARGET|-200.00", at(10, 15)),
+            Triple("4", "TARGET|-50.00", at(9, 15)),
+            Triple("5", "KROGER|-20.00", at(11, 2)),
+        )
+        val repo = InsightsRepository(env.db, env.clock) { zone }
+        val r = repo.recap(java.time.YearMonth.of(2026, 10))
+        assertEquals(120_000L, r.spentMinor)
+        assertEquals(300_000L, r.incomeMinor)
+        assertEquals(5_000L, r.previousSpentMinor)
+        assertEquals(29, r.noSpendDays)
+        assertEquals(100_000L, r.biggest?.second)
+        val cal = repo.calendar()
+        assertEquals(2_000L, cal.weeks.flatten().first { it?.date?.dayOfMonth == 2 }!!.spentMinor)
+        val (income, plan) = com.emotionalleaves.sprout.data.budget.BudgetRepository(env.db, env.clock, { zone }).fiftyThirtyTwenty()
+        assertEquals(300_000L, income) // averaged over the months that had income
+        assertTrue(plan.values.sum() <= 240_000L)
+    }
 }

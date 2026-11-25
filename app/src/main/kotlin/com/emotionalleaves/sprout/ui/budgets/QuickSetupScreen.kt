@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.budgets
 
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -62,6 +63,10 @@ class QuickSetupViewModel(private val c: AppContainer) : ViewModel() {
         }
     }
 
+    private val _template = MutableStateFlow<Pair<Long, Map<Long, Long>>?>(null)
+    val template: StateFlow<Pair<Long, Map<Long, Long>>?> = _template.asStateFlow()
+    fun loadTemplate() = viewModelScope.launch { _template.value = c.budgetRepository.fiftyThirtyTwenty() }
+
     fun apply(amounts: Map<Long, Long>, done: () -> Unit) = viewModelScope.launch {
         c.budgetRepository.applySuggestions(amounts)
         done()
@@ -81,6 +86,8 @@ fun QuickSetupScreen(onBack: () -> Unit) {
     val current by vm.current.collectAsStateWithLifecycle()
     val categories by vm.categories.collectAsStateWithLifecycle()
     val edits = remember { mutableStateMapOf<Long, String>() }
+    val template by vm.template.collectAsStateWithLifecycle()
+    var useTemplate by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
 
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -94,7 +101,28 @@ fun QuickSetupScreen(onBack: () -> Unit) {
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(horizontal = 16.dp),
         )
-        fun valueFor(id: Long): String = edits[id] ?: (current[id] ?: sugg[id]?.suggestedMinor)?.let(::minorToText) ?: ""
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            androidx.compose.material3.FilterChip(!useTemplate, { useTemplate = false; edits.clear() }, label = { Text("From my spending") },
+                modifier = Modifier.heightIn(min = 48.dp))
+            androidx.compose.material3.FilterChip(useTemplate, { useTemplate = true; edits.clear(); vm.loadTemplate() }, label = { Text("50/30/20 of income") },
+                modifier = Modifier.heightIn(min = 48.dp))
+        }
+        if (useTemplate) {
+            val t = template
+            Text(
+                when {
+                    t == null -> "Working it out…"
+                    t.first <= 0 -> "No income found in the last 3 months, so there's nothing to split yet."
+                    else -> "Your income averages ${Money.formatWhole(t.first)}/month: 50% for needs (rent, groceries, bills…), " +
+                        "30% for wants, and 20% (${Money.formatWhole(t.first / 5)}) left for savings and debt."
+                },
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+        }
+        val templateAmounts = if (useTemplate) template?.second.orEmpty() else emptyMap()
+        fun valueFor(id: Long): String = edits[id]
+            ?: (if (useTemplate) templateAmounts[id] else (current[id] ?: sugg[id]?.suggestedMinor))?.let(::minorToText) ?: ""
 
         LazyColumn(Modifier.weight(1f), contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)) {

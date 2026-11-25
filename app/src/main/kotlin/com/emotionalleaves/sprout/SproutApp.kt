@@ -70,6 +70,8 @@ class AppContainer(context: Context) {
     val network = NetworkMonitor(appContext)
     val updates = com.emotionalleaves.sprout.data.update.UpdateRepository(
         appContext, BuildConfig.VERSION_NAME, BuildConfig.UPDATE_REPO, BuildConfig.UPDATE_TOKEN,
+        storedKey = { secureStore.readUpdateKey() },
+        saveStoredKey = { k -> if (k.isEmpty()) secureStore.clearUpdateKey() else secureStore.saveUpdateKey(k) },
     )
 }
 

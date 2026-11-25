@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -43,6 +44,8 @@ data class Settings(
     val privacyMode: Boolean = false,
     /** A notification the day before a bill is due. Off until you turn it on. */
     val notifyBills: Boolean = false,
+    /** "YYYY-MM" of the last monthly recap you closed. */
+    val recapDismissed: String? = null,
 )
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -72,6 +75,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
             dynamicColor = p[DYNAMIC_COLOR] ?: false,
             privacyMode = p[PRIVACY_MODE] ?: false,
             notifyBills = p[NOTIFY_BILLS] ?: false,
+            recapDismissed = p[RECAP_DISMISSED],
         )
     }
 
@@ -92,6 +96,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
     suspend fun setHideInRecents(on: Boolean) = dataStore.edit { it[HIDE_RECENTS] = on }
     suspend fun setThemeMode(mode: Int) = dataStore.edit { it[THEME_MODE] = mode.coerceIn(0, 2) }
     suspend fun setDynamicColor(on: Boolean) = dataStore.edit { it[DYNAMIC_COLOR] = on }
+    suspend fun setRecapDismissed(month: String) = dataStore.edit { it[RECAP_DISMISSED] = month }
     suspend fun setNotifyBills(on: Boolean) = dataStore.edit { it[NOTIFY_BILLS] = on }
     suspend fun setPrivacyMode(on: Boolean) = dataStore.edit { it[PRIVACY_MODE] = on }
     suspend fun setUsePurchaseDate(on: Boolean) = dataStore.edit { it[PURCHASE_DATE] = on }
@@ -126,5 +131,6 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
         val PRIVACY_MODE = booleanPreferencesKey("privacy_mode")
         val NOTIFY_BILLS = booleanPreferencesKey("notify_bills")
+        val RECAP_DISMISSED = stringPreferencesKey("recap_dismissed")
     }
 }

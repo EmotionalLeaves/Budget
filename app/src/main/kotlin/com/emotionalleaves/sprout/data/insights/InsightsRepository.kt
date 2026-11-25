@@ -51,6 +51,32 @@ class InsightsRepository(private val db: SproutDatabase, private val clock: Cloc
         list to grid
     }
 
+    /** Last month in review (or [month]). */
+    suspend fun recap(month: YearMonth = YearMonth.from(today()).minusMonths(1)): com.emotionalleaves.sprout.domain.insights.Recap = withContext(Dispatchers.IO) {
+        val z = zone()
+        val w = MonthWindow.of(month, z)
+        val pw = MonthWindow.of(month.minusMonths(1), z)
+        val cats = db.categories().getAll().associateBy { it.id }
+        val expense = cats.values.filter { it.kind == CategoryKind.EXPENSE }.map { it.id }.toSet()
+        val rows = db.budgets().spendRows(w.start, w.end).filter { it.categoryId in expense }
+        val byCat = rows.groupBy { it.categoryId }.mapValues { (_, l) -> maxOf(0L, -l.sumOf { it.amountMinor }) }
+        val prevRows = db.budgets().spendRows(pw.start, pw.end).filter { it.categoryId in expense }
+        val prev = prevRows.groupBy { it.categoryId }.values.sumOf { l -> maxOf(0L, -l.sumOf { it.amountMinor }) }
+        val merchants = db.insights().merchantTotals(w.start, w.end)
+        val biggest = db.insights().biggestCharge(w.start, w.end)
+        val days = rows.map { java.time.Instant.ofEpochSecond(it.occurredAt).atZone(z).toLocalDate() }.toSet()
+        com.emotionalleaves.sprout.domain.insights.Recap(
+            month = month,
+            spentMinor = byCat.values.sum(),
+            incomeMinor = db.insights().income(w.start, w.end),
+            previousSpentMinor = prev.takeIf { prevRows.isNotEmpty() },
+            topCategories = byCat.entries.sortedByDescending { it.value }.take(3).map { (cats[it.key]?.name ?: "Other") to it.value },
+            biggest = biggest?.let { MerchantNormalizer.displayName(it.merchantKey) to -it.amountMinor },
+            noSpendDays = month.lengthOfMonth() - days.size,
+            transactions = merchants.sumOf { it.count },
+        )
+    }
+
     /** This month's everyday spending per day, as a calendar. */
     suspend fun calendar(): com.emotionalleaves.sprout.domain.calendar.SpendCalendar = withContext(Dispatchers.IO) {
         val z = zone()

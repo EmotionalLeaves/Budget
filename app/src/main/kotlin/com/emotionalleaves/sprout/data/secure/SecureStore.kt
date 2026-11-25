@@ -28,15 +28,15 @@ interface SecretCipher {
 /**
  * AES-256-GCM key in the AndroidKeyStore: non-exportable, random IV per encryption.
  */
-class KeystoreCipher : SecretCipher {
+class KeystoreCipher(private val alias: String = ALIAS) : SecretCipher {
 
     private fun keyStore(): KeyStore = KeyStore.getInstance(PROVIDER).apply { load(null) }
 
     private fun key(): SecretKey {
-        (keyStore().getKey(ALIAS, null) as? SecretKey)?.let { return it }
+        (keyStore().getKey(alias, null) as? SecretKey)?.let { return it }
         val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, PROVIDER)
         generator.init(
-            KeyGenParameterSpec.Builder(ALIAS, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
+            KeyGenParameterSpec.Builder(alias, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
                 .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
                 .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
                 .setKeySize(256)
@@ -60,13 +60,13 @@ class KeystoreCipher : SecretCipher {
         val iv = blob.copyOfRange(1, 1 + ivLen)
         val ct = blob.copyOfRange(1 + ivLen, blob.size)
         val cipher = Cipher.getInstance(TRANSFORMATION)
-        val existing = keyStore().getKey(ALIAS, null) as? SecretKey ?: error("no key")
+        val existing = keyStore().getKey(alias, null) as? SecretKey ?: error("no key")
         cipher.init(Cipher.DECRYPT_MODE, existing, GCMParameterSpec(128, iv))
         return cipher.doFinal(ct)
     }
 
     override fun deleteKey() {
-        runCatching { keyStore().deleteEntry(ALIAS) }
+        runCatching { keyStore().deleteEntry(alias) }
     }
 
     companion object {
@@ -94,8 +94,29 @@ sealed interface StoredSecret {
 class SecureStore(
     private val dataStore: DataStore<Preferences>,
     private val cipher: SecretCipher,
+    /** A separate Keystore key for the update key, so disconnecting the bank never touches it (and vice versa). */
+    private val updateCipher: SecretCipher? = null,
 ) {
-    constructor(context: Context) : this(context.applicationContext.secureDataStore, KeystoreCipher())
+    constructor(context: Context) : this(context.applicationContext.secureDataStore, KeystoreCipher(), KeystoreCipher(UPDATE_ALIAS))
+
+    /** Saves the read-only GitHub key you pasted for in-app updates (AES-256-GCM, Keystore). */
+    suspend fun saveUpdateKey(key: String) {
+        val c = updateCipher ?: return
+        val blob = c.encrypt(key.toByteArray(Charsets.UTF_8))
+        dataStore.edit { it[KEY_UPDATE] = Base64.encodeToString(blob, Base64.NO_WRAP) }
+    }
+
+    /** The saved update key, or "" when there is none or it can't be read. Never logged or shown. */
+    suspend fun readUpdateKey(): String {
+        val c = updateCipher ?: return ""
+        val encoded = dataStore.data.first()[KEY_UPDATE] ?: return ""
+        return runCatching { String(c.decrypt(Base64.decode(encoded, Base64.NO_WRAP)), Charsets.UTF_8) }.getOrDefault("")
+    }
+
+    suspend fun clearUpdateKey() {
+        dataStore.edit { it.remove(KEY_UPDATE) }
+        runCatching { updateCipher?.deleteKey() }
+    }
 
     val hasAccessUrl = dataStore.data.map { it[KEY_ACCESS] != null }
 
@@ -126,5 +147,7 @@ class SecureStore(
 
     private companion object {
         val KEY_ACCESS = stringPreferencesKey("access_url_ct")
+        val KEY_UPDATE = stringPreferencesKey("update_key_ct")
+        const val UPDATE_ALIAS = "sprout_update_key"
     }
 }

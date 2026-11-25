@@ -62,3 +62,14 @@ class InsightsTest {
         assertEquals(LocalDate.of(2026, 10, 15), NetWorthHistory.earliest(txs, z))
     }
 }
+
+class RecapTest {
+    @Test fun headlineAndChange() {
+        val r = Recap(java.time.YearMonth.of(2026, 10), 200_000, 300_000, 250_000, listOf("Rent" to 120_000L), "Target" to 9_000L, 5, 42)
+        assertEquals(100_000L, r.savedMinor)
+        assertEquals(-20, r.changePercent)
+        assertEquals("You kept 33% of what came in", r.headline())
+        assertEquals("Spending was above income", r.copy(incomeMinor = 100_000).headline())
+        assertEquals(null, r.copy(previousSpentMinor = null).changePercent)
+    }
+}

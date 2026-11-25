@@ -41,6 +41,10 @@ sealed interface UpdateState {
     /** Couldn't download in the app (no key, or the key stopped working): open the Releases page instead. */
     data class OpenReleasesPage(val url: String, val release: ReleaseInfo?) : UpdateState
     data class Failed(val message: String) : UpdateState
+    /** The APK download broke off (or didn't match its checksum): offer "Try again". */
+    data class DownloadFailed(val release: ReleaseInfo) : UpdateState
+    /** Android didn't finish installing (cancelled, or not enough space): offer "Install" again. */
+    data class InstallFailed(val release: ReleaseInfo, val file: File) : UpdateState
 }
 
 /**
@@ -52,13 +56,36 @@ class UpdateRepository(
     private val context: Context,
     private val currentVersion: String,
     private val repo: String,
-    private val key: String,
+    /** Built in at build time (UPDATE_TOKEN secret); empty when there isn't one. */
+    private val builtInKey: String,
     private val http: OkHttpClient = OkHttpClient.Builder()
         .followRedirects(false).followSslRedirects(false)
         .connectTimeout(20, TimeUnit.SECONDS).readTimeout(60, TimeUnit.SECONDS)
         .build(),
     private val apiBase: String = "https://api.github.com",
+    /** A key you pasted in Settings → Updates (stored encrypted); used when nothing is built in. */
+    private val storedKey: suspend () -> String = { "" },
+    private val saveStoredKey: suspend (String) -> Unit = {},
 ) {
+    private suspend fun key(): String = builtInKey.ifEmpty { runCatching { storedKey() }.getOrDefault("") }
+    private val _hasKey = MutableStateFlow(builtInKey.isNotEmpty())
+    /** Whether in-app downloads can work (a built-in or saved key). */
+    val hasKeyFlow: StateFlow<Boolean> = _hasKey.asStateFlow()
+    val keyIsBuiltIn: Boolean get() = builtInKey.isNotEmpty()
+
+    /** Saves a pasted read-only key, then checks it right away. Returns true if GitHub accepted it. */
+    suspend fun saveKey(raw: String): Boolean {
+        val k = raw.trim().filter { it.isLetterOrDigit() || it == '_' }
+        if (k.length < 20) return false
+        saveStoredKey(k)
+        _hasKey.value = true
+        check()
+        val ok = _state.value !is UpdateState.OpenReleasesPage
+        if (!ok) { saveStoredKey(""); _hasKey.value = false }
+        return ok
+    }
+
+    suspend fun refreshHasKey() { _hasKey.value = key().isNotEmpty() }
     private val _state = MutableStateFlow<UpdateState>(UpdateState.Idle)
     val state: StateFlow<UpdateState> = _state.asStateFlow()
 
@@ -68,7 +95,7 @@ class UpdateRepository(
     /** Download new versions in the background on Wi-Fi (or any unmetered network), so they're ready to install. */
     val autoDownload = context.updateStore.data.map { it[AUTO_DOWNLOAD] ?: true }
     suspend fun setAutoDownload(on: Boolean) { context.updateStore.edit { it[AUTO_DOWNLOAD] = on } }
-    val hasKey: Boolean get() = key.isNotEmpty()
+    val hasKey: Boolean get() = _hasKey.value
 
     suspend fun setAutoCheck(on: Boolean) { context.updateStore.edit { it[AUTO] = on } }
 
@@ -120,6 +147,8 @@ class UpdateRepository(
     suspend fun check(quiet: Boolean = false) = withContext(Dispatchers.IO) {
         if (_state.value is UpdateState.Downloading) return@withContext
         _state.value = UpdateState.Checking
+        val key = key()
+        _hasKey.value = key.isNotEmpty()
         val result = runCatching {
             val req = Request.Builder().url("$apiBase/repos/$repo/releases/latest")
                 .header("Accept", "application/vnd.github+json")
@@ -148,6 +177,7 @@ class UpdateRepository(
 
     /** Downloads the APK into the app's cache, checks its SHA-256, then hands it to Android's installer. */
     suspend fun download(release: ReleaseInfo) = withContext(Dispatchers.IO) {
+        val key = key()
         if (key.isEmpty()) {
             _state.value = UpdateState.OpenReleasesPage(release.pageUrl.ifEmpty { releasesPage }, release)
             return@withContext
@@ -202,7 +232,7 @@ class UpdateRepository(
             true
         }.getOrElse { false }
         if (ok) context.updateStore.edit { it[READY_VERSION] = release.version; it[READY_NOTES] = release.notes }
-        _state.value = if (ok) UpdateState.ReadyToInstall(release, out) else UpdateState.Failed("The download didn't finish. Try again.")
+        _state.value = if (ok) UpdateState.ReadyToInstall(release, out) else UpdateState.DownloadFailed(release)
     }
 
     /** True when Android lets Sprout open the installer; otherwise send the user to the one-time setting. */
@@ -219,6 +249,12 @@ class UpdateRepository(
     }
 
     fun reset() { _state.value = UpdateState.Idle }
+
+    /** Android refused or cancelled the install: offer it again (the file is still there). */
+    fun installFailed() {
+        val s = _state.value
+        if (s is UpdateState.ReadyToInstall) _state.value = UpdateState.InstallFailed(s.release, s.file)
+    }
 
     companion object {
         const val CHECK_INTERVAL_SECONDS = 6 * 3600L

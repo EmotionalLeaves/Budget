@@ -38,6 +38,7 @@ import com.emotionalleaves.sprout.data.db.CategoryEntity
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CategoryGrid(categories: List<CategoryEntity>, selectedId: Long?, onPick: (CategoryEntity) -> Unit) {
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -54,7 +55,10 @@ fun CategoryGrid(categories: List<CategoryEntity>, selectedId: Long?, onPick: (C
                     .background(if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
                     .then(if (selected) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp)) else Modifier)
                     .semantics { this.selected = selected }
-                    .clickable(role = Role.Button) { onPick(c) }
+                    .clickable(role = Role.Button) {
+                        haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                        onPick(c)
+                    }
                     .padding(horizontal = 12.dp, vertical = 8.dp),
             ) {
                 Icon(CategoryIcons.forKey(c.iconKey), contentDescription = null, tint = Color(c.colorArgb), modifier = Modifier.size(18.dp))

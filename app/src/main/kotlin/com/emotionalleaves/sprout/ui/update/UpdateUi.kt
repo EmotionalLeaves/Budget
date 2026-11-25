@@ -41,6 +41,11 @@ import kotlinx.coroutines.launch
 
 private fun open(context: android.content.Context, intent: Intent) = runCatching { context.startActivity(intent) }
 
+/** Installs in place (PackageInstaller session); falls back to Android's installer screen if that can't start. */
+private fun installNow(context: android.content.Context, updates: UpdateRepository, file: java.io.File) {
+    if (!com.emotionalleaves.sprout.data.update.UpdateInstaller.install(context, file)) open(context, updates.installIntent(file))
+}
+
 /** Calm, dismissible "update ready" card for Home. Shows nothing when there's nothing to do. */
 @Composable
 fun UpdateCard(updates: UpdateRepository) {
@@ -48,7 +53,7 @@ fun UpdateCard(updates: UpdateRepository) {
     val dismissed by updates.dismissedVersion.collectAsState(initial = null)
     val visible = when (val s = state) {
         is UpdateState.Available -> s.release.version != dismissed
-        is UpdateState.Downloading, is UpdateState.ReadyToInstall, is UpdateState.OpenReleasesPage -> true
+        is UpdateState.Downloading, is UpdateState.ReadyToInstall, is UpdateState.OpenReleasesPage, is UpdateState.DownloadFailed, is UpdateState.InstallFailed -> true
         else -> false
     }
     AnimatedVisibility(visible) {
@@ -71,6 +76,10 @@ private fun UpdateBody(updates: UpdateRepository, state: UpdateState, showLater:
                     Text("Sprout ${state.release.version} is ready", style = MaterialTheme.typography.titleMedium)
                 }
                 if (state.release.notes.isNotBlank()) Text(state.release.notes, style = MaterialTheme.typography.bodySmall)
+                if (state.release.sizeBytes > 0) {
+                    Text("%.1f MB download".format(state.release.sizeBytes / 1_048_576.0), style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = { scope.launch { updates.download(state.release) } }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Update") }
                     if (showLater) TextButton(onClick = { scope.launch { updates.dismiss(state.release.version) } }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Later") }
@@ -83,7 +92,7 @@ private fun UpdateBody(updates: UpdateRepository, state: UpdateState, showLater:
             is UpdateState.ReadyToInstall -> {
                 val allowed = updates.canInstall()
                 // Open the installer as soon as the download finishes, when Android already allows it.
-                LaunchedEffect(state.file) { if (allowed) open(context, updates.installIntent(state.file)) }
+                LaunchedEffect(state.file) { if (allowed) installNow(context, updates, state.file) }
                 Text("Ready to install ${state.release.version}", style = MaterialTheme.typography.titleSmall)
                 if (!allowed) {
                     Text(
@@ -93,7 +102,7 @@ private fun UpdateBody(updates: UpdateRepository, state: UpdateState, showLater:
                     )
                     OutlinedButton(onClick = { open(context, updates.unknownSourcesIntent()) }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Allow updates") }
                 }
-                Button(onClick = { open(context, updates.installIntent(state.file)) }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Install") }
+                Button(onClick = { installNow(context, updates, state.file) }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Install") }
                 Text("Your data stays: the update installs over this version.", style = MaterialTheme.typography.labelSmall)
             }
             is UpdateState.OpenReleasesPage -> {
@@ -101,9 +110,23 @@ private fun UpdateBody(updates: UpdateRepository, state: UpdateState, showLater:
                     if (state.release != null) "Sprout ${state.release.version} is out" else "Get the newest Sprout",
                     style = MaterialTheme.typography.titleSmall,
                 )
-                Text("Open the Releases page and tap the .apk to install it over this version.", style = MaterialTheme.typography.bodySmall)
+                Text("To update right here in Sprout, add your read-only update key in Settings → Updates (one time). Or open the Releases page.",
+                    style = MaterialTheme.typography.bodySmall)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = { open(context, Intent(Intent.ACTION_VIEW, Uri.parse(state.url))) }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Open Releases") }
+                    if (showLater) TextButton(onClick = { updates.reset() }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Later") }
+                }
+            }
+            is UpdateState.InstallFailed -> {
+                Text("${state.release.version} didn't install", style = MaterialTheme.typography.titleSmall)
+                Text("It may have been cancelled, or the phone is low on space. Nothing changed.", style = MaterialTheme.typography.bodySmall)
+                Button(onClick = { installNow(context, updates, state.file) }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Install again") }
+            }
+            is UpdateState.DownloadFailed -> {
+                Text("The download of ${state.release.version} didn't finish", style = MaterialTheme.typography.titleSmall)
+                Text("Check your connection and try again. Nothing changed on your phone.", style = MaterialTheme.typography.bodySmall)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { scope.launch { updates.download(state.release) } }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Try again") }
                     if (showLater) TextButton(onClick = { updates.reset() }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Later") }
                 }
             }
@@ -124,7 +147,10 @@ fun UpdateSettings(updates: UpdateRepository) {
             Text("Check for updates automatically", Modifier.weight(1f))
             Switch(checked = auto, onCheckedChange = { scope.launch { updates.setAutoCheck(it) } })
         }
-        if (updates.hasKey) {
+        val hasKey by updates.hasKeyFlow.collectAsState()
+        LaunchedEffect(Unit) { updates.refreshHasKey() }
+        if (!updates.keyIsBuiltIn) UpdateKeyRow(updates, hasKey)
+        if (hasKey) {
             val autoDl by updates.autoDownload.collectAsState(initial = true)
             Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text("Download updates on Wi-Fi in the background", Modifier.weight(1f))
@@ -135,7 +161,7 @@ fun UpdateSettings(updates: UpdateRepository) {
             UpdateState.Checking -> Text("Checking…", style = MaterialTheme.typography.bodySmall)
             UpdateState.UpToDate -> Text("You're up to date.", style = MaterialTheme.typography.bodySmall)
             is UpdateState.Failed -> Text((state as UpdateState.Failed).message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
-            is UpdateState.Available, is UpdateState.Downloading, is UpdateState.ReadyToInstall, is UpdateState.OpenReleasesPage ->
+            is UpdateState.Available, is UpdateState.Downloading, is UpdateState.ReadyToInstall, is UpdateState.OpenReleasesPage, is UpdateState.DownloadFailed, is UpdateState.InstallFailed ->
                 Card { UpdateBody(updates, state, showLater = false) }
             UpdateState.Idle -> Unit
         }
@@ -155,5 +181,55 @@ fun UpdateSettings(updates: UpdateRepository) {
             enabled = state !is UpdateState.Checking && state !is UpdateState.Downloading,
             modifier = Modifier.heightIn(min = 48.dp),
         ) { Text("Check for updates") }
+    }
+}
+
+
+/**
+ * Paste a read-only GitHub key once so updates download inside Sprout (this repo is private). Stored encrypted with
+ * a key that never leaves the phone; only ever sent to api.github.com.
+ */
+@Composable
+private fun UpdateKeyRow(updates: UpdateRepository, hasKey: Boolean) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var editing by remember { mutableStateOf(false) }
+    var text by remember { mutableStateOf("") }
+    var result by remember { mutableStateOf<String?>(null) }
+    if (hasKey && !editing) {
+        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Update key saved: updates install right here", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+            TextButton(onClick = { editing = true }) { Text("Change") }
+        }
+        return
+    }
+    Card {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Update inside Sprout", style = MaterialTheme.typography.titleSmall)
+            Text(
+                "One time: make a read-only key on GitHub (Settings → Developer settings → Fine-grained tokens → only the Budget repo, " +
+                    "Contents: Read-only), then paste it here. After that, updates download and install without leaving Sprout.",
+                style = MaterialTheme.typography.bodySmall,
+            )
+            androidx.compose.material3.OutlinedTextField(
+                value = text, onValueChange = { text = it.trim().take(200) }, singleLine = true,
+                label = { Text("Read-only key") },
+                visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            result?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = {
+                    scope.launch {
+                        val ok = updates.saveKey(text)
+                        result = if (ok) null else "GitHub didn't accept that key. Check it has read access to the Budget repo."
+                        if (ok) { text = ""; editing = false }
+                    }
+                }, enabled = text.length >= 20, modifier = Modifier.heightIn(min = 48.dp)) { Text("Save key") }
+                TextButton(onClick = {
+                    open(context, Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/settings/personal-access-tokens/new")))
+                }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Make a key") }
+            }
+        }
     }
 }

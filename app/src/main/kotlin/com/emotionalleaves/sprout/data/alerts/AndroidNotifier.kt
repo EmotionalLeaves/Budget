@@ -136,6 +136,27 @@ class AndroidNotifier(private val context: Context) : Notifier {
         }
     }
 
+    /** "Sprout updated to X · tap to open" right after an in-app update installs. */
+    fun showUpdated(version: String): Boolean {
+        if (!canPost()) return false
+        val id = "updated".hashCode()
+        val intent = Intent(context, MainActivity::class.java).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP }
+        val pending = PendingIntent.getActivity(context, id, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        val n = NotificationCompat.Builder(context, CH_UPDATES)
+            .setSmallIcon(R.drawable.ic_stat_sprout)
+            .setContentTitle("Sprout updated to $version")
+            .setContentText("Tap to open. Your data is all there.")
+            .setContentIntent(pending)
+            .setAutoCancel(true)
+            .build()
+        return try {
+            NotificationManagerCompat.from(context).notify(id, n)
+            true
+        } catch (e: SecurityException) {
+            false
+        }
+    }
+
     companion object {
         const val CH_BILLS = "bill_reminders"
         const val CH_UPDATES = "app_updates"

@@ -2,7 +2,25 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
-## [2.2.0] - 2026-11-24
+## [2.3.0] - 2026-11-24
+
+Round 4 of the overhaul.
+
+### Auto-update
+- **Updates install inside Sprout.** No browser, no Downloads folder: tap Update, then Install, and Android's short confirmation appears on top of Sprout. On Android 12 and later, once Sprout has installed one update itself, later updates can install without even that step. A notification offers to reopen Sprout when it's done.
+- **Paste your update key in the app**: Settings → Updates → "Update inside Sprout". Sprout checks the key with GitHub before saving it, and stores it encrypted on your phone. No repo settings needed.
+- The update card shows the download size, and offers "Try again" if a download breaks off or "Install again" if an install is cancelled.
+
+### New look
+- The review flow shows progress ("12 done") with a bar and a big card for each transaction, animating to the next one.
+- A small vibration when you pick a category.
+- Quick setup can switch between "From my spending" and a 50/30/20 plan.
+
+### New features
+- **50/30/20 budgets**: Quick setup splits your average income into needs (50%), wants (30%) and savings (20%), shared across categories by what you usually spend.
+- **Monthly recap**: in the first week of each month, Home shows how last month went: spent vs income, the change from the month before, where most money went, the biggest purchase and no-spend days.
+
+ - 2026-11-24
 
 Round 3 of the overhaul.
 

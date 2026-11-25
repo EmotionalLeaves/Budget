@@ -90,14 +90,22 @@ fun ReviewScreen(onBack: () -> Unit) {
             EmptyState("All caught up", "Every transaction has a category.")
             return@Column
         }
-        Text("${list.size} left", style = MaterialTheme.typography.labelLarge)
+        var startCount by rememberSaveable { mutableStateOf(0) }
+        if (list.size > startCount) startCount = list.size
+        val done = startCount - list.size
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("${list.size} left", style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
+            if (done > 0) Text("$done done", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+        }
+        com.emotionalleaves.sprout.ui.common.FatProgress(if (startCount == 0) 0f else done.toFloat() / startCount, MaterialTheme.colorScheme.primary)
         val merchant = MerchantNormalizer.displayName(row.merchantKey)
-        Card(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(merchant, style = MaterialTheme.typography.headlineSmall)
-                Text(Format.amount(row.amountMinor), style = MaterialTheme.typography.titleLarge)
-                Text(row.description, style = MaterialTheme.typography.bodyMedium)
-                Text("${Format.dateTime(row.occurredAt)} · ${row.accountName}", style = MaterialTheme.typography.bodySmall)
+        val c = com.emotionalleaves.sprout.ui.theme.LocalSproutColors.current
+        androidx.compose.animation.AnimatedContent(targetState = row, label = "review-card") { r ->
+            com.emotionalleaves.sprout.ui.common.HeroCard(c.hero, Modifier.padding(horizontal = 0.dp)) {
+                Text(MerchantNormalizer.displayName(r.merchantKey), style = MaterialTheme.typography.headlineSmall, color = c.onHero)
+                Text(Format.amount(r.amountMinor), style = MaterialTheme.typography.displaySmall, color = c.onHero)
+                Text(r.description, style = MaterialTheme.typography.bodyMedium, color = c.onHero.copy(alpha = 0.85f))
+                Text("${Format.dateTime(r.occurredAt)} · ${r.accountName}", style = MaterialTheme.typography.bodySmall, color = c.onHero.copy(alpha = 0.8f))
             }
         }
         Row(

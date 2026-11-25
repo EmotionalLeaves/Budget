@@ -164,6 +164,21 @@ class BudgetRepository(
             }
     }
 
+    /** 50/30/20 amounts from the average income of the last 3 full months. Empty without income history. */
+    suspend fun fiftyThirtyTwenty(): Pair<Long, Map<Long, Long>> = withContext(Dispatchers.IO) {
+        val z = zone()
+        val current = currentMonth()
+        val months = (1..3).map { current.minusMonths(it.toLong()) }
+        val incomes = months.map { m -> MonthWindow.of(m, z).let { w -> db.insights().income(w.start, w.end) } }.filter { it > 0 }
+        val income = if (incomes.isEmpty()) 0L else incomes.sum() / incomes.size
+        val from = MonthWindow.of(current.minusMonths(3), z).start
+        val to = MonthWindow.of(current, z).start
+        val spend = db.budgets().spendRows(from, to).groupBy { it.categoryId }.mapValues { (_, l) -> maxOf(0L, -l.sumOf { it.amountMinor }) / 3 }
+        val cats = db.categories().getAll().filter { it.kind == CategoryKind.EXPENSE && !it.archived }
+            .map { com.emotionalleaves.sprout.domain.budget.BudgetTemplates.Input(it.id, it.key, spend[it.id] ?: 0L) }
+        income to com.emotionalleaves.sprout.domain.budget.BudgetTemplates.fiftyThirtyTwenty(income, cats)
+    }
+
     suspend fun applySuggestions(amounts: Map<Long, Long>) = withContext(Dispatchers.IO) {
         val now = clock.instant().epochSecond
         db.budgets().upsertDefaults(amounts.filterValues { it >= 0 }.map { (id, a) -> CategoryBudgetEntity(id, a, now) })

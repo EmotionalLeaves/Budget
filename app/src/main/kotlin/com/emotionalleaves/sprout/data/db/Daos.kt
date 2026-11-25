@@ -628,4 +628,17 @@ interface InsightDao {
         """,
     )
     fun observeMerchant(merchantKey: String): Flow<List<TransactionRow>>
+
+    @Query(
+        """
+        SELECT t.merchantKey AS merchantKey, t.amountMinor AS amountMinor FROM transactions t
+        JOIN accounts a ON a.id = t.accountId JOIN categories c ON c.id = t.categoryId
+        WHERE t.occurredAt >= :start AND t.occurredAt < :end AND c.kind = 'EXPENSE' AND t.amountMinor < 0
+          AND t.excludedFromBudget = 0 AND a.hidden = 0
+        ORDER BY t.amountMinor ASC LIMIT 1
+        """,
+    )
+    suspend fun biggestCharge(start: Long, end: Long): MerchantCharge?
 }
+
+data class MerchantCharge(val merchantKey: String, val amountMinor: Long)
