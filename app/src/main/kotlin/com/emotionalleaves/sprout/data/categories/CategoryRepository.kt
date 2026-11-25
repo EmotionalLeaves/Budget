@@ -106,6 +106,18 @@ class CategoryRepository(private val db: SproutDatabase, private val clock: Cloc
         }
     }
 
+    /** Moves a category one place up (-1) or down (+1); everything picks up the new order (grids, budgets, lists). */
+    suspend fun move(id: Long, delta: Int) = withContext(Dispatchers.IO) {
+        db.withTransaction {
+            val list = db.categories().getAll().filter { !it.archived }.toMutableList()
+            val i = list.indexOfFirst { it.id == id }
+            val j = i + delta
+            if (i < 0 || j !in list.indices) return@withTransaction
+            java.util.Collections.swap(list, i, j)
+            list.forEachIndexed { n, c -> if (c.sortOrder != n * 10) db.categories().update(c.copy(sortOrder = n * 10)) }
+        }
+    }
+
     /** How many transactions a keyword rule would match (for the live preview while typing). */
     suspend fun previewContains(keyword: String, minAbsMinor: Long?, maxAbsMinor: Long?): Int = withContext(Dispatchers.IO) {
         val pattern = BuiltInRules.haystack(Sanitize.text(keyword, 60))

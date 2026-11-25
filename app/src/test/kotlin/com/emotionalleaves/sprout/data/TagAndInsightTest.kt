@@ -234,6 +234,20 @@ class TagAndInsightTest {
         assertEquals(setOf("DELTA AIR 0061"), find("#trav"))
         assertEquals(setOf("DELTA AIR 0061"), find("travel"))
         assertEquals(setOf("SQ *JOES"), find("corner"))
+        // "Select all" uses the same filters as the list.
+        assertEquals(setOf(ids.getValue("DELTA AIR 0061")), env.db.transactions().filteredIds("travel", null, false).toSet())
+        assertEquals(3, env.db.transactions().filteredIds("", null, false).size)
+    }
+
+    @Test fun reorderCategories() = runBlocking {
+        env.repo().ensureSeeded()
+        val cats = com.emotionalleaves.sprout.data.categories.CategoryRepository(env.db, env.clock)
+        val before = env.db.categories().getAll().filter { !it.archived }.map { it.id }
+        cats.move(before[1], -1)
+        val after = env.db.categories().getAll().filter { !it.archived }.map { it.id }
+        assertEquals(listOf(before[1], before[0]) + before.drop(2), after)
+        cats.move(after[0], -1) // already first: nothing happens
+        assertEquals(after, env.db.categories().getAll().filter { !it.archived }.map { it.id })
     }
 
     @Test fun challengesAndHealth() = runBlocking {

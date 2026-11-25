@@ -2,6 +2,14 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.14.0] - 2026-11-25
+
+Round 15: big cleanups and your own order.
+
+### New
+- **Select all**: while selecting in Activity, "Select all" picks everything your search and filters match (up to 2,000). Example: search "venmo", Select all → Category → Person-to-Person. Undo puts it all back.
+- **Reorder categories**: More → Categories → Reorder, then use the arrows. Your order is used everywhere you pick a category.
+
 ## [2.13.0] - 2026-11-25
 
 Round 14: do several at once, and a Sunday summary.

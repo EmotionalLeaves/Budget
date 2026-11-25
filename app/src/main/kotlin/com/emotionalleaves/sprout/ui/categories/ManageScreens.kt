@@ -1,5 +1,7 @@
 package com.emotionalleaves.sprout.ui.categories
 
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import com.emotionalleaves.sprout.ui.common.readable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -66,6 +68,7 @@ class ManageCategoriesViewModel(private val c: AppContainer) : ViewModel() {
     val rules: StateFlow<List<RuleRow>> =
         c.db.merchantRules().observeRows().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    fun move(id: Long, delta: Int) = viewModelScope.launch { c.categoryRepository.move(id, delta) }
     fun add(name: String, color: Int, icon: String = "custom") = viewModelScope.launch { c.categoryRepository.addCategory(name, CategoryKind.EXPENSE, color, icon) }
     fun update(id: Long, name: String, color: Int, icon: String? = null) = viewModelScope.launch { c.categoryRepository.updateCategory(id, name, color, icon) }
     fun setArchived(id: Long, archived: Boolean) = viewModelScope.launch { c.categoryRepository.setArchived(id, archived) }
@@ -92,6 +95,7 @@ fun CategoriesScreen(onBack: () -> Unit) {
     val all by vm.all.collectAsStateWithLifecycle()
     var editing by remember { mutableStateOf<CategoryEntity?>(null) }
     var adding by remember { mutableStateOf(false) }
+    var reordering by remember { mutableStateOf(false) }
     val app = com.emotionalleaves.sprout.ui.common.appContainer()
     // This month's spending per category, so the list says something useful at a glance.
     val spent = com.emotionalleaves.sprout.ui.common.rememberLoaded(all.size) {
@@ -103,12 +107,18 @@ fun CategoriesScreen(onBack: () -> Unit) {
 
     Column(Modifier.fillMaxSize()) {
         ScreenHeader("Categories", onBack) {
+            TextButton(onClick = { reordering = !reordering }) { Text(if (reordering) "Done" else "Reorder") }
             IconButton(onClick = { adding = true }) { Icon(Icons.Filled.Add, contentDescription = "Add category") }
+        }
+        if (reordering) {
+            Text("This order is used everywhere you pick a category.", Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         LazyColumn {
             items(all, key = { it.id }) { c ->
                 Row(
-                    Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable { editing = c }.padding(horizontal = 16.dp),
+                    Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(enabled = !reordering) { editing = c }.padding(horizontal = 16.dp)
+                        .animateItem(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(Modifier.size(32.dp).clip(CircleShape).background(Color(c.colorArgb).readable().copy(alpha = 0.18f)), contentAlignment = Alignment.Center) {
@@ -124,6 +134,10 @@ fun CategoriesScreen(onBack: () -> Unit) {
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                    }
+                    if (reordering && !c.archived) {
+                        IconButton(onClick = { vm.move(c.id, -1) }) { Icon(Icons.Filled.KeyboardArrowUp, contentDescription = "Move ${c.name} up") }
+                        IconButton(onClick = { vm.move(c.id, +1) }) { Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Move ${c.name} down") }
                     }
                 }
                 HorizontalDivider(Modifier.padding(start = 16.dp))

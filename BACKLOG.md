@@ -112,5 +112,5 @@ What the leaders do well, and what Sprout takes from it. Never copied: anything 
 - [ ] Demo mode with sample data for first-run exploration — *why: see the app before connecting*
 - [x] (2.13.0) Multi-select in Activity (category, tag, leave out, reviewed)
 - [x] (2.13.0) Weekly summary notification (opt-in)
-- [ ] Select all matching a search in Activity — *why: big cleanups*
-- [ ] Category list: reorder by drag — *why: personal order*
+- [x] (2.14.0) Select all matching a search in Activity — *why: big cleanups*
+- [x] (2.14.0) Category list: reorder (arrows) — *why: personal order*

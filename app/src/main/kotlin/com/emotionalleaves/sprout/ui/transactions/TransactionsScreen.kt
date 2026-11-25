@@ -110,6 +110,16 @@ data class TxFilter(
 class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
     // ---- Several at once (selection mode). Each returns a message and an undo. ----
 
+    /** Everything the current search and filters match (up to 2,000). */
+    suspend fun allMatchingIds(): Set<String> {
+        val f = _filter.value
+        val sq = com.emotionalleaves.sprout.domain.search.SearchQuery.parse(f.query)
+        return c.db.transactions().filteredIds(
+            query = sq.text, categoryId = if (f.uncategorizedOnly) c.db.categories().getByKey(DefaultCategories.UNCATEGORIZED)?.id ?: -1 else f.categoryId,
+            pendingOnly = f.pendingOnly, accountId = f.accountId, minAbs = sq.minAbsMinor, maxAbs = sq.maxAbsMinor, tagId = f.tagId,
+        ).toSet()
+    }
+
     suspend fun bulkCategory(ids: Set<String>, categoryId: Long): suspend () -> Unit {
         val undos = ids.map { c.categoryRepository.recategorizeWithUndo(it, categoryId, alwaysForMerchant = false).undo }
         return { undos.forEach { it() } }
@@ -316,6 +326,7 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = { selected = emptySet() }) { Icon(Icons.Filled.Clear, contentDescription = "Stop selecting") }
                         Text("${selected.size} selected", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                        androidx.compose.material3.TextButton(onClick = { scope.launch { selected = vm.allMatchingIds() } }) { Text("Select all") }
                     }
                     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         androidx.compose.material3.AssistChip(onClick = { bulkCategory = true }, label = { Text("Category") }, modifier = Modifier.heightIn(min = 48.dp))

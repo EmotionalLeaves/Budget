@@ -257,6 +257,39 @@ interface TransactionDao {
         maxAbs: Long? = null,
         tagId: Long? = null,
     ): PagingSource<Int, TransactionRow>
+
+    /** The ids the paged list would show (same filters), for "select all". Capped so a mistake stays small. */
+    @Query(
+        """
+        SELECT t.id
+        FROM transactions t
+        JOIN categories c ON c.id = t.categoryId
+        JOIN accounts a ON a.id = t.accountId
+        WHERE a.hidden = 0
+          AND (:query = '' OR t.description LIKE '%' || :query || '%' OR t.merchantKey LIKE '%' || :query || '%'
+               OR t.note LIKE '%' || :query || '%' OR c.name LIKE '%' || :query || '%'
+               OR EXISTS (SELECT 1 FROM merchant_names mn WHERE mn.merchantKey = t.merchantKey AND mn.displayName LIKE '%' || :query || '%')
+               OR EXISTS (SELECT 1 FROM transaction_tags tq JOIN tags g ON g.id = tq.tagId
+                          WHERE tq.transactionId = t.id AND ('#' || g.name) LIKE '%' || :query || '%'))
+          AND (:categoryId IS NULL OR t.categoryId = :categoryId
+               OR EXISTS (SELECT 1 FROM transaction_splits s WHERE s.transactionId = t.id AND s.categoryId = :categoryId))
+          AND (:pendingOnly = 0 OR t.pending = 1)
+          AND (:accountId IS NULL OR t.accountId = :accountId)
+          AND (:tagId IS NULL OR EXISTS (SELECT 1 FROM transaction_tags tt WHERE tt.transactionId = t.id AND tt.tagId = :tagId))
+          AND (:minAbs IS NULL OR ABS(t.amountMinor) >= :minAbs)
+          AND (:maxAbs IS NULL OR ABS(t.amountMinor) <= :maxAbs)
+        ORDER BY t.occurredAt DESC LIMIT 2000
+        """,
+    )
+    suspend fun filteredIds(
+        query: String,
+        categoryId: Long?,
+        pendingOnly: Boolean,
+        accountId: String? = null,
+        minAbs: Long? = null,
+        maxAbs: Long? = null,
+        tagId: Long? = null,
+    ): List<String>
 }
 
 @Dao
