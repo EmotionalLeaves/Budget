@@ -179,8 +179,22 @@ class ScreenTour {
         createdAt = System.currentTimeMillis() / 1000 - 200 * 86_400,
     )
 
+    /** The main screens at 200% text size (an accessibility setting people really use). Run with -Psprout.only=large. */
+    @Test @Config(fontScale = 2.0f) fun tourLargeText() {
+        assumeTrue(out != null && System.getProperty("sprout.only") == "large")
+        seed()
+        ActivityScenario.launch(MainActivity::class.java).use {
+            scenario = it
+            shot("x-01-home")
+            tap("Activity"); shot("x-02-activity")
+            tap("Budgets"); shot("x-03-budgets")
+            tap("Bills"); shot("x-04-bills")
+            tap("More"); shot("x-05-more")
+        }
+    }
+
     @Test fun tour() {
-        assumeTrue(out != null)
+        assumeTrue(out != null && System.getProperty("sprout.only") != "large")
         if (System.getProperty("sprout.only") == "onboard") {
             androidx.work.testing.WorkManagerTestInitHelper.initializeTestWorkManager(ApplicationProvider.getApplicationContext<SproutApp>())
             ActivityScenario.launch(MainActivity::class.java).use {

@@ -300,3 +300,27 @@ fun SkeletonBlock(height: Dp, modifier: Modifier = Modifier) {
     Box(modifier.fillMaxWidth().height(height).padding(horizontal = 16.dp, vertical = 6.dp).clip(RoundedCornerShape(24.dp))
         .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = a)))
 }
+
+/** Inside a [TileRow]: the modifier each tile takes (shares the row, or the full width when stacked). */
+interface TileScope { fun Modifier.tile(): Modifier }
+
+/**
+ * A row of stat tiles that stacks into a column at large text sizes, so "$7,775" is never cut to "$7,7…".
+ * In a row the tiles share the tallest one's height.
+ */
+@Composable
+fun TileRow(modifier: Modifier = Modifier, content: @Composable TileScope.() -> Unit) {
+    val large = androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.3f
+    if (large) {
+        Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            val scope = object : TileScope { override fun Modifier.tile() = this.fillMaxWidth() }
+            scope.content()
+        }
+    } else {
+        Row(modifier.fillMaxWidth().height(androidx.compose.foundation.layout.IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            val row = this
+            val scope = object : TileScope { override fun Modifier.tile() = with(row) { this@tile.weight(1f) } }
+            scope.content()
+        }
+    }
+}

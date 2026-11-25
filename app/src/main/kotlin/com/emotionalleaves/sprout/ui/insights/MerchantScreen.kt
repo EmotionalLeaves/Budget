@@ -70,10 +70,10 @@ fun MerchantScreen(merchantKey: String, snackbar: androidx.compose.material3.Sna
         )
         LazyColumn {
             item {
-                Row(Modifier.fillMaxWidth().height(androidx.compose.foundation.layout.IntrinsicSize.Min).padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    StatTile("This year", money(stats.thisYearMinor, whole = true), Modifier.weight(1f))
-                    StatTile("Per visit", money(stats.averageMinor), Modifier.weight(1f))
-                    StatTile("Visits", stats.visits.toString(), Modifier.weight(1f))
+                com.emotionalleaves.sprout.ui.common.TileRow(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+                    StatTile("This year", money(stats.thisYearMinor, whole = true), Modifier.tile())
+                    StatTile("Per visit", money(stats.averageMinor), Modifier.tile())
+                    StatTile("Visits", stats.visits.toString(), Modifier.tile())
                 }
             }
             item {

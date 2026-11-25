@@ -151,16 +151,16 @@ fun SafeToSpendHero(m: BudgetMonth?, netWorthMinor: Long, onSetBudget: () -> Uni
 @Composable
 fun StatsRow(netWorthMinor: Long, trend: CashFlow.Trend?, forecastEndMinor: Long?, onNetWorth: () -> Unit = {}) {
     val c = LocalSproutColors.current
-    Row(Modifier.fillMaxWidth().height(androidx.compose.foundation.layout.IntrinsicSize.Min).padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        StatTile("Net worth", money(netWorthMinor, whole = true), Modifier.weight(1f).clickable(onClick = onNetWorth), note = "see trend ›")
+    com.emotionalleaves.sprout.ui.common.TileRow(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+        StatTile("Net worth", money(netWorthMinor, whole = true), Modifier.tile().clickable(onClick = onNetWorth), note = "see trend ›")
         val p = trend?.percent
         StatTile(
-            "Spent", money(trend?.thisMonthMinor ?: 0, whole = true), Modifier.weight(1f),
+            "Spent", money(trend?.thisMonthMinor ?: 0, whole = true), Modifier.tile(),
             note = p?.let { if (it > 0) "↑ $it% vs last mo." else if (it < 0) "↓ ${-it}% vs last mo." else "Same as last mo." },
             noteColor = if ((p ?: 0) > 10) c.warning else if ((p ?: 0) < 0) c.ok else Color.Unspecified,
         )
         if (forecastEndMinor != null) {
-            StatTile("Month end", money(forecastEndMinor, whole = true), Modifier.weight(1f), note = "cash, estimated",
+            StatTile("Month end", money(forecastEndMinor, whole = true), Modifier.tile(), note = "cash, estimated",
                 noteColor = if (forecastEndMinor < 0) c.danger else Color.Unspecified)
         }
     }

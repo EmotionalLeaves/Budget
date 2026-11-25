@@ -104,6 +104,8 @@ fun CategoryBudgetRow(line: CategoryLine, onEdit: (() -> Unit)? = null, pace: St
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconBadge(CategoryIcons.forKey(line.category.iconKey), tint, 40.dp)
                 Spacer(Modifier.width(12.dp))
+                // At large text sizes "left" moves under the name, so the name keeps its width.
+                val large = androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.3f
                 Column(Modifier.weight(1f)) {
                     Text(line.category.name, style = MaterialTheme.typography.titleSmall)
                     Text(
@@ -111,8 +113,9 @@ fun CategoryBudgetRow(line: CategoryLine, onEdit: (() -> Unit)? = null, pace: St
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    if (large) Text(leftOrOver(remaining), style = MaterialTheme.typography.titleSmall, color = levelColor(line.level))
                 }
-                Text(leftOrOver(remaining), style = MaterialTheme.typography.titleSmall, color = levelColor(line.level))
+                if (!large) Text(leftOrOver(remaining), style = MaterialTheme.typography.titleSmall, color = levelColor(line.level))
                 if (onEdit != null) {
                     androidx.compose.material3.IconButton(onClick = onEdit) {
                         Icon(androidx.compose.material.icons.Icons.Rounded.Edit, contentDescription = "Edit ${line.category.name} budget",

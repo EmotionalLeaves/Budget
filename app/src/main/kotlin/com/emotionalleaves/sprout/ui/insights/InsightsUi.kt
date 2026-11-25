@@ -129,12 +129,12 @@ fun NetWorthScreen(onBack: () -> Unit) {
                 }
             }
             item {
-                Row(Modifier.fillMaxWidth().height(androidx.compose.foundation.layout.IntrinsicSize.Min).padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                com.emotionalleaves.sprout.ui.common.TileRow(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
                     val c1 = now - lastMonth
                     val c2 = now - first
-                    StatTile("This month", (if (c1 >= 0) "+" else "") + money(c1, whole = true), Modifier.weight(1f),
+                    StatTile("This month", (if (c1 >= 0) "+" else "") + money(c1, whole = true), Modifier.tile(),
                         noteColor = if (c1 >= 0) LocalSproutColors.current.ok else LocalSproutColors.current.danger, note = if (c1 >= 0) "▲ since last month" else "▼ since last month")
-                    StatTile("Since ${s.first().first.format(monthLabel)}", (if (c2 >= 0) "+" else "") + money(c2, whole = true), Modifier.weight(1f),
+                    StatTile("Since ${s.first().first.format(monthLabel)}", (if (c2 >= 0) "+" else "") + money(c2, whole = true), Modifier.tile(),
                         noteColor = if (c2 >= 0) LocalSproutColors.current.ok else LocalSproutColors.current.danger, note = if (c2 >= 0) "▲ in total" else "▼ in total")
                 }
             }

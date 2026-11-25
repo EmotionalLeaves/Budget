@@ -165,10 +165,17 @@ fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit, onGoals:
                 }
             }
             item {
-                Row(Modifier.fillMaxWidth().padding(top = 12.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    SectionTitle("Budgets", Modifier.weight(1f), inRow = true)
-                    TextButton(onClick = onGoals, modifier = Modifier.heightIn(min = 48.dp)) { Text("Goals") }
-                    TextButton(onClick = onQuickSetup, modifier = Modifier.heightIn(min = 48.dp)) { Text("Quick setup") }
+                @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                androidx.compose.foundation.layout.FlowRow(
+                    Modifier.fillMaxWidth().padding(top = 12.dp, end = 8.dp),
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+                    verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+                ) {
+                    SectionTitle("Budgets", Modifier.align(Alignment.CenterVertically), inRow = true)
+                    Row {
+                        TextButton(onClick = onGoals, modifier = Modifier.heightIn(min = 48.dp)) { Text("Goals") }
+                        TextButton(onClick = onQuickSetup, modifier = Modifier.heightIn(min = 48.dp)) { Text("Quick setup") }
+                    }
                 }
             }
             if (m.budgeted.isEmpty()) {

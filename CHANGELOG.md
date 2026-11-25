@@ -2,6 +2,18 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.15.0] - 2026-11-25
+
+Round 16: Sprout works with big text.
+
+### Accessibility
+- Tested at 200% text size (Settings → Display → Font size on your phone). Fixed everything that broke:
+  - Number tiles (Net worth, Spent, Month end, Reports, Compare, Merchant, Net worth) **stack into a column** instead of cutting "$7,775" to "$7,7…".
+  - Budget cards move "$207.54 left" under the name, so names like "Groceries" are never split mid-word.
+  - The Budgets header wraps its Goals and Quick setup buttons onto their own line instead of breaking "BUDGETS" in two.
+  - Transaction names can use two lines instead of being cut short.
+- Normal-size layouts are unchanged.
+
 ## [2.14.0] - 2026-11-25
 
 Round 15: big cleanups and your own order.

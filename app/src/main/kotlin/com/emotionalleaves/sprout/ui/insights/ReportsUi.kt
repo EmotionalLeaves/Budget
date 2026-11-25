@@ -132,11 +132,11 @@ fun ReportsScreen(onBack: () -> Unit) {
         val sc = LocalSproutColors.current
         LazyColumn {
             item {
-                Row(Modifier.fillMaxWidth().height(androidx.compose.foundation.layout.IntrinsicSize.Min).padding(horizontal = 16.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    StatTile("Came in", Money.formatWhole(totalIn), Modifier.weight(1f))
-                    StatTile("Spent", Money.formatWhole(totalOut), Modifier.weight(1f))
+                com.emotionalleaves.sprout.ui.common.TileRow(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
+                    StatTile("Came in", Money.formatWhole(totalIn), Modifier.tile())
+                    StatTile("Spent", Money.formatWhole(totalOut), Modifier.tile())
                     val net = totalIn - totalOut
-                    StatTile("Kept", (if (net >= 0) "" else "−") + Money.formatWhole(kotlin.math.abs(net)), Modifier.weight(1f),
+                    StatTile("Kept", (if (net >= 0) "" else "−") + Money.formatWhole(kotlin.math.abs(net)), Modifier.tile(),
                         note = if (totalIn > 0) "${net * 100 / totalIn}% of income" else null, noteColor = if (net >= 0) sc.ok else sc.danger)
                 }
             }
@@ -288,11 +288,11 @@ private fun CompareMonths(onBack: () -> Unit) {
         val before = list.sumOf { it.beforeMinor }
         LazyColumn {
             item {
-                Row(Modifier.fillMaxWidth().height(androidx.compose.foundation.layout.IntrinsicSize.Min).padding(horizontal = 16.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    StatTile(ym.format(java.time.format.DateTimeFormatter.ofPattern("MMMM")), Money.formatWhole(now), Modifier.weight(1f))
-                    StatTile(ym.minusMonths(1).format(java.time.format.DateTimeFormatter.ofPattern("MMMM")), Money.formatWhole(before), Modifier.weight(1f))
+                com.emotionalleaves.sprout.ui.common.TileRow(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
+                    StatTile(ym.format(java.time.format.DateTimeFormatter.ofPattern("MMMM")), Money.formatWhole(now), Modifier.tile())
+                    StatTile(ym.minusMonths(1).format(java.time.format.DateTimeFormatter.ofPattern("MMMM")), Money.formatWhole(before), Modifier.tile())
                     val d = now - before
-                    StatTile("Change", (if (d > 0) "+" else if (d < 0) "−" else "") + Money.formatWhole(kotlin.math.abs(d)), Modifier.weight(1f),
+                    StatTile("Change", (if (d > 0) "+" else if (d < 0) "−" else "") + Money.formatWhole(kotlin.math.abs(d)), Modifier.tile(),
                         noteColor = if (d > 0) sc.danger else sc.ok, note = if (d > 0) "more" else if (d < 0) "less" else "same")
                 }
             }
