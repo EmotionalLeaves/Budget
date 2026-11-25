@@ -115,6 +115,7 @@ Decisions made while building, one per line:
 
 ---
 - No certificate pinning for SimpleFIN. Pins break sync the day the server changes certificates, and you can't fix that from a phone without a new release. Sprout trusts only the system's certificates (never user-installed ones) and refuses plain HTTP, which covers the realistic risks.
+- Rollover looks back with today's every-month amount for past months (plus any one-off amount set for that month). Sprout doesn't keep a history of every-month amounts, so changing one also changes what carried over.
 
 ## For developers
 

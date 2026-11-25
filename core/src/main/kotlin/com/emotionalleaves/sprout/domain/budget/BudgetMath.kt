@@ -40,9 +40,17 @@ enum class ProgressLevel { GREEN, AMBER, RED }
 
 data class CategoryLine(
     val category: BudgetCategory,
-    /** Effective budget: this month's override, else the default, else null. */
+    /**
+     * What can be spent this month: the set amount (this month's override, else the default) plus any rollover
+     * carry, never below 0; null without a budget.
+     */
     val budgetMinor: Long?,
     val spentMinor: Long,
+    /** Money carried from earlier months with rollover on: positive = unspent, negative = overspent. */
+    val carryMinor: Long = 0,
+    /** The amount the user set, before rollover. What the edit dialog shows. */
+    val baseBudgetMinor: Long? = budgetMinor,
+    val rolloverOn: Boolean = false,
 ) {
     val remainingMinor: Long? get() = budgetMinor?.let { it - spentMinor }
 
@@ -132,12 +140,23 @@ object BudgetMath {
         overrides: Map<Long, Long>,
         sumsByCategory: Map<Long, Long>,
         expectedCharges: List<ExpectedCharge> = emptyList(),
+        /** Rollover carry into [month] per category, for categories with rollover on (see [rolloverCarry]). */
+        carries: Map<Long, Long> = emptyMap(),
     ): BudgetMonth {
         val window = MonthWindow.of(month, zone)
         val expense = categories.filter { it.kind == CategoryKind.EXPENSE }
         val lines = expense.map { c ->
             val spent = maxOf(0L, -(sumsByCategory[c.id] ?: 0L))
-            CategoryLine(c, overrides[c.id] ?: defaultBudgets[c.id], spent)
+            val base = overrides[c.id] ?: defaultBudgets[c.id]
+            val carry = if (base != null) carries[c.id] ?: 0L else 0L
+            CategoryLine(
+                category = c,
+                budgetMinor = base?.let { maxOf(0L, it + carry) },
+                spentMinor = spent,
+                carryMinor = carry,
+                baseBudgetMinor = base,
+                rolloverOn = c.id in carries,
+            )
         }
         val budgeted = lines.filter { it.budgetMinor != null }
         val unbudgeted = lines.filter { it.budgetMinor == null && it.spentMinor > 0 }
@@ -181,6 +200,25 @@ object BudgetMath {
         if (total <= 0L) return null
         val avg = (total + months.size - 1) / months.size
         return roundUpToTenDollars(avg)
+    }
+
+    /**
+     * Rollover: what carries into [month] when rollover has been on since [since]. Each full month from [since]
+     * up to (not including) [month] adds its budget minus its spending, so unspent money grows the next month's
+     * budget and overspending shrinks it. Months without a budget add nothing. The carry is not capped; only the
+     * displayed budget is kept at 0 or more. Returns 0 when [month] is not after [since].
+     *
+     * [spentFor] returns spending (positive cents) for a month; [budgetFor] the set amount or null.
+     */
+    fun rolloverCarry(since: YearMonth, month: YearMonth, budgetFor: (YearMonth) -> Long?, spentFor: (YearMonth) -> Long): Long {
+        var carry = 0L
+        var m = since
+        while (m.isBefore(month)) {
+            val b = budgetFor(m)
+            if (b != null) carry += b - spentFor(m)
+            m = m.plusMonths(1)
+        }
+        return carry
     }
 
     fun roundUpToTenDollars(amountMinor: Long): Long {

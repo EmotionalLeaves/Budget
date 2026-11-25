@@ -50,7 +50,7 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [x] (1.7.0) Savings goals with progress — *why: popular in budgeting apps, motivating*
 - [x] (1.6.0) Cash-flow forecast to month end (balance − upcoming bills + expected income) — *why: "will I make it to payday?"*
 - [x] (1.8.0) Bill calendar view — *why: see bills by date*
-- [ ] Budget rollover (unused amount carries to next month, opt-in per category) — *why: flexible budgets*
+- [x] (1.10.0) Budget rollover (opt-in per category, schema 3 + MIGRATION_2_3)
 - [ ] Split a transaction across categories — *why: a Target run is groceries + household*
 - [ ] Tags on transactions — *why: track trips or projects across categories*
 - [ ] Home-screen widget (Glance) with safe to spend — *why: check without opening the app*

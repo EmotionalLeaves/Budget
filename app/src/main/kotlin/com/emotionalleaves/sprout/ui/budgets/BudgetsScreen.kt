@@ -63,8 +63,11 @@ class BudgetsViewModel(private val c: AppContainer) : ViewModel() {
     fun next() = _month.update { it.plusMonths(1) }
     fun isCurrent() = _month.value == c.budgetRepository.currentMonth()
 
-    fun save(categoryId: Long, amount: Long, thisMonthOnly: Boolean) =
-        viewModelScope.launch { c.budgetRepository.setBudget(categoryId, amount, thisMonthOnly, _month.value) }
+    fun save(categoryId: Long, amount: Long, thisMonthOnly: Boolean, rollover: Boolean, wasOn: Boolean) =
+        viewModelScope.launch {
+            c.budgetRepository.setBudget(categoryId, amount, thisMonthOnly, _month.value)
+            if (rollover != wasOn) c.budgetRepository.setRollover(categoryId, rollover, _month.value)
+        }
 
     fun remove(categoryId: Long, thisMonthOnly: Boolean) =
         viewModelScope.launch { c.budgetRepository.removeBudget(categoryId, thisMonthOnly, _month.value) }
@@ -168,10 +171,11 @@ fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit, onGoals:
     editing?.let { line ->
         EditBudgetDialog(
             categoryName = line.category.name,
-            initialMinor = line.budgetMinor,
+            initialMinor = line.baseBudgetMinor,
             hasBudget = line.budgetMinor != null,
+            rolloverOn = line.rolloverOn,
             onDismiss = { editing = null },
-            onSave = { amount, thisMonth -> vm.save(line.category.id, amount, thisMonth); editing = null },
+            onSave = { amount, thisMonth, roll -> vm.save(line.category.id, amount, thisMonth, roll, line.rolloverOn); editing = null },
             onRemove = { thisMonth -> vm.remove(line.category.id, thisMonth); editing = null },
         )
     }

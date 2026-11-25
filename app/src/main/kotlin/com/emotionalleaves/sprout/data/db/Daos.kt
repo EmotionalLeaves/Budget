@@ -276,6 +276,10 @@ interface BudgetDao {
     @Query("SELECT * FROM category_budgets") fun observeDefaults(): Flow<List<CategoryBudgetEntity>>
     @Query("SELECT * FROM budget_overrides WHERE yearMonth = :yearMonth") fun observeOverrides(yearMonth: String): Flow<List<BudgetOverrideEntity>>
     @Query("SELECT * FROM budget_overrides ORDER BY yearMonth, categoryId") suspend fun allOverrides(): List<BudgetOverrideEntity>
+    @Query("SELECT * FROM budget_overrides WHERE yearMonth < :beforeMonth") fun observeOverridesBefore(beforeMonth: String): Flow<List<BudgetOverrideEntity>>
+    @Query("SELECT * FROM budget_rollovers") fun observeRollovers(): Flow<List<BudgetRolloverEntity>>
+    @Upsert suspend fun upsertRollover(item: BudgetRolloverEntity)
+    @Query("DELETE FROM budget_rollovers WHERE categoryId = :categoryId") suspend fun deleteRollover(categoryId: Long)
     @Upsert suspend fun upsertDefault(item: CategoryBudgetEntity)
     @Upsert suspend fun upsertDefaults(items: List<CategoryBudgetEntity>)
     @Query("DELETE FROM category_budgets WHERE categoryId = :categoryId") suspend fun deleteDefault(categoryId: Long)
@@ -437,6 +441,9 @@ interface BackupDao {
     @Query("SELECT * FROM category_budgets") suspend fun categoryBudgets(): List<CategoryBudgetEntity>
     @Query("SELECT * FROM budget_overrides") suspend fun budgetOverrides(): List<BudgetOverrideEntity>
     @Query("SELECT * FROM budget_alerts") suspend fun budgetAlerts(): List<BudgetAlertEntity>
+    @Query("SELECT * FROM budget_rollovers") suspend fun budgetRollovers(): List<BudgetRolloverEntity>
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putBudgetRollovers(items: List<BudgetRolloverEntity>)
+    @Query("DELETE FROM budget_rollovers") suspend fun wipeBudgetRollovers()
 
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putConnections(items: List<ConnectionEntity>)
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putAccounts(items: List<AccountEntity>)

@@ -1,5 +1,7 @@
 package com.emotionalleaves.sprout.ui.budgets
 
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material3.Switch
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -54,6 +56,13 @@ fun levelColor(level: ProgressLevel?): Color {
 fun leftOrOver(remaining: Long): String =
     if (remaining >= 0) "${Money.format(remaining)} left" else "${Money.format(-remaining)} over"
 
+/** " (incl. $50 rolled over)" or " ($30 overspent last month)" when rollover changed this month's budget. */
+fun carryNote(line: CategoryLine): String = when {
+    !line.rolloverOn || line.carryMinor == 0L || line.baseBudgetMinor == null -> ""
+    line.carryMinor > 0 -> " (incl. ${Money.format(line.carryMinor)} rolled over)"
+    else -> " (${Money.format(-line.carryMinor)} overspent before)"
+}
+
 @Composable
 fun BudgetProgress(spent: Long, budget: Long, level: ProgressLevel?, modifier: Modifier = Modifier) {
     val fraction = if (budget <= 0) (if (spent > 0) 1f else 0f) else (spent.toFloat() / budget).coerceIn(0f, 1f)
@@ -84,7 +93,7 @@ fun CategoryBudgetRow(line: CategoryLine, onClick: () -> Unit) {
         }
         BudgetProgress(line.spentMinor, budget, line.level)
         Text(
-            "${Money.format(line.spentMinor)} of ${Money.format(budget)}",
+            "${Money.format(line.spentMinor)} of ${Money.format(budget)}" + carryNote(line),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -158,12 +167,14 @@ fun EditBudgetDialog(
     categoryName: String,
     initialMinor: Long?,
     hasBudget: Boolean,
+    rolloverOn: Boolean = false,
     onDismiss: () -> Unit,
-    onSave: (amountMinor: Long, thisMonthOnly: Boolean) -> Unit,
+    onSave: (amountMinor: Long, thisMonthOnly: Boolean, rollover: Boolean) -> Unit,
     onRemove: (thisMonthOnly: Boolean) -> Unit,
 ) {
     var text by remember { mutableStateOf(initialMinor?.let { (it / 100).toString() + if (it % 100 != 0L) "." + "%02d".format(it % 100) else "" } ?: "") }
     var thisMonthOnly by remember { mutableStateOf(false) }
+    var roll by remember { mutableStateOf(rolloverOn) }
     val parsed = Money.parseUserInput(text)?.takeIf { it >= 0 }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -189,6 +200,21 @@ fun EditBudgetDialog(
                         Text(label, Modifier.padding(start = 8.dp))
                     }
                 }
+                Row(
+                    Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                        .toggleable(roll, role = Role.Switch) { roll = it },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Roll over leftover money")
+                        Text(
+                            "Unspent money adds to next month; overspending takes from it.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(checked = roll, onCheckedChange = null)
+                }
                 if (hasBudget) {
                     TextButton(onClick = { onRemove(thisMonthOnly) }, modifier = Modifier.heightIn(min = 48.dp)) {
                         Text(if (thisMonthOnly) "Remove this month's amount" else "Remove budget")
@@ -196,7 +222,7 @@ fun EditBudgetDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { parsed?.let { onSave(it, thisMonthOnly) } }, enabled = parsed != null) { Text("Save") } },
+        confirmButton = { TextButton(onClick = { parsed?.let { onSave(it, thisMonthOnly, roll) } }, enabled = parsed != null) { Text("Save") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }

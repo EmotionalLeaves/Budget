@@ -41,6 +41,7 @@ class BackupRepositoryTest {
             cats.recategorize("sf:CON-111:ACT-CHK-1:TX-1003", env.db.categories().getByKey(DefaultCategories.ENTERTAINMENT)!!.id, true)
             cats.setNote("sf:CON-111:ACT-CHK-1:TX-1001", "weekly shop")
             BudgetRepository(env.db, env.clock).setBudget(env.db.categories().getByKey(DefaultCategories.GROCERIES)!!.id, 40_000, false, YearMonth.of(2026, 11))
+            BudgetRepository(env.db, env.clock).setRollover(env.db.categories().getByKey(DefaultCategories.GROCERIES)!!.id, true, YearMonth.of(2026, 10))
         }
     }
 
@@ -53,6 +54,7 @@ class BackupRepositoryTest {
             env.db.categories().getAll().sortedBy { it.id }.toString(),
             env.db.merchantRules().getAll().sortedBy { it.id }.toString(),
             env.db.budgets().observeDefaults().first().toString(),
+            env.db.backup().budgetRollovers().toString(),
             env.db.connections().getAll().toString(),
         )
     }

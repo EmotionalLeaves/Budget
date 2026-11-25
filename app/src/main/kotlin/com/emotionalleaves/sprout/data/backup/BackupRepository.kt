@@ -5,6 +5,7 @@ import com.emotionalleaves.sprout.data.db.AccountEntity
 import com.emotionalleaves.sprout.data.db.AccountSource
 import com.emotionalleaves.sprout.data.db.BudgetAlertEntity
 import com.emotionalleaves.sprout.data.db.BudgetOverrideEntity
+import com.emotionalleaves.sprout.data.db.BudgetRolloverEntity
 import com.emotionalleaves.sprout.data.db.CategoryBudgetEntity
 import com.emotionalleaves.sprout.data.db.CategoryEntity
 import com.emotionalleaves.sprout.data.db.ConnectionEntity
@@ -78,15 +79,18 @@ class BackupRepository(private val db: SproutDatabase, private val clock: Clock)
         val recurring = arr(backup, "recurringCharges").map(::recurringCharge)
         // Added in schema 2; older backups simply have none.
         val goals = arr(backup, "savingsGoals").map(::goal)
+        // Added in schema 3.
+        val rollovers = arr(backup, "budgetRollovers").map { o -> BudgetRolloverEntity(o.long("categoryId"), o.str("sinceMonth")) }
         if (cats.isEmpty()) throw BackupException("This backup file is damaged.")
         val b = db.backup()
         db.withTransaction {
-            b.wipeTransactions(); b.wipeBudgetAlerts(); b.wipeBudgetOverrides(); b.wipeCategoryBudgets()
+            b.wipeTransactions(); b.wipeBudgetAlerts(); b.wipeBudgetRollovers(); b.wipeBudgetOverrides(); b.wipeCategoryBudgets()
             b.wipeMerchantRules(); b.wipeRecurring(); db.goals().wipe(); b.wipeAccounts(); b.wipeConnections(); b.wipeCategories()
             b.putCategories(cats); b.putConnections(conns); b.putAccounts(accounts)
             txs.chunked(500).forEach { b.putTransactions(it) }
             b.putCategoryBudgets(budgets); b.putBudgetOverrides(overrides); b.putBudgetAlerts(alerts)
             b.putMerchantRules(rules); b.putRecurring(recurring); db.goals().putAll(goals)
+            b.putBudgetRollovers(rollovers)
         }
         RestoreSummary(txs.size, accounts.size, budgets.size, rules.size, recurring.size)
     }
@@ -136,6 +140,9 @@ class BackupRepository(private val db: SproutDatabase, private val clock: Clock)
             } })
             put("budgetOverrides", buildJsonArray { b.budgetOverrides().forEach { x ->
                 add(buildJsonObject { put("categoryId", x.categoryId); put("yearMonth", x.yearMonth); put("amountMinor", x.amountMinor) })
+            } })
+            put("budgetRollovers", buildJsonArray { b.budgetRollovers().forEach { x ->
+                add(buildJsonObject { put("categoryId", x.categoryId); put("sinceMonth", x.sinceMonth) })
             } })
             put("budgetAlerts", buildJsonArray { b.budgetAlerts().forEach { x ->
                 add(buildJsonObject { put("categoryId", x.categoryId); put("yearMonth", x.yearMonth); put("threshold", x.threshold); put("firedAt", x.firedAt) })

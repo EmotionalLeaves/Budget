@@ -156,6 +156,17 @@ data class BudgetOverrideEntity(
     val amountMinor: Long,
 )
 
+/** Rollover is on for a category (schema 3). Leftover money carries forward starting after [sinceMonth]. */
+@Entity(
+    tableName = "budget_rollovers",
+    foreignKeys = [ForeignKey(entity = CategoryEntity::class, parentColumns = ["id"], childColumns = ["categoryId"], onDelete = ForeignKey.CASCADE)],
+)
+data class BudgetRolloverEntity(
+    @PrimaryKey val categoryId: Long,
+    /** "YYYY-MM": the first month whose leftover carries into the next. */
+    val sinceMonth: String,
+)
+
 @Entity(
     tableName = "budget_alerts",
     primaryKeys = ["categoryId", "yearMonth", "threshold"],

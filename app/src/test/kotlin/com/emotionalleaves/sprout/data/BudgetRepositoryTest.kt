@@ -104,4 +104,38 @@ class BudgetRepositoryTest {
         assertEquals(1_000L, h.first { it.first == YearMonth.of(2026, 9) }.second)
         assertEquals(500L, h.last().second)
     }
+
+    @Test fun rolloverCarriesLeftoverIntoNextMonth() = runBlocking {
+        syncTx(
+            Triple("1", "KROGER #1|-120.00", at(10, 5)),
+            Triple("2", "KROGER #1|-50.00", at(11, 3)),
+        )
+        val g = cat(DefaultCategories.GROCERIES)
+        val oct = nov.minusMonths(1)
+        repo.setBudget(g, 30_000, thisMonthOnly = false, month = oct)
+        repo.setRollover(g, true, oct)
+        val line = repo.observeMonth(nov).first().budgeted.single()
+        assertEquals(18_000L, line.carryMinor)
+        assertEquals(48_000L, line.budgetMinor)
+        assertEquals(30_000L, line.baseBudgetMinor)
+        assertEquals(43_000L, line.remainingMinor)
+        // October itself gets no carry.
+        assertEquals(30_000L, repo.observeMonth(oct).first().budgeted.single().budgetMinor)
+        // A one-off October amount changes what carries.
+        repo.setBudget(g, 10_000, thisMonthOnly = true, month = oct)
+        assertEquals(-2_000L, repo.observeMonth(nov).first().budgeted.single().carryMinor)
+        repo.setRollover(g, false, oct)
+        val off = repo.observeMonth(nov).first().budgeted.single()
+        assertEquals(30_000L, off.budgetMinor)
+        assertEquals(false, off.rolloverOn)
+    }
+
+    @Test fun removingTheBudgetTurnsRolloverOff() = runBlocking {
+        env.repo().ensureSeeded()
+        val g = cat(DefaultCategories.GROCERIES)
+        repo.setBudget(g, 30_000, thisMonthOnly = false, month = nov)
+        repo.setRollover(g, true, nov)
+        repo.removeBudget(g, thisMonthOnly = false, month = nov)
+        assertEquals(0, env.db.backup().budgetRollovers().size)
+    }
 }

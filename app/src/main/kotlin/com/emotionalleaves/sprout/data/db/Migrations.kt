@@ -21,4 +21,15 @@ object Migrations {
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_savings_goals_accountId` ON `savings_goals` (`accountId`)")
         }
     }
+
+    /** v3: budget rollover. A new table only; existing budgets are untouched and rollover starts off. */
+    val MIGRATION_2_3 = object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `budget_rollovers` (`categoryId` INTEGER NOT NULL, `sinceMonth` TEXT NOT NULL, " +
+                    "PRIMARY KEY(`categoryId`), FOREIGN KEY(`categoryId`) REFERENCES `categories`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE CASCADE )",
+            )
+        }
+    }
 }

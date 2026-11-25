@@ -56,4 +56,28 @@ class MigrationTest {
         }
         room.close()
     }
+
+    @Test fun migrate2To3KeepsAllDataAndStartsWithRolloverOff() {
+        helper.createDatabase(name, 2).use { db ->
+            seedV1(db)
+            db.execSQL("INSERT INTO savings_goals (id, name, targetMinor, targetDate, accountId, savedMinor, archived, createdAt, updatedAt) VALUES (1, 'Trip', 100000, '2027-06-01', NULL, 25000, 0, 1, 2)")
+        }
+        helper.runMigrationsAndValidate(name, 3, true, Migrations.MIGRATION_2_3).use { db ->
+            db.query("SELECT COUNT(*) FROM budget_rollovers").use { c -> c.moveToFirst(); assertEquals(0, c.getInt(0)) }
+            db.query("SELECT amountMinor FROM category_budgets WHERE categoryId = 1").use { c -> c.moveToFirst(); assertEquals(40000L, c.getLong(0)) }
+            db.query("SELECT savedMinor FROM savings_goals WHERE id = 1").use { c -> c.moveToFirst(); assertEquals(25000L, c.getLong(0)) }
+        }
+        val room = Room.databaseBuilder(ApplicationProvider.getApplicationContext(), SproutDatabase::class.java, name)
+            .addMigrations(*SproutDatabase.MIGRATIONS).allowMainThreadQueries().build()
+        runBlocking {
+            assertEquals("weekly shop", room.backup().transactions().single().note)
+            assertEquals("Trip", room.goals().getAll().single().name)
+        }
+        room.close()
+    }
+
+    @Test fun migrate1To3InOneGo() {
+        helper.createDatabase(name, 1).use { seedV1(it) }
+        helper.runMigrationsAndValidate(name, 3, true, *SproutDatabase.MIGRATIONS).close()
+    }
 }

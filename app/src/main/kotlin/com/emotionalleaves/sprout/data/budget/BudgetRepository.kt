@@ -2,6 +2,7 @@ package com.emotionalleaves.sprout.data.budget
 
 import androidx.room.withTransaction
 import com.emotionalleaves.sprout.data.db.BudgetOverrideEntity
+import com.emotionalleaves.sprout.data.db.BudgetRolloverEntity
 import com.emotionalleaves.sprout.data.db.CategoryBudgetEntity
 import com.emotionalleaves.sprout.data.db.SproutDatabase
 import com.emotionalleaves.sprout.domain.budget.BudgetCategory
@@ -52,19 +53,69 @@ class BudgetRepository(
             db.budgets().observeOverrides(month.toString()),
             db.budgets().observeSums(window.start, window.end),
             expectedCharges(month),
-        ) { cats, defaults, overrides, sums, charges ->
+        ) { cats, defaults, overrides, sums, charges -> Inputs(cats, defaults, overrides, sums, charges) }
+            .combine(combine(db.budgets().observeRollovers(), db.budgets().observeOverridesBefore(month.toString())) { r, o -> r to o }) { i, (rollovers, pastOverrides) ->
+            val (cats, defaults, overrides, sums, charges) = i
+            val defaultMap = defaults.associate { it.categoryId to it.amountMinor }
             BudgetMath.computeFromSums(
                 month = month,
                 zone = zone(),
                 today = today(),
                 // Archived categories still count if they have a budget or spending this month.
                 categories = cats.map { BudgetCategory(it.id, it.name, it.kind, it.archived) },
-                defaultBudgets = defaults.associate { it.categoryId to it.amountMinor },
+                defaultBudgets = defaultMap,
                 overrides = overrides.associate { it.categoryId to it.amountMinor },
                 sumsByCategory = sums.associate { it.categoryId to it.total },
                 expectedCharges = charges,
+                carries = carries(month, rollovers, defaultMap, pastOverrides),
             )
         }
+    }
+
+    private data class Inputs(
+        val cats: List<com.emotionalleaves.sprout.data.db.CategoryEntity>,
+        val defaults: List<CategoryBudgetEntity>,
+        val overrides: List<BudgetOverrideEntity>,
+        val sums: List<com.emotionalleaves.sprout.data.db.CategorySum>,
+        val charges: List<ExpectedCharge>,
+    )
+
+    /**
+     * Rollover carry into [month] for each category with rollover on. Past months use that month's override or
+     * today's every-month amount (Sprout doesn't keep a history of every-month amounts). Recomputed whenever
+     * transactions change, since observeSums re-emits on every transactions write.
+     */
+    private suspend fun carries(
+        month: YearMonth,
+        rollovers: List<BudgetRolloverEntity>,
+        defaults: Map<Long, Long>,
+        pastOverrides: List<BudgetOverrideEntity>,
+    ): Map<Long, Long> {
+        if (rollovers.isEmpty()) return emptyMap()
+        val z = zone()
+        val starts = rollovers.associate { it.categoryId to (runCatching { YearMonth.parse(it.sinceMonth) }.getOrNull() ?: month) }
+        val earliest = starts.values.minOrNull()?.takeIf { it.isBefore(month) } ?: return starts.mapValues { 0L }
+        val rows = withContext(Dispatchers.IO) {
+            db.budgets().spendRows(MonthWindow.of(earliest, z).start, MonthWindow.of(month, z).start)
+        }
+        val spent = rows.filter { it.categoryId in starts }
+            .groupBy { it.categoryId }
+            .mapValues { (_, l) -> l.groupBy { MonthWindow.monthOf(it.occurredAt, z) }.mapValues { (_, x) -> maxOf(0L, -x.sumOf { it.amountMinor }) } }
+        val overrideBy = pastOverrides.groupBy { it.categoryId }.mapValues { (_, l) -> l.associate { it.yearMonth to it.amountMinor } }
+        return starts.mapValues { (id, since) ->
+            BudgetMath.rolloverCarry(
+                since = since,
+                month = month,
+                budgetFor = { m -> overrideBy[id]?.get(m.toString()) ?: defaults[id] },
+                spentFor = { m -> spent[id]?.get(m) ?: 0L },
+            )
+        }
+    }
+
+    /** Turns rollover on (starting with [month]'s leftover) or off for a category. */
+    suspend fun setRollover(categoryId: Long, on: Boolean, month: YearMonth) = withContext(Dispatchers.IO) {
+        if (on) db.budgets().upsertRollover(BudgetRolloverEntity(categoryId, month.toString()))
+        else db.budgets().deleteRollover(categoryId)
     }
 
     /** Sets a budget for every month, or only [month] when [thisMonthOnly]. Amount in cents, ≥ 0. */
@@ -85,7 +136,10 @@ class BudgetRepository(
     suspend fun removeBudget(categoryId: Long, thisMonthOnly: Boolean, month: YearMonth) = withContext(Dispatchers.IO) {
         db.withTransaction {
             db.budgets().deleteOverride(categoryId, month.toString())
-            if (!thisMonthOnly) db.budgets().deleteDefault(categoryId)
+            if (!thisMonthOnly) {
+                db.budgets().deleteDefault(categoryId)
+                db.budgets().deleteRollover(categoryId)
+            }
         }
     }
 

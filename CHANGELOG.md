@@ -2,7 +2,15 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
-## [1.9.1] - 2026-11-24
+## [1.10.0] - 2026-11-24
+
+### Added
+- Budget rollover. Tap a budget and turn on "Roll over leftover money": what you don't spend this month is added to next month's budget, and overspending comes out of it. Each budget shows "(incl. $X rolled over)" when it applies. Off by default, set per category.
+
+### Data safety
+- Database version 3 adds one new table for rollover settings. Updating keeps all your transactions, budgets, rules, goals and settings (tested from version 1 and 2). Backups now include rollover settings; older backups still restore.
+
+ - 2026-11-24
 
 ### Tests
 - Background sync is now tested end to end: retries, the server's "try again later" timing, stopping after 3 retries, and pausing sync when access is revoked.
