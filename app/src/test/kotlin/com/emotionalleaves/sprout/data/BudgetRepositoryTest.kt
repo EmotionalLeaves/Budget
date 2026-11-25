@@ -159,6 +159,7 @@ class BudgetRepositoryTest {
         assertEquals(-3_000L, env.db.splits().getFor(id).single().amountMinor)
         // The split category's transaction list includes it.
         assertEquals(1, env.db.transactions().observeRows("", 50, h).first().size)
+        assertEquals(1, env.db.transactions().observeRows("", 50, h).first().single().splitCount)
         assertNull(cats.setSplits(id, emptyList()))
         assertEquals(0L, repo.observeMonth(nov).first().budgeted.first { it.category.id == h }.spentMinor)
     }

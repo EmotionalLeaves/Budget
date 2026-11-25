@@ -40,8 +40,8 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [ ] Category icons (iconKey) in chips and grids — *why: faster scanning*
 - [ ] TalkBack and 200% font pass on every screen with screenshot tests (Roborazzi) — *why: accessibility regressions are easy to miss*
 - [x] (1.5.0) Onboarding: offer Quick budget setup right after the first sync — *why: spec flow; faster to value*
-- [ ] Mark split transactions in the list (small "Split" label) — *why: know at a glance*
-- [ ] Rollover breakdown on the category screen (set amount, carried, available) — *why: explain the number*
+- [x] (1.12.0) Split label in the transaction list
+- [x] (1.12.0) Rollover breakdown on the category screen
 
 ## 6. Performance and battery
 - [ ] Baseline profile for faster cold start — *why: opens instantly*

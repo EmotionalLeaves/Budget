@@ -2,7 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
-## [1.11.1] - 2026-11-24
+## [1.12.0] - 2026-11-24
+
+### Added
+- Split transactions show a small "+2 split" label in the list (and TalkBack says "split across categories").
+- A category with rollover on explains its number: "Set $300 · rolled over +$180 · available $480".
+
+ - 2026-11-24
 
 ### Fixed
 - The month-end forecast now follows split transactions: a part moved to Transfers no longer counts as everyday spending.

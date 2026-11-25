@@ -110,6 +110,7 @@ fun TransactionItem(row: TransactionRow, onClick: (() -> Unit)? = null) {
         append(merchant).append(", ").append(Format.amountSpoken(row.amountMinor))
         append(", ").append(row.categoryName).append(", ").append(row.accountName)
         if (row.pending) append(", pending")
+        if (row.splitCount > 0) append(", split across categories")
     }
     Row(
         modifier = Modifier
@@ -124,6 +125,9 @@ fun TransactionItem(row: TransactionRow, onClick: (() -> Unit)? = null) {
             Text(merchant, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                 CategoryChip(row.categoryName, row.categoryColor)
+                if (row.splitCount > 0) {
+                    Text("+${row.splitCount} split", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary, maxLines = 1)
+                }
                 Text(row.accountName, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
             }

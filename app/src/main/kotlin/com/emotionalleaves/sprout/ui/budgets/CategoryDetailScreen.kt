@@ -147,6 +147,17 @@ fun CategoryDetailScreen(categoryId: Long, snackbar: SnackbarHostState, onBack: 
                     if (budget != null) {
                         BudgetProgress(spent, budget, line.level)
                         Text("of ${Money.format(budget)} · ${leftOrOver(budget - spent)}", style = MaterialTheme.typography.bodyMedium)
+                        val base = line.baseBudgetMinor
+                        if (line.rolloverOn && base != null) {
+                            val carry = line.carryMinor
+                            Text(
+                                "Set ${Money.format(base)} · " +
+                                    (if (carry >= 0) "rolled over +${Money.format(carry)}" else "overspent before −${Money.format(-carry)}") +
+                                    " · available ${Money.format(budget)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     } else {
                         Text("No budget set", style = MaterialTheme.typography.bodyMedium)
                     }
