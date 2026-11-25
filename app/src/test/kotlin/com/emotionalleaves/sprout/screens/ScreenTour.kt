@@ -205,6 +205,7 @@ class ScreenTour {
             ActivityScenario.launch(MainActivity::class.java).use {
                 scenario = it
                 shot("o-01-welcome")
+                runCatching { tap("I have a setup token"); shot("o-01b-token"); back() }
                 runCatching { tap("Skip — I'll import a CSV"); shot("o-02-after-skip") }
                 runCatching { tap("Home"); shot("o-03-empty-home") }
                 runCatching { tap("Activity"); shot("o-04-empty-activity") }

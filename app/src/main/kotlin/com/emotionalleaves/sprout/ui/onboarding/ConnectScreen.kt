@@ -75,6 +75,10 @@ fun ConnectScreen(startAtToken: Boolean, onDone: () -> Unit, onSkip: () -> Unit,
     ) {
         if (onBack != null) {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+        } else if (state.step == ConnectStep.TOKEN && !startAtToken) {
+            // From the welcome screen: a way back that isn't only the system gesture.
+            IconButton(onClick = vm::back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+            androidx.activity.compose.BackHandler(onBack = vm::back)
         }
         when (state.step) {
             ConnectStep.WELCOME -> Welcome(
@@ -205,6 +209,16 @@ private fun TokenStep(
     val clipboard = LocalClipboardManager.current
     Text("Paste your setup token", style = MaterialTheme.typography.headlineSmall)
     Text("Copy it from SimpleFIN Bridge. Each token works only once.", style = MaterialTheme.typography.bodyMedium)
+    com.emotionalleaves.sprout.ui.common.SoftCard(inset = 0.dp) {
+        Text("What happens next", style = MaterialTheme.typography.titleSmall)
+        listOf(
+            "Sprout swaps the token for a read-only link to your accounts. The token can't be used again.",
+            "The link is stored encrypted on this phone. Sprout only ever reads balances and transactions.",
+            "Your first sync can take up to a minute.",
+        ).forEach { line ->
+            Row { Text("•  ", color = MaterialTheme.colorScheme.primary); Text(line, style = MaterialTheme.typography.bodySmall) }
+        }
+    }
     OutlinedTextField(
         value = token,
         onValueChange = onTokenChange,
@@ -233,7 +247,7 @@ private fun TokenStep(
             Spacer(Modifier.size(8.dp))
             Text("Paste")
         }
-        Button(onClick = onConnect, enabled = !connecting, modifier = Modifier.weight(1f).heightIn(min = 48.dp)) {
+        Button(onClick = onConnect, enabled = !connecting && token.isNotBlank(), modifier = Modifier.weight(1f).heightIn(min = 48.dp)) {
             if (connecting) {
                 CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
                 Spacer(Modifier.size(8.dp))

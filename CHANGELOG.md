@@ -2,6 +2,14 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.18.0] - 2026-11-25
+
+Round 19: a gentler first connection.
+
+### Polish
+- **Setup token screen**: a back arrow to the welcome screen, and "Connect" stays off until a token is pasted.
+- A short **"What happens next"** card explains that the token becomes a read-only link stored encrypted on your phone, and that the first sync can take a minute.
+
 ## [2.17.0] - 2026-11-25
 
 Round 18: tidier pages.
