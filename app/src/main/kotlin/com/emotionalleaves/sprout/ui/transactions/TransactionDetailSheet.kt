@@ -35,6 +35,11 @@ import com.emotionalleaves.sprout.AppContainer
 import com.emotionalleaves.sprout.data.db.CategoryEntity
 import com.emotionalleaves.sprout.data.db.TransactionDetail
 import com.emotionalleaves.sprout.domain.categorize.MerchantNormalizer
+import com.emotionalleaves.sprout.domain.money.Money
+import com.emotionalleaves.sprout.domain.split.SplitPart
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlin.math.abs
 import com.emotionalleaves.sprout.ui.categories.CategoryGrid
 import com.emotionalleaves.sprout.ui.common.Format
 import com.emotionalleaves.sprout.ui.common.sproutViewModel
@@ -66,6 +71,16 @@ class TransactionDetailViewModel(private val c: AppContainer, private val id: St
         _messages.tryEmit(msg to undo)
     }
 
+    val splits: StateFlow<List<com.emotionalleaves.sprout.data.db.TransactionSplitEntity>> =
+        c.db.splits().observeFor(id).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Saves the split; returns a problem to show, or null when saved. */
+    suspend fun saveSplits(parts: List<SplitPart>): String? {
+        val problem = c.categoryRepository.setSplits(id, parts)
+        if (problem == null) c.alertRepository.evaluateBudgets()
+        return problem
+    }
+
     fun saveNote(note: String) = viewModelScope.launch { c.categoryRepository.setNote(id, note) }
 
     /** "Part of a bill" text, when this charge belongs to a recurring charge. */
@@ -85,6 +100,10 @@ fun TransactionDetailSheet(transactionId: String, onDismiss: () -> Unit, onMessa
     val vm = sproutViewModel(key = "tx-$transactionId") { TransactionDetailViewModel(it, transactionId) }
     val detail by vm.detail.collectAsStateWithLifecycle()
     val categories by vm.categories.collectAsStateWithLifecycle()
+    val splits by vm.splits.collectAsStateWithLifecycle()
+    var splitting by remember { mutableStateOf(false) }
+    var splitProblem by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
     val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     LaunchedEffect(vm) { vm.messages.collect { (msg, undo) -> onMessage(msg, undo) } }
 
@@ -124,6 +143,43 @@ fun TransactionDetailSheet(transactionId: String, onDismiss: () -> Unit, onMessa
             Text("Category: ${d.categoryName}", style = MaterialTheme.typography.titleMedium)
             SwitchRow("Always use this for $merchant", always) { always = it }
             CategoryGrid(categories, d.categoryId) { vm.pick(it, always, merchant) }
+
+            val names = categories.associate { it.id to it.name }
+            if (splits.isNotEmpty()) {
+                Text("Split", style = MaterialTheme.typography.titleMedium)
+                splits.forEach { p ->
+                    Text("${names[p.categoryId] ?: "Category"}: ${Money.format(abs(p.amountMinor))}", style = MaterialTheme.typography.bodyMedium)
+                }
+                Text(
+                    "${d.categoryName}: ${Money.format(abs(d.amountMinor - splits.sumOf { it.amountMinor }))}",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+            if (d.pending) {
+                Text("You can split this once it posts.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else if (d.amountMinor != 0L) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { splitProblem = null; splitting = true }, modifier = Modifier.heightIn(min = 48.dp)) {
+                        Text(if (splits.isEmpty()) "Split across categories" else "Edit split")
+                    }
+                    if (splits.isNotEmpty()) {
+                        OutlinedButton(onClick = { scope.launch { vm.saveSplits(emptyList()) } }, modifier = Modifier.heightIn(min = 48.dp)) {
+                            Text("Remove split")
+                        }
+                    }
+                }
+            }
+            if (splitting) {
+                SplitDialog(
+                    amountMinor = d.amountMinor,
+                    ownCategory = categories.firstOrNull { it.id == d.categoryId },
+                    categories = categories,
+                    existing = splits.map { SplitPart(it.categoryId, it.amountMinor) },
+                    onDismiss = { splitting = false },
+                    onSave = { parts -> scope.launch { splitProblem = vm.saveSplits(parts); if (splitProblem == null) splitting = false } },
+                    problem = splitProblem,
+                )
+            }
 
             OutlinedTextField(
                 value = note,

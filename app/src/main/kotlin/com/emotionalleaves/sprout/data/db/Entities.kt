@@ -156,6 +156,26 @@ data class BudgetOverrideEntity(
     val amountMinor: Long,
 )
 
+/**
+ * Part of a transaction moved to another category (schema 4). The transaction's own category keeps the rest.
+ * [amountMinor] has the transaction's sign.
+ */
+@Entity(
+    tableName = "transaction_splits",
+    foreignKeys = [
+        ForeignKey(entity = TransactionEntity::class, parentColumns = ["id"], childColumns = ["transactionId"], onDelete = ForeignKey.CASCADE),
+        ForeignKey(entity = CategoryEntity::class, parentColumns = ["id"], childColumns = ["categoryId"], onDelete = ForeignKey.CASCADE),
+    ],
+    indices = [Index("transactionId"), Index("categoryId")],
+)
+data class TransactionSplitEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val transactionId: String,
+    val categoryId: Long,
+    val amountMinor: Long,
+    val createdAt: Long,
+)
+
 /** Rollover is on for a category (schema 3). Leftover money carries forward starting after [sinceMonth]. */
 @Entity(
     tableName = "budget_rollovers",

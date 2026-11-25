@@ -138,4 +138,28 @@ class BudgetRepositoryTest {
         repo.removeBudget(g, thisMonthOnly = false, month = nov)
         assertEquals(0, env.db.backup().budgetRollovers().size)
     }
+
+    @Test fun splitMovesSpendingBetweenCategories() = runBlocking {
+        syncTx(Triple("1", "KROGER #1|-100.00", at(11, 5)))
+        val g = cat(DefaultCategories.GROCERIES)
+        val h = cat(DefaultCategories.SHOPPING)
+        repo.setBudget(g, 30_000, thisMonthOnly = false, month = nov)
+        repo.setBudget(h, 20_000, thisMonthOnly = false, month = nov)
+        val cats = com.emotionalleaves.sprout.data.categories.CategoryRepository(env.db, env.clock)
+        val id = env.db.backup().transactions().single().id
+        assertNull(cats.setSplits(id, listOf(com.emotionalleaves.sprout.domain.split.SplitPart(h, 3_000))))
+        val m = repo.observeMonth(nov).first()
+        assertEquals(7_000L, m.budgeted.first { it.category.id == g }.spentMinor)
+        assertEquals(3_000L, m.budgeted.first { it.category.id == h }.spentMinor)
+        assertEquals(10_000L, m.totalSpentMinor)
+        assertEquals(listOf(nov to 3_000L), repo.history(h, months = 1))
+        // Too much, or into its own category: refused, nothing changes.
+        assertEquals(true, cats.setSplits(id, listOf(com.emotionalleaves.sprout.domain.split.SplitPart(h, 20_000))) != null)
+        assertEquals(true, cats.setSplits(id, listOf(com.emotionalleaves.sprout.domain.split.SplitPart(g, 1_000))) != null)
+        assertEquals(-3_000L, env.db.splits().getFor(id).single().amountMinor)
+        // The split category's transaction list includes it.
+        assertEquals(1, env.db.transactions().observeRows("", 50, h).first().size)
+        assertNull(cats.setSplits(id, emptyList()))
+        assertEquals(0L, repo.observeMonth(nov).first().budgeted.first { it.category.id == h }.spentMinor)
+    }
 }

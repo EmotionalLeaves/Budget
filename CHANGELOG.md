@@ -2,7 +2,15 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
-## [1.10.0] - 2026-11-24
+## [1.11.0] - 2026-11-24
+
+### Added
+- Split a transaction across categories. Open a posted transaction and tap "Split across categories", then move part of it (say $30 of a $100 Target run) to another category. The rest stays in the transaction's own category, so the parts always add up. Budgets, safe to spend, category history and the category's transaction list all follow the split. "Remove split" puts it back.
+
+### Data safety
+- Database version 4 adds one new table for splits. Updating keeps all your data (tested from every earlier version). Backups include splits; older backups still restore.
+
+ - 2026-11-24
 
 ### Added
 - Budget rollover. Tap a budget and turn on "Roll over leftover money": what you don't spend this month is added to next month's budget, and overspending comes out of it. Each budget shows "(incl. $X rolled over)" when it applies. Off by default, set per category.

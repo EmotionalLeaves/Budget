@@ -28,6 +28,7 @@ import androidx.room.migration.Migration
         SyncLogEntity::class,
         SavingsGoalEntity::class,
         BudgetRolloverEntity::class,
+        TransactionSplitEntity::class,
     ],
     version = SproutDatabase.VERSION,
     exportSchema = true,
@@ -45,13 +46,14 @@ abstract class SproutDatabase : RoomDatabase() {
     abstract fun recurring(): RecurringDao
     abstract fun backup(): BackupDao
     abstract fun goals(): GoalDao
+    abstract fun splits(): SplitDao
 
     companion object {
-        const val VERSION = 3
+        const val VERSION = 4
         const val NAME = "sprout.db"
 
         /** All migrations, oldest first. */
-        val MIGRATIONS: Array<Migration> = arrayOf(Migrations.MIGRATION_1_2, Migrations.MIGRATION_2_3)
+        val MIGRATIONS: Array<Migration> = arrayOf(Migrations.MIGRATION_1_2, Migrations.MIGRATION_2_3, Migrations.MIGRATION_3_4)
 
         fun build(context: Context): SproutDatabase =
             Room.databaseBuilder(context.applicationContext, SproutDatabase::class.java, NAME)

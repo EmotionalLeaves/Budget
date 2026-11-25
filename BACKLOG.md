@@ -11,6 +11,7 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [x] (1.0.1) Local crash log: catch uncaught exceptions to a file on the phone and show "Sprout closed unexpectedly — share details?" (no network) — *why: no crash reporting service, so the user needs a way to report crashes*
 - [x] (1.0.1) Home's budget card keeps the month it was created with; refresh when the month changes while the app stays open — *why: wrong month after midnight on the 1st*
 - [x] (1.0.1) Transactions list "today/yesterday" labels don't refresh after midnight — *why: stale headers*
+- [ ] Forecast "everyday spending" ignores split parts (uses the parent category only) — *why: forecast accuracy*
 
 ## 2. Security and data safety
 - [x] (1.1.0) Optional app lock with fingerprint/PIN (BiometricPrompt) — *why: banking data on a shared or lost phone*
@@ -39,6 +40,8 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [ ] Category icons (iconKey) in chips and grids — *why: faster scanning*
 - [ ] TalkBack and 200% font pass on every screen with screenshot tests (Roborazzi) — *why: accessibility regressions are easy to miss*
 - [x] (1.5.0) Onboarding: offer Quick budget setup right after the first sync — *why: spec flow; faster to value*
+- [ ] Mark split transactions in the list (small "Split" label) — *why: know at a glance*
+- [ ] Rollover breakdown on the category screen (set amount, carried, available) — *why: explain the number*
 
 ## 6. Performance and battery
 - [ ] Baseline profile for faster cold start — *why: opens instantly*
@@ -51,8 +54,9 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [x] (1.6.0) Cash-flow forecast to month end (balance − upcoming bills + expected income) — *why: "will I make it to payday?"*
 - [x] (1.8.0) Bill calendar view — *why: see bills by date*
 - [x] (1.10.0) Budget rollover (opt-in per category, schema 3 + MIGRATION_2_3)
-- [ ] Split a transaction across categories — *why: a Target run is groceries + household*
+- [x] (1.11.0) Split a transaction across categories (schema 4 + MIGRATION_3_4)
 - [ ] Tags on transactions — *why: track trips or projects across categories*
 - [ ] Home-screen widget (Glance) with safe to spend — *why: check without opening the app*
 - [ ] Custom-currency lookup (GET the currency URL) — *why: show points/crypto accounts properly*
 - [ ] CSV import: European comma decimals and a Category column — *why: more bank formats*
+- [ ] CSV export: one row per split part (or a "Split" column) — *why: spreadsheets match budgets*

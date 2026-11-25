@@ -7,7 +7,7 @@
 Phase 2 – improve forever. v1.0.0 published.
 
 ## Current task
-Phase 2: split transactions, then refill the backlog.
+Phase 2: forecast split bug, then split marker and rollover breakdown (UX), then tests tier.
 
 ## v1.0 checklist (verified 2026-11-24)
 - [x] F1–F9 acceptance criteria pass, with unit tests where specified (core: token/URL/parser/client, 60+ categorization tests, budget math, alerts, recurring, CSV 6 formats + round trip; app: sync, categories, budgets, alerts, recurring, import, export, connect, 20k-row data).
@@ -22,21 +22,21 @@ Phase 2: split transactions, then refill the backlog.
 - [x] GitHub Release v1.0.0 published with the APK and marked latest (this push).
 
 ## Recent changes
-1. 2026-11-24 – v1.10.0: budget rollover (BudgetMath.rolloverCarry, budget_rollovers table, MIGRATION_2_3 + tests, backup support).
-2. 2026-11-24 – v1.9.1: SyncWorker tests (work-testing, worker test seam); certificate pinning decided against.
-3. 2026-11-24 – v1.9.0: purchase-date option (SyncMerger.usePurchaseDate, redatePosted DAO, tests); 10k merge test.
-4. 2026-11-24 – v1.8.0: bill calendar (CalendarGrid Sunday-first helper + test, RecurringRepository.observeCalendar + test).
-5. 2026-11-24 – v1.7.0: savings goals (GoalMath 7 tests, GoalRepository 3 tests, Goals screen, Home card); DB v2 with explicit MIGRATION_1_2 and MigrationTest proving v1 data survives; goals in backups.
-6. 2026-11-24 – v1.6.0: CashFlow forecast (low point, next paycheck; 8 tests), income detection via RecurringDetector.detectIncome, spending trend vs same days last month, ForecastRepository (2 Robolectric tests), Home forecast card with breakdown.
-7. 2026-11-24 – v1.5.0: category detail month switcher; onboarding Quick budget step (suggestions applied in one tap).
-8. 2026-11-24 – v1.4.0: undoable recategorization (snapshot + rule restore, 2 tests), account/category filter chips, budgets show-all (BudgetMonth.allLines), bill link in transaction detail.
-9. 2026-11-24 – v1.3.0: 12-hour pause after SimpleFIN rate-limit warnings (SyncErrors.isRateLimitWarning + SyncRepository test); stale/possibly-closed account flag on Home (AccountTypes.isStale).
-10. 2026-11-24 – v1.2.0: password-encrypted backup/restore (BackupCrypto PBKDF2+AES-GCM with authenticated header, 9 tests; BackupRepository JSON codec, all-or-nothing restore, 5 tests).
-11. 2026-11-24 – v1.1.0: optional app lock (KeyguardManager confirm, 60 s grace, AppLockPolicy tests) and FLAG_SECURE toggle.
-12. 2026-11-24 – v1.0.1: local crash log (message-free, user-shared only, 3 tests); Home budget/bills and Transactions day labels roll over at midnight (todayFlow).
-13. 2026-11-24 – v1.0.0 released (CI green).
-14. 2026-11-24 – v1.0.0: v1.0 checklist verified and ticked; release notes; Phase 2 begins.
-15. 2026-11-24 – v0.10.0 released; CI green including coverage and manifest check.
+1. 2026-11-24 – v1.11.0: split transactions (Splits domain rules, transaction_splits table, MIGRATION_3_4, split-aware spending queries, backup).
+2. 2026-11-24 – v1.10.0: budget rollover (BudgetMath.rolloverCarry, budget_rollovers table, MIGRATION_2_3 + tests, backup support).
+3. 2026-11-24 – v1.9.1: SyncWorker tests (work-testing, worker test seam); certificate pinning decided against.
+4. 2026-11-24 – v1.9.0: purchase-date option (SyncMerger.usePurchaseDate, redatePosted DAO, tests); 10k merge test.
+5. 2026-11-24 – v1.8.0: bill calendar (CalendarGrid Sunday-first helper + test, RecurringRepository.observeCalendar + test).
+6. 2026-11-24 – v1.7.0: savings goals (GoalMath 7 tests, GoalRepository 3 tests, Goals screen, Home card); DB v2 with explicit MIGRATION_1_2 and MigrationTest proving v1 data survives; goals in backups.
+7. 2026-11-24 – v1.6.0: CashFlow forecast (low point, next paycheck; 8 tests), income detection via RecurringDetector.detectIncome, spending trend vs same days last month, ForecastRepository (2 Robolectric tests), Home forecast card with breakdown.
+8. 2026-11-24 – v1.5.0: category detail month switcher; onboarding Quick budget step (suggestions applied in one tap).
+9. 2026-11-24 – v1.4.0: undoable recategorization (snapshot + rule restore, 2 tests), account/category filter chips, budgets show-all (BudgetMonth.allLines), bill link in transaction detail.
+10. 2026-11-24 – v1.3.0: 12-hour pause after SimpleFIN rate-limit warnings (SyncErrors.isRateLimitWarning + SyncRepository test); stale/possibly-closed account flag on Home (AccountTypes.isStale).
+11. 2026-11-24 – v1.2.0: password-encrypted backup/restore (BackupCrypto PBKDF2+AES-GCM with authenticated header, 9 tests; BackupRepository JSON codec, all-or-nothing restore, 5 tests).
+12. 2026-11-24 – v1.1.0: optional app lock (KeyguardManager confirm, 60 s grace, AppLockPolicy tests) and FLAG_SECURE toggle.
+13. 2026-11-24 – v1.0.1: local crash log (message-free, user-shared only, 3 tests); Home budget/bills and Transactions day labels roll over at midnight (todayFlow).
+14. 2026-11-24 – v1.0.0 released (CI green).
+15. 2026-11-24 – v1.0.0: v1.0 checklist verified and ticked; release notes; Phase 2 begins.
 
 ## Known issues
 - The repo is private, so GitHub Actions minutes are limited (2,000/month free). Keep pushes meaningful.

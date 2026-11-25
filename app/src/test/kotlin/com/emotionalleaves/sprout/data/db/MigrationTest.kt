@@ -76,8 +76,27 @@ class MigrationTest {
         room.close()
     }
 
-    @Test fun migrate1To3InOneGo() {
+    @Test fun migrate3To4KeepsAllData() {
+        helper.createDatabase(name, 3).use { db ->
+            seedV1(db)
+            db.execSQL("INSERT INTO budget_rollovers (categoryId, sinceMonth) VALUES (1, '2026-10')")
+        }
+        helper.runMigrationsAndValidate(name, 4, true, Migrations.MIGRATION_3_4).use { db ->
+            db.query("SELECT COUNT(*) FROM transaction_splits").use { c -> c.moveToFirst(); assertEquals(0, c.getInt(0)) }
+            db.query("SELECT sinceMonth FROM budget_rollovers WHERE categoryId = 1").use { c -> c.moveToFirst(); assertEquals("2026-10", c.getString(0)) }
+        }
+        val room = Room.databaseBuilder(ApplicationProvider.getApplicationContext(), SproutDatabase::class.java, name)
+            .addMigrations(*SproutDatabase.MIGRATIONS).allowMainThreadQueries().build()
+        runBlocking {
+            assertEquals("weekly shop", room.backup().transactions().single().note)
+            assertEquals(1, room.backup().budgetRollovers().size)
+            assertEquals(40000L, room.backup().categoryBudgets().single().amountMinor)
+        }
+        room.close()
+    }
+
+    @Test fun migrate1ToLatestInOneGo() {
         helper.createDatabase(name, 1).use { seedV1(it) }
-        helper.runMigrationsAndValidate(name, 3, true, *SproutDatabase.MIGRATIONS).close()
+        helper.runMigrationsAndValidate(name, SproutDatabase.VERSION, true, *SproutDatabase.MIGRATIONS).close()
     }
 }

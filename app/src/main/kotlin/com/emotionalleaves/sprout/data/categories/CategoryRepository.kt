@@ -5,6 +5,9 @@ import com.emotionalleaves.sprout.data.db.CategoryEntity
 import com.emotionalleaves.sprout.data.db.MerchantRuleEntity
 import com.emotionalleaves.sprout.data.db.RuleOrigin
 import com.emotionalleaves.sprout.data.db.SproutDatabase
+import com.emotionalleaves.sprout.data.db.TransactionSplitEntity
+import com.emotionalleaves.sprout.domain.split.SplitPart
+import com.emotionalleaves.sprout.domain.split.Splits
 import com.emotionalleaves.sprout.domain.categorize.BuiltInRules
 import com.emotionalleaves.sprout.domain.categorize.CategoryKind
 import com.emotionalleaves.sprout.domain.categorize.CategoryResolver
@@ -66,6 +69,19 @@ class CategoryRepository(private val db: SproutDatabase, private val clock: Cloc
             db.transactions().setCategory(transactionId, categoryId, CategorySource.USER, now)
             Change(others, undo)
         }
+    }
+
+    /**
+     * Saves a transaction's split: [parts] move money (positive amounts as typed) to other categories; the rest stays
+     * in its own category. An empty list removes the split. Returns why it can't be saved, or null when saved.
+     */
+    suspend fun setSplits(transactionId: String, parts: List<SplitPart>): String? = withContext(Dispatchers.IO) {
+        val tx = db.transactions().getById(transactionId) ?: return@withContext "This transaction no longer exists."
+        val normalized = Splits.normalize(tx.amountMinor, parts)
+        Splits.problem(tx.amountMinor, tx.pending, tx.categoryId, normalized)?.let { return@withContext it }
+        val now = clock.instant().epochSecond
+        db.splits().replace(transactionId, normalized.map { TransactionSplitEntity(transactionId = transactionId, categoryId = it.categoryId, amountMinor = it.amountMinor, createdAt = now) })
+        null
     }
 
     suspend fun setNote(transactionId: String, note: String) = withContext(Dispatchers.IO) {

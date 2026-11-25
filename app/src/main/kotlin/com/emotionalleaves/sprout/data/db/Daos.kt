@@ -5,6 +5,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import androidx.room.Upsert
 import com.emotionalleaves.sprout.domain.categorize.CategorySource
@@ -181,7 +182,8 @@ interface TransactionDao {
           AND (:start IS NULL OR (t.occurredAt >= :start AND t.occurredAt < :end))
           AND (:query = '' OR t.description LIKE '%' || :query || '%' OR t.merchantKey LIKE '%' || :query || '%'
                OR t.note LIKE '%' || :query || '%')
-          AND (:categoryId IS NULL OR t.categoryId = :categoryId)
+          AND (:categoryId IS NULL OR t.categoryId = :categoryId
+               OR EXISTS (SELECT 1 FROM transaction_splits s WHERE s.transactionId = t.id AND s.categoryId = :categoryId))
         ORDER BY t.occurredAt DESC, t.id DESC
         LIMIT :limit
         """,
@@ -200,7 +202,8 @@ interface TransactionDao {
         WHERE a.hidden = 0
           AND (:query = '' OR t.description LIKE '%' || :query || '%' OR t.merchantKey LIKE '%' || :query || '%'
                OR t.note LIKE '%' || :query || '%')
-          AND (:categoryId IS NULL OR t.categoryId = :categoryId)
+          AND (:categoryId IS NULL OR t.categoryId = :categoryId
+               OR EXISTS (SELECT 1 FROM transaction_splits s WHERE s.transactionId = t.id AND s.categoryId = :categoryId))
           AND (:pendingOnly = 0 OR t.pending = 1)
           AND (:accountId IS NULL OR t.accountId = :accountId)
         ORDER BY t.occurredAt DESC, t.id DESC
@@ -289,31 +292,53 @@ interface BudgetDao {
 
     @Query(
         """
-        SELECT t.categoryId AS categoryId, SUM(t.amountMinor) AS total
-        FROM transactions t JOIN accounts a ON a.id = t.accountId
-        WHERE t.occurredAt >= :start AND t.occurredAt < :end AND t.excludedFromBudget = 0 AND a.hidden = 0
-        GROUP BY t.categoryId
+        SELECT categoryId, SUM(amt) AS total FROM (
+            SELECT t.categoryId AS categoryId,
+                   t.amountMinor - COALESCE((SELECT SUM(s.amountMinor) FROM transaction_splits s WHERE s.transactionId = t.id), 0) AS amt
+            FROM transactions t JOIN accounts a ON a.id = t.accountId
+            WHERE t.occurredAt >= :start AND t.occurredAt < :end AND t.excludedFromBudget = 0 AND a.hidden = 0
+            UNION ALL
+            SELECT s.categoryId AS categoryId, s.amountMinor AS amt
+            FROM transaction_splits s JOIN transactions t ON t.id = s.transactionId JOIN accounts a ON a.id = t.accountId
+            WHERE t.occurredAt >= :start AND t.occurredAt < :end AND t.excludedFromBudget = 0 AND a.hidden = 0
+        )
+        GROUP BY categoryId
         """,
     )
     fun observeSums(start: Long, end: Long): Flow<List<CategorySum>>
 
     @Query(
         """
-        SELECT t.categoryId AS categoryId, t.amountMinor AS amountMinor, t.occurredAt AS occurredAt
-        FROM transactions t JOIN accounts a ON a.id = t.accountId
-        WHERE t.occurredAt >= :start AND t.occurredAt < :end AND t.excludedFromBudget = 0 AND a.hidden = 0
-          AND (:categoryId IS NULL OR t.categoryId = :categoryId)
+        SELECT categoryId, amountMinor, occurredAt FROM (
+            SELECT t.categoryId AS categoryId, t.occurredAt AS occurredAt,
+                   t.amountMinor - COALESCE((SELECT SUM(s.amountMinor) FROM transaction_splits s WHERE s.transactionId = t.id), 0) AS amountMinor
+            FROM transactions t JOIN accounts a ON a.id = t.accountId
+            WHERE t.occurredAt >= :start AND t.occurredAt < :end AND t.excludedFromBudget = 0 AND a.hidden = 0
+            UNION ALL
+            SELECT s.categoryId AS categoryId, t.occurredAt AS occurredAt, s.amountMinor AS amountMinor
+            FROM transaction_splits s JOIN transactions t ON t.id = s.transactionId JOIN accounts a ON a.id = t.accountId
+            WHERE t.occurredAt >= :start AND t.occurredAt < :end AND t.excludedFromBudget = 0 AND a.hidden = 0
+        )
+        WHERE :categoryId IS NULL OR categoryId = :categoryId
         """,
     )
     suspend fun spendRows(start: Long, end: Long, categoryId: Long? = null): List<SpendRow>
 
     @Query(
         """
-        SELECT t.merchantKey AS merchantKey, SUM(t.amountMinor) AS total, COUNT(*) AS count
-        FROM transactions t JOIN accounts a ON a.id = t.accountId
-        WHERE t.categoryId = :categoryId AND t.occurredAt >= :start AND t.occurredAt < :end
-          AND t.excludedFromBudget = 0 AND a.hidden = 0
-        GROUP BY t.merchantKey ORDER BY total ASC
+        SELECT merchantKey, SUM(amt) AS total, COUNT(*) AS count FROM (
+            SELECT t.merchantKey AS merchantKey,
+                   t.amountMinor - COALESCE((SELECT SUM(s.amountMinor) FROM transaction_splits s WHERE s.transactionId = t.id), 0) AS amt
+            FROM transactions t JOIN accounts a ON a.id = t.accountId
+            WHERE t.categoryId = :categoryId AND t.occurredAt >= :start AND t.occurredAt < :end
+              AND t.excludedFromBudget = 0 AND a.hidden = 0
+            UNION ALL
+            SELECT t.merchantKey AS merchantKey, s.amountMinor AS amt
+            FROM transaction_splits s JOIN transactions t ON t.id = s.transactionId JOIN accounts a ON a.id = t.accountId
+            WHERE s.categoryId = :categoryId AND t.occurredAt >= :start AND t.occurredAt < :end
+              AND t.excludedFromBudget = 0 AND a.hidden = 0
+        )
+        GROUP BY merchantKey ORDER BY total ASC
         """,
     )
     fun observeMerchantSums(categoryId: Long, start: Long, end: Long): Flow<List<MerchantSum>>
@@ -442,6 +467,9 @@ interface BackupDao {
     @Query("SELECT * FROM budget_overrides") suspend fun budgetOverrides(): List<BudgetOverrideEntity>
     @Query("SELECT * FROM budget_alerts") suspend fun budgetAlerts(): List<BudgetAlertEntity>
     @Query("SELECT * FROM budget_rollovers") suspend fun budgetRollovers(): List<BudgetRolloverEntity>
+    @Query("SELECT * FROM transaction_splits") suspend fun transactionSplits(): List<TransactionSplitEntity>
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putTransactionSplits(items: List<TransactionSplitEntity>)
+    @Query("DELETE FROM transaction_splits") suspend fun wipeTransactionSplits()
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putBudgetRollovers(items: List<BudgetRolloverEntity>)
     @Query("DELETE FROM budget_rollovers") suspend fun wipeBudgetRollovers()
 
@@ -476,4 +504,23 @@ interface GoalDao {
     @Query("DELETE FROM savings_goals WHERE id = :id") suspend fun delete(id: Long)
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putAll(items: List<SavingsGoalEntity>)
     @Query("DELETE FROM savings_goals") suspend fun wipe()
+}
+
+@Dao
+interface SplitDao {
+    @Query("SELECT * FROM transaction_splits WHERE transactionId = :transactionId ORDER BY id")
+    fun observeFor(transactionId: String): Flow<List<TransactionSplitEntity>>
+
+    @Query("SELECT * FROM transaction_splits WHERE transactionId = :transactionId ORDER BY id")
+    suspend fun getFor(transactionId: String): List<TransactionSplitEntity>
+
+    @Query("DELETE FROM transaction_splits WHERE transactionId = :transactionId") suspend fun deleteFor(transactionId: String)
+    @Insert suspend fun insert(items: List<TransactionSplitEntity>)
+
+    /** Replaces a transaction's parts in one step. */
+    @Transaction
+    suspend fun replace(transactionId: String, items: List<TransactionSplitEntity>) {
+        deleteFor(transactionId)
+        if (items.isNotEmpty()) insert(items)
+    }
 }
