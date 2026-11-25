@@ -4,6 +4,7 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import kotlinx.coroutines.flow.map
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -185,19 +186,7 @@ fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit, onGoals:
             if (m.unbudgetedWithSpending.isNotEmpty()) {
                 item { SectionTitle("Not budgeted") }
                 items(m.unbudgetedWithSpending, key = { "u-" + it.category.id }) { line ->
-                    Row(
-                        Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(start = 16.dp, end = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(Modifier.weight(1f)) {
-                            TextButton(onClick = { onCategory(line.category.id) }, modifier = Modifier.heightIn(min = 48.dp)) {
-                                Text(line.category.name, style = MaterialTheme.typography.bodyLarge)
-                            }
-                            Text("Spent ${Money.format(line.spentMinor)}", style = MaterialTheme.typography.labelMedium,
-                                modifier = Modifier.padding(start = 12.dp))
-                        }
-                        TextButton(onClick = { editing = line }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Add budget") }
-                    }
+                    UnbudgetedRow(line.category, "Spent ${Money.format(line.spentMinor)} this month", onOpen = { onCategory(line.category.id) }) { editing = line }
                 }
             }
             val idle = m.allLines.filter { it.budgetMinor == null && it.spentMinor == 0L }
@@ -209,13 +198,7 @@ fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit, onGoals:
                 }
                 if (showAll) {
                     items(idle, key = { "i-" + it.category.id }) { line ->
-                        Row(
-                            Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(start = 16.dp, end = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(line.category.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-                            TextButton(onClick = { editing = line }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Add budget") }
-                        }
+                        UnbudgetedRow(line.category, "Nothing spent this month", onOpen = { onCategory(line.category.id) }) { editing = line }
                     }
                 }
             }
@@ -240,5 +223,24 @@ fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit, onGoals:
             onSave = { amount, thisMonth, roll -> vm.save(line.category.id, amount, thisMonth, roll, line.rolloverOn); editing = null },
             onRemove = { thisMonth -> vm.remove(line.category.id, thisMonth); editing = null },
         )
+    }
+}
+
+/** A category without a budget: its icon, what it cost this month, and a quiet "Set budget". */
+@Composable
+private fun UnbudgetedRow(category: com.emotionalleaves.sprout.domain.budget.BudgetCategory, note: String, onOpen: () -> Unit, onSet: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 60.dp).clickable(onClickLabel = "Open ${category.name}", onClick = onOpen)
+            .padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        com.emotionalleaves.sprout.ui.common.IconBadge(
+            com.emotionalleaves.sprout.ui.common.CategoryIcons.forKey(category.iconKey), androidx.compose.ui.graphics.Color(category.colorArgb), 38.dp,
+        )
+        Column(Modifier.weight(1f).padding(start = 12.dp)) {
+            Text(category.name, style = MaterialTheme.typography.bodyLarge)
+            Text(note, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        TextButton(onClick = onSet, modifier = Modifier.heightIn(min = 48.dp)) { Text("Set budget") }
     }
 }

@@ -209,7 +209,7 @@ fun CategoryDetailScreen(categoryId: Long, snackbar: SnackbarHostState, onBack: 
         }
         item { SectionTitle("Transactions") }
         items(txs, key = { "t-" + it.id }) { row ->
-            TransactionItem(row) { openId = row.id }
+            TransactionItem(row, showDate = true) { openId = row.id }
             HorizontalDivider(Modifier.padding(start = 16.dp))
         }
     }

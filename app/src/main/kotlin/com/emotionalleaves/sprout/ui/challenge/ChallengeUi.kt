@@ -182,12 +182,15 @@ fun HealthCard(r: HealthScore.Result) {
         onDismissRequest = { open = false },
         title = { Text("Money health: $score/100") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                val sc = com.emotionalleaves.sprout.ui.theme.LocalSproutColors.current
                 r.parts.forEach { p ->
-                    Column {
-                        Row { Text(p.name, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall); Text("${p.points}/${p.max}") }
-                        FatProgress(p.points.toFloat() / p.max, MaterialTheme.colorScheme.primary, height = 6.dp)
-                        Text(p.tip, style = MaterialTheme.typography.bodySmall)
+                    val frac = p.points.toFloat() / p.max
+                    val tone = when { frac >= 0.8f -> sc.ok; frac >= 0.5f -> sc.warning; else -> sc.danger }
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row { Text(p.name, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall); Text("${p.points}/${p.max}", color = tone, style = MaterialTheme.typography.titleSmall) }
+                        FatProgress(frac, tone, height = 6.dp)
+                        Text(p.tip, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 Text("A simple guide, not a credit score. Parts Sprout can't work out yet are left out.", style = MaterialTheme.typography.labelSmall)

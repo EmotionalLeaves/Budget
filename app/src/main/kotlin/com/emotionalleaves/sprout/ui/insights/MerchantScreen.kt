@@ -86,7 +86,7 @@ fun MerchantScreen(merchantKey: String, snackbar: androidx.compose.material3.Sna
                     }
                 }
             }
-            items(rows, key = { it.id }) { r -> TransactionItem(r) { openId = r.id } }
+            items(rows, key = { it.id }) { r -> TransactionItem(r, dateAsTitle = true) { openId = r.id } }
         }
     }
 }

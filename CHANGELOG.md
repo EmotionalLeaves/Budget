@@ -2,6 +2,24 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.11.0] - 2026-11-25
+
+Round 12: polish, from a third screenshot pass (settings, detail pages, dark mode).
+
+### Polish
+- **More → settings** are now grouped in cards that match the rows above them. Every switch has a short plain-English line under it ("When a budget reaches 80% and 100%"), and long labels got shorter.
+- If notifications are off, the Notifications card says so in red: none of the alerts can reach you until you turn them on.
+- Accounts in settings show their type and balance.
+- **Dates in lists**: the review inbox, Home's recent list and a category's transactions show the date on each row. On a merchant's page every row was "Hy-Vee, Hy-Vee, Hy-Vee…"; now each row leads with its date instead.
+- **Categories** shows what each one cost this month ("Groceries · $192 this month").
+- **Budgets → Not budgeted** rows have icons and a quiet "Set budget" button. The names no longer look like links.
+- **Money health** details: each part is colored by how it's doing (green, amber, red), with more breathing room.
+- Net worth: the tiles say "since last month" and "in total" instead of a bare "up".
+- Category icons stay readable in dark mode everywhere, including the category list.
+
+### Fixed
+- A test checked a challenge against a hard-coded date and would have failed every build from today on. It now uses the real date.
+
 ## [2.10.0] - 2026-11-24
 
 Round 11: more polish, from a second pass of real screenshots (detail screens, sheets, dialogs, first launch).

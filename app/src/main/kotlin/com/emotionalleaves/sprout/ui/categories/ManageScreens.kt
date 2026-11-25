@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.categories
 
+import com.emotionalleaves.sprout.ui.common.readable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -91,6 +92,14 @@ fun CategoriesScreen(onBack: () -> Unit) {
     val all by vm.all.collectAsStateWithLifecycle()
     var editing by remember { mutableStateOf<CategoryEntity?>(null) }
     var adding by remember { mutableStateOf(false) }
+    val app = com.emotionalleaves.sprout.ui.common.appContainer()
+    // This month's spending per category, so the list says something useful at a glance.
+    val spent = com.emotionalleaves.sprout.ui.common.rememberLoaded(all.size) {
+        runCatching {
+            val w = com.emotionalleaves.sprout.domain.budget.MonthWindow.of(java.time.YearMonth.now(), java.time.ZoneId.systemDefault())
+            app.db.budgets().spendRows(w.start, w.end).groupBy { it.categoryId }.mapValues { (_, l) -> -l.sumOf { it.amountMinor } }
+        }.getOrNull()
+    }
 
     Column(Modifier.fillMaxSize()) {
         ScreenHeader("Categories", onBack) {
@@ -102,14 +111,16 @@ fun CategoriesScreen(onBack: () -> Unit) {
                     Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable { editing = c }.padding(horizontal = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Box(Modifier.size(32.dp).clip(CircleShape).background(Color(c.colorArgb).copy(alpha = 0.16f)), contentAlignment = Alignment.Center) {
-                        Icon(com.emotionalleaves.sprout.ui.common.CategoryIcons.forKey(c.iconKey), contentDescription = null, tint = Color(c.colorArgb), modifier = Modifier.size(18.dp))
+                    Box(Modifier.size(32.dp).clip(CircleShape).background(Color(c.colorArgb).readable().copy(alpha = 0.18f)), contentAlignment = Alignment.Center) {
+                        Icon(com.emotionalleaves.sprout.ui.common.CategoryIcons.forKey(c.iconKey), contentDescription = null,
+                            tint = Color(c.colorArgb).readable(), modifier = Modifier.size(18.dp))
                     }
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Text(c.name, style = MaterialTheme.typography.bodyLarge)
                         Text(
-                            kindLabel(c.kind) + if (c.archived) " · archived" else "",
+                            kindLabel(c.kind) + (spent?.get(c.id)?.takeIf { it != 0L }?.let { " · " + com.emotionalleaves.sprout.domain.money.Money.formatWhole(kotlin.math.abs(it)) + " this month" } ?: "") +
+                                if (c.archived) " · archived" else "",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

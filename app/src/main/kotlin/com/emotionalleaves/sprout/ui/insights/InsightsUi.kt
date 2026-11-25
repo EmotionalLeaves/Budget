@@ -133,9 +133,9 @@ fun NetWorthScreen(onBack: () -> Unit) {
                     val c1 = now - lastMonth
                     val c2 = now - first
                     StatTile("This month", (if (c1 >= 0) "+" else "") + money(c1, whole = true), Modifier.weight(1f),
-                        noteColor = if (c1 >= 0) LocalSproutColors.current.ok else LocalSproutColors.current.danger, note = if (c1 >= 0) "up" else "down")
-                    StatTile("Since ${s.first().first.format(shortMonth)}", (if (c2 >= 0) "+" else "") + money(c2, whole = true), Modifier.weight(1f),
-                        noteColor = if (c2 >= 0) LocalSproutColors.current.ok else LocalSproutColors.current.danger, note = if (c2 >= 0) "up" else "down")
+                        noteColor = if (c1 >= 0) LocalSproutColors.current.ok else LocalSproutColors.current.danger, note = if (c1 >= 0) "▲ since last month" else "▼ since last month")
+                    StatTile("Since ${s.first().first.format(monthLabel)}", (if (c2 >= 0) "+" else "") + money(c2, whole = true), Modifier.weight(1f),
+                        noteColor = if (c2 >= 0) LocalSproutColors.current.ok else LocalSproutColors.current.danger, note = if (c2 >= 0) "▲ in total" else "▼ in total")
                 }
             }
             items(s.reversed(), key = { it.first.toString() }) { (d, v) ->

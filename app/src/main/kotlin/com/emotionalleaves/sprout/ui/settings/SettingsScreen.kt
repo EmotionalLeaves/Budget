@@ -220,9 +220,10 @@ fun SettingsScreen(
 
         item { SectionTitle("Notifications") }
         item {
-            Column(Modifier.padding(horizontal = 16.dp)) {
+            SettingsGroup {
                 if (!vm.canPost()) {
-                    Text("Notifications are off for Sprout.", style = MaterialTheme.typography.bodyMedium)
+                    Text("Notifications are off for Sprout, so none of these can reach you.", style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 10.dp))
                     TextButton(
                         onClick = {
                             runCatching {
@@ -235,26 +236,27 @@ fun SettingsScreen(
                         modifier = Modifier.heightIn(min = 48.dp),
                     ) { Text("Turn on in system settings") }
                 }
-                ToggleRow("Budget alerts (80% and 100%)", state.settings.notifyBudget) { vm.setNotifyBudget(it) }
-                ToggleRow("Large or unusual charges", state.settings.notifyUnusual) { vm.setNotifyUnusual(it) }
-                ToggleRow("Bill reminders (the day before)", state.settings.notifyBills) { vm.setNotifyBills(it) }
-                ToggleRow("Sync problems", state.settings.notifySyncProblems) { vm.setNotifySync(it) }
+                ToggleRow("Budget alerts", state.settings.notifyBudget, "When a budget reaches 80% and 100%") { vm.setNotifyBudget(it) }
+                ToggleRow("Large or unusual charges", state.settings.notifyUnusual, "Big amounts, and charges unlike your usual ones") { vm.setNotifyUnusual(it) }
+                ToggleRow("Bill reminders", state.settings.notifyBills, "The day before a bill is due") { vm.setNotifyBills(it) }
+                ToggleRow("Sync problems", state.settings.notifySyncProblems, "If your bank connection needs attention") { vm.setNotifySync(it) }
                 ThresholdRow(state.settings.largeTxThresholdMinor) { vm.setThreshold(it) }
             }
         }
 
         item { SectionTitle("Sync") }
         item {
-            Column(Modifier.padding(horizontal = 16.dp)) {
+            SettingsGroup {
                 val last = state.settings.lastSuccessfulSyncAt
-                Text(if (last != null) "Last successful sync: ${Format.ago(last, now)}" else "Not synced yet")
+                Text(if (last != null) "Last successful sync: ${Format.ago(last, now)}" else "Not synced yet",
+                    style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 12.dp))
                 Text(
                     "Sprout syncs about every 6 hours and asks SimpleFIN at most ${SyncPolicy.DAILY_REQUEST_BUDGET} times a day.",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Button(onClick = { vm.syncNow() }, modifier = Modifier.padding(vertical = 8.dp).heightIn(min = 48.dp)) { Text("Sync now") }
-                ToggleRow("Date transactions by purchase day (when the bank sends it)", state.settings.usePurchaseDate) { vm.setUsePurchaseDate(it) }
-                Text("History to fetch on first sync", style = MaterialTheme.typography.labelLarge)
+                ToggleRow("Date by purchase day", state.settings.usePurchaseDate, "When the bank sends it, instead of the day it posted") { vm.setUsePurchaseDate(it) }
+                Text("History to fetch on first sync", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 8.dp))
                 SyncPolicy.ALLOWED_FIRST_SYNC_DAYS.forEach { days ->
                     Row(
                         Modifier.fillMaxWidth().heightIn(min = 48.dp)
@@ -269,11 +271,15 @@ fun SettingsScreen(
         }
         if (state.logs.isNotEmpty()) {
             item { SectionTitle("Sync log") }
-            items(state.logs, key = { "l-" + it.id }) { log ->
-                Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
-                    Text("${Format.dateTime(log.startedAt)} · ${log.trigger.name.lowercase()} · ${log.result.name.lowercase()}",
-                        style = MaterialTheme.typography.labelMedium)
-                    Text(log.message, style = MaterialTheme.typography.bodySmall)
+            item {
+                SettingsGroup {
+                    state.logs.take(8).forEach { log ->
+                        Column(Modifier.padding(vertical = 6.dp)) {
+                            Text("${Format.dateTime(log.startedAt)} · ${log.trigger.name.lowercase()} · ${log.result.name.lowercase()}",
+                                style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(log.message, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
                 }
             }
         }
@@ -281,11 +287,12 @@ fun SettingsScreen(
         if (state.accounts.isNotEmpty()) {
                 item { SectionTitle("Accounts") }
             items(state.accounts, key = { "a-" + it.id }) { a ->
-                Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                SettingsGroup {
+                    Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text(a.label, style = MaterialTheme.typography.bodyLarge)
-                            Text(a.type.name.lowercase().replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.labelSmall)
+                            Text(a.label, style = MaterialTheme.typography.titleSmall)
+                            Text(a.type.name.lowercase().replaceFirstChar { it.uppercase() } + " · " + Money.format(a.balanceMinor),
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         TextButton(onClick = { editingAccount = a }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Edit") }
                     }
@@ -297,26 +304,27 @@ fun SettingsScreen(
 
         item { SectionTitle("Privacy") }
         item {
-            Column(Modifier.padding(horizontal = 16.dp)) {
+            SettingsGroup {
                 Text(
                     "No analytics. No servers. Data never leaves this phone except to talk to SimpleFIN. " +
                         "Sprout is read-only: it can never move money.",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 12.dp),
                 )
                 val secure = com.emotionalleaves.sprout.ui.lock.DeviceLock.isSecure(context)
-                ToggleRow("Lock Sprout with your screen lock", state.settings.appLock && secure) {
+                ToggleRow("App lock", state.settings.appLock && secure, "Unlock Sprout with your screen lock or fingerprint") {
                     if (secure) vm.setAppLock(it)
                 }
                 if (!secure) {
                     Text("Set up a screen lock (PIN, pattern or fingerprint) in your phone's settings to use this.",
                         style = MaterialTheme.typography.bodySmall)
                 }
-                ToggleRow("Hide in screenshots and recent apps", state.settings.hideInRecents) { vm.setHideInRecents(it) }
+                ToggleRow("Hide from screenshots", state.settings.hideInRecents, "Also blanks Sprout in the recent-apps view") { vm.setHideInRecents(it) }
             }
         }
         item { SectionTitle("Appearance") }
         item {
-            Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Theme", style = MaterialTheme.typography.labelLarge)
+            SettingsGroup {
+                Text("Theme", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 12.dp, bottom = 6.dp))
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                     listOf("Phone", "Light", "Dark", "Black").forEachIndexed { i, label ->
                         SegmentedButton(
@@ -326,18 +334,19 @@ fun SettingsScreen(
                         ) { Text(label) }
                     }
                 }
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                    ToggleRow("Wallpaper colors", state.settings.dynamicColor, "Match your phone's color theme") { vm.setDynamicColor(it) }
+                }
+                ToggleRow("Hide amounts on Home", state.settings.privacyMode, "Tap the eye on Home to show them") { vm.setPrivacyMode(it) }
             }
         }
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-            item { ToggleRow("Use wallpaper colors", state.settings.dynamicColor) { vm.setDynamicColor(it) } }
-        }
-        item { ToggleRow("Hide amounts on Home (tap the eye to show)", state.settings.privacyMode) { vm.setPrivacyMode(it) } }
         item { SectionTitle("Updates") }
-        item { Column(Modifier.padding(horizontal = 16.dp)) { com.emotionalleaves.sprout.ui.update.UpdateSettings(vm.updates, state.settings.betaUpdates) { vm.setBeta(it) } } }
+        item { SettingsGroup { com.emotionalleaves.sprout.ui.update.UpdateSettings(vm.updates, state.settings.betaUpdates) { vm.setBeta(it) } } }
         item { SectionTitle("About") }
         item {
-            Column(Modifier.padding(horizontal = 16.dp)) {
-                Text("Sprout ${BuildConfig.VERSION_NAME} (build ${BuildConfig.VERSION_CODE})")
+            SettingsGroup {
+                Text("Sprout ${BuildConfig.VERSION_NAME} (build ${BuildConfig.VERSION_CODE})", style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(top = 12.dp))
                 TextButton(onClick = { openUrl(context, "$REPO_URL/releases") }, modifier = Modifier.heightIn(min = 48.dp)) {
                     Text("Releases and updates")
                 }
@@ -487,14 +496,27 @@ private fun NavRow(title: String, subtitle: String, onClick: () -> Unit, icon: a
 }
 
 @Composable
-private fun ToggleRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+private fun ToggleRow(label: String, checked: Boolean, subtitle: String? = null, onChange: (Boolean) -> Unit) {
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(role = Role.Switch) { onChange(!checked) },
+        Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(role = Role.Switch) { onChange(!checked) }.padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, Modifier.weight(1f))
+        Column(Modifier.weight(1f).padding(end = 12.dp)) {
+            Text(label, style = MaterialTheme.typography.bodyLarge)
+            if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
         Switch(checked = checked, onCheckedChange = null)
     }
+}
+
+/** One settings section as a card, matching the navigation rows above it. */
+@Composable
+private fun SettingsGroup(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
+    androidx.compose.material3.Surface(
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 3.dp),
+    ) { Column(Modifier.padding(start = 16.dp, end = 12.dp, bottom = 8.dp), content = content) }
 }
 
 private fun statusText(conn: ConnectionEntity): String = when (conn.status) {

@@ -224,7 +224,7 @@ fun HomeScreen(
 
             item { com.emotionalleaves.sprout.ui.common.SectionHeader("Recent", "See all", onSeeAllTransactions) }
             items(state.recent, key = { "tx-" + it.id }) { row ->
-                TransactionItem(row) { openId = row.id }
+                TransactionItem(row, showDate = true) { openId = row.id }
             }
             item {
                 var customizing by androidx.compose.runtime.remember { mutableStateOf(false) }

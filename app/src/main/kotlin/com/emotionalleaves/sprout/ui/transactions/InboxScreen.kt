@@ -113,7 +113,7 @@ fun InboxScreen(snackbar: SnackbarHostState, onBack: () -> Unit) {
                     },
                 ) {
                     Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) { TransactionItem(r) { openId = r.id } }
+                        Column(Modifier.weight(1f)) { TransactionItem(r, showDate = true) { openId = r.id } }
                         IconButton(onClick = { markSeen(listOf(r)) }) { Icon(Icons.Rounded.Check, contentDescription = "Mark ${r.description} reviewed") }
                     }
                 }

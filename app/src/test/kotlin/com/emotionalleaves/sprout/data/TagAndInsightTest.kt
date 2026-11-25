@@ -224,9 +224,11 @@ class TagAndInsightTest {
         env.db.categories().getAll().forEach { }
         val eating = env.db.backup().transactions().first { it.description.startsWith("PIZZA") }.categoryId
         ch.add(com.emotionalleaves.sprout.domain.challenge.ChallengeType.NO_SPEND_CATEGORY, "No pizza", 7, eating)
-        val p = ch.progress(java.time.LocalDate.of(2026, 11, 24)).first { it.challenge.title == "No pizza" }
+        // The challenge starts on the real today, so check it relative to that (this test once broke at midnight).
+        val today = java.time.LocalDate.now(zone)
+        val p = ch.progress(today).first { it.challenge.title == "No pizza" }
         assertEquals(com.emotionalleaves.sprout.domain.challenge.ChallengeStatus.ON_TRACK, p.status)
-        val missed = ch.progress(java.time.LocalDate.of(2026, 11, 24)).first { it.challenge.title == "No pizza" }
+        val missed = ch.progress(today).first { it.challenge.title == "No pizza" }
         assertEquals(1, missed.daysIn)
         ch.remove(p.challenge.id)
         assertTrue(ch.progress().none { it.challenge.title == "No pizza" })

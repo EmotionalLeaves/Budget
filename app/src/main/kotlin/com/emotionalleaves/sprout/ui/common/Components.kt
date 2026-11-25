@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.common
 
+import androidx.compose.runtime.remember
 import androidx.compose.material.icons.rounded.Spa
 import android.content.Context
 import android.content.Intent
@@ -110,11 +111,23 @@ fun CategoryChip(name: String, color: Int, iconKey: String? = null) {
 }
 
 @Composable
-fun TransactionItem(row: TransactionRow, onClick: (() -> Unit)? = null) {
+fun TransactionItem(
+    row: TransactionRow,
+    /** Lists without day headers show the date in the row. */
+    showDate: Boolean = false,
+    /** On a merchant's own page the name is the same on every row, so the date leads instead. */
+    dateAsTitle: Boolean = false,
+    onClick: (() -> Unit)? = null,
+) {
     val merchant = com.emotionalleaves.sprout.ui.common.merchantName(row.merchantKey)
+    val date = remember(row.occurredAt) {
+        java.time.Instant.ofEpochSecond(row.occurredAt).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+            .format(java.time.format.DateTimeFormatter.ofPattern(if (dateAsTitle) "EEE, MMM d, yyyy" else "MMM d"))
+    }
     val amountText = Format.amount(row.amountMinor)
     val spoken = buildString {
-        append(merchant).append(", ").append(Format.amountSpoken(row.amountMinor))
+        append(if (dateAsTitle) date else merchant).append(", ").append(Format.amountSpoken(row.amountMinor))
+        if (showDate && !dateAsTitle) append(", ").append(date)
         append(", ").append(row.categoryName).append(", ").append(row.accountName)
         if (row.pending) append(", pending")
         if (row.splitCount > 0) append(", split across categories")
@@ -131,12 +144,13 @@ fun TransactionItem(row: TransactionRow, onClick: (() -> Unit)? = null) {
         IconBadge(CategoryIcons.forKey(row.categoryIcon), Color(row.categoryColor), 42.dp)
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(merchant, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(if (dateAsTitle) date else merchant, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(row.categoryName, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                 if (row.splitCount > 0) {
                     Text("+${row.splitCount} split", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary, maxLines = 1)
                 }
+                if (showDate && !dateAsTitle) Text("· $date", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                 Text("· " + row.accountName, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
             }

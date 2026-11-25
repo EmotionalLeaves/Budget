@@ -7,6 +7,7 @@ import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
@@ -211,6 +212,28 @@ class ScreenTour {
                 "Debt payoff plan" to "13-debt")) {
                 runCatching { tap(label); s(name); if (label == "Reports") { tap("Compare"); s("06b-compare"); back() }; back() }
             }
+            }
+            if (only == "detail2") {
+                fun t(n: String, block: () -> Unit) = runCatching(block).onFailure { System.err.println("TOUR $n: " + it.toString().take(200)) }
+                t("merchant") {
+                    tap("Activity")
+                    rule.onAllNodes(androidx.compose.ui.test.hasContentDescription("Hy-Vee", substring = true))[0]
+                        .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); settle()
+                    tap("Everything at Hy-Vee"); s("50-merchant"); back()
+                }
+                t("cats") { tap("More"); tap("Categories"); s("51-categories"); back() }
+                t("rules") { tap("More"); tap("Category rules"); s("52-rules"); back() }
+                t("health") { tap("Home"); tap("Money health"); s("53-health"); back() }
+                t("networth") { tap("More"); tap("Net worth over time"); s("54-networth"); back() }
+                t("challenge") { tap("More"); tap("Challenges"); tap("No eating out"); s("55-challenge"); back() }
+                return@use
+            }
+            if (only == "settings") {
+                tap("More")
+                val list = rule.onAllNodes(androidx.compose.ui.test.hasScrollAction())[0]
+                list.performScrollToNode(androidx.compose.ui.test.hasText("Notifications", substring = true)); settle(); s("40-settings-a")
+                list.performScrollToNode(androidx.compose.ui.test.hasText("Open-source licenses")); settle(); s("41-settings-b")
+                return@use
             }
             if (only == "detail") {
                 fun t(n: String, block: () -> Unit) = runCatching(block).onFailure { System.err.println("TOUR $n: " + it.toString().take(200) + " @ " + it.stackTrace.firstOrNull { e -> e.className.contains("ScreenTour") }) }
