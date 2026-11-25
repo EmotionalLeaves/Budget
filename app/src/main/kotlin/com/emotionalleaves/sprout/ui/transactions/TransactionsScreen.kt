@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.transactions
 
+import androidx.compose.ui.semantics.customActions
 import kotlinx.coroutines.flow.map
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.zIndex
@@ -391,6 +392,13 @@ private fun SwipeRow(onRight: () -> Unit, onLeft: () -> Unit, content: @Composab
     )
     androidx.compose.material3.SwipeToDismissBox(
         state = state,
+        // TalkBack users get the same two actions from the actions menu, since swiping isn't available to them.
+        modifier = Modifier.semantics {
+            customActions = listOf(
+                androidx.compose.ui.semantics.CustomAccessibilityAction("Change category") { onRight(); true },
+                androidx.compose.ui.semantics.CustomAccessibilityAction("Leave out of budget, or count it again") { onLeft(); true },
+            )
+        },
         backgroundContent = {
             if (state.dismissDirection == androidx.compose.material3.SwipeToDismissBoxValue.Settled) return@SwipeToDismissBox
             val toRight = state.dismissDirection == androidx.compose.material3.SwipeToDismissBoxValue.StartToEnd

@@ -7,7 +7,7 @@
 Phase 2 – improve forever. v1.0.0 published.
 
 ## Current task
-Round 11 (bigger than 2.9.0). User (2026-11-24): heavy visual and functional polish; each of the next 10 releases the biggest yet (#1 2.4.0 … #6 2.9.0); one release per round (update → visuals → features); never stop. Use the screenshot tour: ./gradlew :app:testDebugUnitTest --tests "*ScreenTour*" -Psprout.screens=/tmp/screens [-Psprout.dark=1] [-Psprout.only=dialogs].
+Round 12 (bigger than 2.10.0). User (2026-11-24): heavy visual and functional polish; each of the next 10 releases the biggest yet (#1 2.4.0 … #7 2.10.0); one release per round (update → visuals → features); never stop. Use the screenshot tour: ./gradlew :app:testDebugUnitTest --tests "*ScreenTour*" -Psprout.screens=/tmp/screens [-Psprout.dark=1] [-Psprout.only=dialogs|detail|onboard].
 
 ## v1.0 checklist (verified 2026-11-24)
 - [x] F1–F9 acceptance criteria pass, with unit tests where specified (core: token/URL/parser/client, 60+ categorization tests, budget math, alerts, recurring, CSV 6 formats + round trip; app: sync, categories, budgets, alerts, recurring, import, export, connect, 20k-row data).

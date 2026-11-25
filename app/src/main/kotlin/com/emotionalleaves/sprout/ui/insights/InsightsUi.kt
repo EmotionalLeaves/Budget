@@ -170,8 +170,10 @@ fun YearScreen(onBack: () -> Unit, onCategory: (Long) -> Unit) {
         val scroll = rememberScrollState()
         // Open on the latest months (the right end), where the data is.
         androidx.compose.runtime.LaunchedEffect(months.size) {
-            val max = androidx.compose.runtime.snapshotFlow { scroll.maxValue }.first { it in 1 until Int.MAX_VALUE }
-            scroll.scrollTo(max)
+            // Rows measure one by one, so the end keeps moving for a moment; follow it until it settles.
+            kotlinx.coroutines.withTimeoutOrNull(1_500) {
+                androidx.compose.runtime.snapshotFlow { scroll.maxValue }.collect { if (it in 1 until Int.MAX_VALUE) scroll.scrollTo(it) }
+            }
         }
         val heat = MaterialTheme.colorScheme.primary
         LazyColumn {

@@ -81,18 +81,46 @@ private fun UpdateBody(updates: UpdateRepository, state: UpdateState, showLater:
                     Text("%.1f MB download".format(state.release.sizeBytes / 1_048_576.0), style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                val queued by androidx.compose.runtime.remember {
-                    com.emotionalleaves.sprout.work.UpdateWhenChargingWorker.observeQueued(context)
-                }.collectAsState(initial = false)
+                val waiting by androidx.compose.runtime.remember {
+                    com.emotionalleaves.sprout.work.UpdateWhenChargingWorker.observeWaitingFor(context)
+                }.collectAsState(initial = null)
+                val queued = waiting != null
+                var meteredAsk by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+                if (meteredAsk) {
+                    androidx.compose.material3.AlertDialog(
+                        onDismissRequest = { meteredAsk = false },
+                        title = { Text("You're on mobile data") },
+                        text = {
+                            Text(
+                                (if (state.release.sizeBytes > 0) "This update is %.1f MB. ".format(state.release.sizeBytes / 1_048_576.0) else "") +
+                                    "Download it now, or let Sprout wait for Wi-Fi and update itself then.",
+                            )
+                        },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                meteredAsk = false
+                                com.emotionalleaves.sprout.work.UpdateWhenChargingWorker.schedule(context, onWifi = true)
+                            }) { Text("Wait for Wi-Fi") }
+                        },
+                        dismissButton = { TextButton(onClick = { meteredAsk = false; scope.launch { updates.download(state.release) } }) { Text("Download now") } },
+                    )
+                }
                 if (queued) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Sprout will update itself the next time your phone is charging. Nothing else to do.",
+                        Text(
+                            if (waiting == "wifi") "Sprout will update itself as soon as you're on Wi-Fi. Nothing else to do."
+                            else "Sprout will update itself the next time your phone is charging. Nothing else to do.",
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f))
                         TextButton(onClick = { com.emotionalleaves.sprout.work.UpdateWhenChargingWorker.cancel(context) }) { Text("Cancel") }
                     }
                 }
                 androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { scope.launch { updates.download(state.release) } }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Update now") }
+                    Button(onClick = {
+                        val cm = context.getSystemService(android.net.ConnectivityManager::class.java)
+                        // Ask once on mobile data (only when Sprout can update by itself later); otherwise just go.
+                        if (updates.hasKey && cm != null && cm.isActiveNetworkMetered) meteredAsk = true
+                        else scope.launch { updates.download(state.release) }
+                    }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Update now") }
                     if (updates.hasKey && !queued) {
                         OutlinedButton(onClick = {
                             com.emotionalleaves.sprout.work.UpdateWhenChargingWorker.schedule(context)

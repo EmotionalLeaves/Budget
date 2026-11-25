@@ -164,7 +164,7 @@ fun ConnectScreen(startAtToken: Boolean, onDone: () -> Unit, onSkip: () -> Unit,
 @Composable
 private fun Welcome(onOpenBridge: () -> Unit, onHaveToken: () -> Unit, onSkip: () -> Unit) {
     val c = com.emotionalleaves.sprout.ui.theme.LocalSproutColors.current
-    com.emotionalleaves.sprout.ui.common.HeroCard(c.hero, Modifier.padding(top = 8.dp)) {
+    com.emotionalleaves.sprout.ui.common.HeroCard(c.hero, Modifier.padding(top = 8.dp), inset = 0.dp) {
         Icon(Icons.Filled.Eco, contentDescription = null, tint = c.onHero, modifier = Modifier.size(52.dp))
         Text("Welcome to Sprout", style = MaterialTheme.typography.displaySmall, color = c.onHero)
         Text("See what's safe to spend, every day. Read-only: Sprout can never move money, and your data stays on this phone.",

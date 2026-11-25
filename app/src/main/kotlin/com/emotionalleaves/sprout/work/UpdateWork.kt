@@ -74,9 +74,13 @@ class UpdateWhenChargingWorker(context: Context, params: WorkerParameters) : Cor
     companion object {
         private const val NAME = "sprout-update-when-charging"
 
-        fun schedule(context: Context) {
+        /** [onWifi]: wait for Wi-Fi (any power) instead of charging. Either way it's one queued update. */
+        fun schedule(context: Context, onWifi: Boolean = false) {
+            val c = if (onWifi) Constraints.Builder().setRequiredNetworkType(NetworkType.UNMETERED).build()
+            else Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).setRequiresCharging(true).build()
             val req = androidx.work.OneTimeWorkRequestBuilder<UpdateWhenChargingWorker>()
-                .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).setRequiresCharging(true).build())
+                .setConstraints(c)
+                .addTag(if (onWifi) "wifi" else "charging")
                 .build()
             WorkManager.getInstance(context).enqueueUniqueWork(NAME, androidx.work.ExistingWorkPolicy.REPLACE, req)
         }
@@ -87,6 +91,18 @@ class UpdateWhenChargingWorker(context: Context, params: WorkerParameters) : Cor
         fun observeQueued(context: Context): kotlinx.coroutines.flow.Flow<Boolean> =
             WorkManager.getInstance(context).getWorkInfosForUniqueWorkFlow(NAME)
                 .let { f -> kotlinx.coroutines.flow.flow { f.collect { list -> emit(list.any { it.state == androidx.work.WorkInfo.State.ENQUEUED || it.state == androidx.work.WorkInfo.State.BLOCKED }) } } }
+
+        /** "charging", "wifi" or null: what a queued update is waiting for. */
+        fun observeWaitingFor(context: Context): kotlinx.coroutines.flow.Flow<String?> =
+            WorkManager.getInstance(context).getWorkInfosForUniqueWorkFlow(NAME)
+                .let { f ->
+                    kotlinx.coroutines.flow.flow {
+                        f.collect { list ->
+                            val w = list.firstOrNull { it.state == androidx.work.WorkInfo.State.ENQUEUED || it.state == androidx.work.WorkInfo.State.BLOCKED }
+                            emit(w?.let { if ("wifi" in it.tags) "wifi" else "charging" })
+                        }
+                    }
+                }
     }
 }
 

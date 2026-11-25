@@ -7,6 +7,7 @@ import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import com.emotionalleaves.sprout.MainActivity
@@ -83,18 +84,24 @@ class ScreenTour {
     }.getOrDefault(emptyList())
 
     private fun settle() {
-        repeat(10) {
+        repeat(16) {
             org.robolectric.shadows.ShadowLooper.idleMainLooper()
             runCatching { rule.mainClock.advanceTimeBy(150) }
-            Thread.sleep(40)
+            Thread.sleep(90)
         }
         org.robolectric.shadows.ShadowLooper.idleMainLooper(3, java.util.concurrent.TimeUnit.SECONDS)
         repeat(5) { org.robolectric.shadows.ShadowLooper.idleMainLooper(); Thread.sleep(50) }
     }
 
-    private fun tap(text: String) {
+    private fun tap(text: String, last: Boolean = text in setOf("Home", "Activity", "Budgets", "Bills", "More")) {
         settle()
-        rule.onAllNodesWithText(text)[0].performClick()
+        val clickable = rule.onAllNodes(androidx.compose.ui.test.hasText(text) and androidx.compose.ui.test.hasClickAction())
+        val n = clickable.fetchSemanticsNodes().size
+        if (n > 0) {
+            clickable[if (last) n - 1 else 0].performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
+        } else {
+            rule.onAllNodesWithText(text)[0].performClick()
+        }
         settle()
     }
 
@@ -173,6 +180,16 @@ class ScreenTour {
 
     @Test fun tour() {
         assumeTrue(out != null)
+        if (System.getProperty("sprout.only") == "onboard") {
+            androidx.work.testing.WorkManagerTestInitHelper.initializeTestWorkManager(ApplicationProvider.getApplicationContext<SproutApp>())
+            ActivityScenario.launch(MainActivity::class.java).use {
+                scenario = it
+                shot("o-01-welcome")
+                runCatching { tap("Get started"); shot("o-02") }
+                runCatching { tap("Skip for now"); shot("o-03-empty-home") }
+            }
+            return
+        }
         seed()
         ActivityScenario.launch(MainActivity::class.java).use {
             scenario = it
@@ -195,6 +212,18 @@ class ScreenTour {
                 runCatching { tap(label); s(name); if (label == "Reports") { tap("Compare"); s("06b-compare"); back() }; back() }
             }
             }
+            if (only == "detail") {
+                fun t(n: String, block: () -> Unit) = runCatching(block).onFailure { System.err.println("TOUR $n: " + it.toString().take(200) + " @ " + it.stackTrace.firstOrNull { e -> e.className.contains("ScreenTour") }) }
+                t("sheet") { tap("Activity")
+                    rule.onAllNodes(androidx.compose.ui.test.hasContentDescription("Hy-Vee", substring = true))[0]
+                        .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); settle(); s("30-tx-sheet"); back() }
+                t("add") { tap("Activity"); rule.onAllNodes(androidx.compose.ui.test.hasText("Add"), useUnmergedTree = true)[0].performClick(); settle(); s("31-add-sheet"); back() }
+                t("cat") { tap("Budgets"); tap("Groceries"); s("32-category"); back() }
+                t("backup") { tap("More"); tap("Backup and restore"); s("33-backup"); back() }
+                t("import") { tap("More"); tap("Import CSV"); s("34-import"); back() }
+                t("more-bottom") { tap("More"); s("35-more-full") }
+                return@use
+            }
             // Dialogs and sheets.
             tap("More")
             runCatching { tap("Tags"); tap("Auto-tag"); s("20-autotag-dialog"); tap("Cancel"); back() }.onFailure { System.err.println("TOUR: " + it.toString().take(300)) }
@@ -204,4 +233,14 @@ class ScreenTour {
             runCatching { tap("Activity"); tap("Doordash Thai Basil"); s("24-transaction-sheet") }.onFailure { System.err.println("TOUR: " + it.toString().take(300)) }
         }
     }
+}
+
+private fun androidx.compose.ui.test.SemanticsNodeInteraction.printToStringCompat(): String {
+    fun walk(n: androidx.compose.ui.semantics.SemanticsNode, d: Int, sb: StringBuilder) {
+        val texts = n.config.getOrElseNullable(androidx.compose.ui.semantics.SemanticsProperties.Text) { null }?.joinToString { it.text }
+        val cd = n.config.getOrElseNullable(androidx.compose.ui.semantics.SemanticsProperties.ContentDescription) { null }?.joinToString()
+        sb.append("  ".repeat(d)).append(n.id).append(" t=").append(texts).append(" cd=").append(cd).append('\n')
+        if (d < 12) n.children.forEach { walk(it, d + 1, sb) }
+    }
+    return StringBuilder().also { walk(fetchSemanticsNode(), 0, it) }.toString()
 }

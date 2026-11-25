@@ -190,6 +190,19 @@ fun ImportScreen(onBack: () -> Unit, onDone: () -> Unit) {
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
             ) { Text("Choose a CSV file") }
             if (state.loading) CircularProgressIndicator()
+            if (!state.loading) {
+                com.emotionalleaves.sprout.ui.common.SoftCard(Modifier.padding(top = 8.dp), inset = 0.dp) {
+                    Text("Good to know", style = MaterialTheme.typography.titleSmall)
+                    listOf(
+                        "Sprout finds the date, amount and description columns itself, and shows a preview before anything is added.",
+                        "Importing the same file twice is safe: rows already in Sprout are skipped.",
+                        "If the file has a category column, Sprout uses it, unless one of your own rules says otherwise.",
+                        "Nothing leaves your phone.",
+                    ).forEach { line ->
+                        Row { Text("•  ", color = MaterialTheme.colorScheme.primary); Text(line, style = MaterialTheme.typography.bodySmall) }
+                    }
+                }
+            }
             state.error?.let { Banner(it) }
             return@Column
         }

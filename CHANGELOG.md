@@ -2,6 +2,21 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.10.0] - 2026-11-24
+
+Round 11: more polish, from a second pass of real screenshots (detail screens, sheets, dialogs, first launch).
+
+### Auto-update
+- **On mobile data?** Tapping Update asks once: download now, or **Wait for Wi-Fi**, and Sprout updates itself as soon as you're on Wi-Fi. The update card shows what it's waiting for (Wi-Fi or charging), with Cancel.
+
+### Polish
+- **Fixed:** on Backup and restore, the automatic-snapshots card sat above the screen title. It's now below the backup buttons, where it belongs.
+- Welcome screen: the hero card lines up with the buttons under it.
+- Import CSV: a short "Good to know" card (columns are found automatically, re-importing is safe, nothing leaves your phone).
+- Year view follows the scroll to the very end, so the newest month and the average are in view.
+- Accessibility: Activity rows offer "Change category" and "Leave out of budget" in TalkBack's actions menu, since swiping isn't available there.
+- Cards can sit flush in screens that already have margins, so edges line up everywhere.
+
 ## [2.9.0] - 2026-11-24
 
 Round 10 — plus a full visual and functional polish pass, screen by screen, in light and dark.

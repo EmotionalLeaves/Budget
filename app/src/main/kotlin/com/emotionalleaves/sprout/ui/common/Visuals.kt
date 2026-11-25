@@ -63,11 +63,18 @@ fun money(minor: Long, whole: Boolean = false): String =
 
 /** A big rounded card with a gradient background: the one thing on a screen that matters most. */
 @Composable
-fun HeroCard(brush: Brush, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null, content: @Composable ColumnScope.() -> Unit) {
+fun HeroCard(
+    brush: Brush,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    /** Side margin; 0 when the screen already pads its content, so the card lines up with everything else. */
+    inset: Dp = 16.dp,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     Column(
         modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = inset, vertical = 8.dp)
             .clip(RoundedCornerShape(28.dp))
             .background(brush)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
@@ -79,13 +86,13 @@ fun HeroCard(brush: Brush, modifier: Modifier = Modifier, onClick: (() -> Unit)?
 
 /** A soft card for a section. */
 @Composable
-fun SoftCard(modifier: Modifier = Modifier, onClick: (() -> Unit)? = null, content: @Composable ColumnScope.() -> Unit) {
+fun SoftCard(modifier: Modifier = Modifier, onClick: (() -> Unit)? = null, inset: Dp = 16.dp, content: @Composable ColumnScope.() -> Unit) {
     Surface(
         shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
-        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+        modifier = modifier.fillMaxWidth().padding(horizontal = inset, vertical = 6.dp),
     ) {
         Column(
             Modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier).padding(18.dp),
