@@ -16,6 +16,8 @@ Round 16: Sprout works with big text.
 
 ## [2.14.0] - 2026-11-25
 
+(2.13.0's release page couldn't be published because GitHub was briefly down; everything in 2.13.0 is included here.)
+
 Round 15: big cleanups and your own order.
 
 ### New

@@ -153,9 +153,23 @@ jobs:
           APK: ${{ steps.apk.outputs.file }}
         run: |
           TAG="v$VERSION_NAME"
+          # GitHub sometimes answers 503 for a moment; try again before giving up. If the release was
+          # created but the APK upload failed, finish the upload instead of creating it twice.
+          publish() {
+            local tag="$1"; shift
+            for i in 1 2 3 4 5; do
+              if gh release view "$tag" > /dev/null 2>&1; then
+                gh release upload "$tag" "$APK" --clobber && return 0
+              elif gh release create "$tag" "$APK" "$@"; then
+                return 0
+              fi
+              echo "Publishing failed (try $i), waiting..."; sleep $((i * 20))
+            done
+            return 1
+          }
           if gh release view "$TAG" > /dev/null 2>&1; then
             # This version already has a release: publish a development build so every push has an APK.
-            gh release create "$TAG-build.$VERSION_CODE" "$APK" \
+            publish "$TAG-build.$VERSION_CODE" \
               --prerelease --target "$GITHUB_SHA" \
               --title "Sprout $VERSION_NAME (build $VERSION_CODE)" \
               --notes "Development build"
@@ -167,7 +181,7 @@ jobs:
             ' CHANGELOG.md > notes.md
             if [ ! -s notes.md ]; then echo "Sprout $VERSION_NAME" > notes.md; fi
             printf '\n---\nInstall: tap the .apk file below. Updating? Install it over your current Sprout (never uninstall first).\n' >> notes.md
-            gh release create "$TAG" "$APK" \
+            publish "$TAG" \
               --latest --target "$GITHUB_SHA" \
               --title "Sprout $VERSION_NAME" \
               --notes-file notes.md
