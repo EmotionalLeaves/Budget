@@ -20,14 +20,22 @@ import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
 /** Runs one sync off the main thread. Retries temporary failures with backoff, at most 3 times per run. */
-class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+class SyncWorker(
+    context: Context,
+    params: WorkerParameters,
+    /** Test seam; null means the app's real [com.emotionalleaves.sprout.data.sync.SyncRepository]. */
+    private val runSync: (suspend (SyncTrigger) -> SyncRunResult)? = null,
+) : CoroutineWorker(context, params) {
+
+    /** The constructor WorkManager's default factory calls by reflection. */
+    constructor(context: Context, params: WorkerParameters) : this(context, params, null)
 
     override suspend fun doWork(): Result {
-        val container = (applicationContext as SproutApp).container
+        val sync = runSync ?: (applicationContext as SproutApp).container.syncRepository::sync
         val trigger = inputData.getString(KEY_TRIGGER)?.let { name -> SyncTrigger.entries.firstOrNull { it.name == name } }
             ?: SyncTrigger.PERIODIC
         val chain = inputData.getInt(KEY_CHAIN, 0)
-        val result = container.syncRepository.sync(trigger)
+        val result = sync(trigger)
         if (result is SyncRunResult.Skipped &&
             (result.reason == SkipReason.REVOKED || result.reason == SkipReason.NEEDS_RECONNECT)
         ) {

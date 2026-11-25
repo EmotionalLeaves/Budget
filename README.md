@@ -114,6 +114,7 @@ Decisions made while building, one per line:
 - Signing-key secrets are deliberately not mapped in CI: the committed key is always used.
 
 ---
+- No certificate pinning for SimpleFIN. Pins break sync the day the server changes certificates, and you can't fix that from a phone without a new release. Sprout trusts only the system's certificates (never user-installed ones) and refuses plain HTTP, which covers the realistic risks.
 
 ## For developers
 

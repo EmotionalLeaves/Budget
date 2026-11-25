@@ -2,7 +2,15 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
-## [1.9.0] - 2026-11-24
+## [1.9.1] - 2026-11-24
+
+### Tests
+- Background sync is now tested end to end: retries, the server's "try again later" timing, stopping after 3 retries, and pausing sync when access is revoked.
+
+### Security
+- Decided not to pin SimpleFIN's certificate (it would break sync whenever the server renews it). Sprout keeps trusting only your phone's built-in certificates over HTTPS.
+
+ - 2026-11-24
 
 ### Added
 - Settings → Sync → "Date transactions by purchase day": show each transaction on the day you made the purchase instead of the day the bank posted it (when your bank sends that date). Switching it re-dates your existing transactions; off by default.

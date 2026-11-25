@@ -16,7 +16,7 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [x] (1.1.0) Optional app lock with fingerprint/PIN (BiometricPrompt) — *why: banking data on a shared or lost phone*
 - [x] (1.1.0) FLAG_SECURE option to hide Sprout from screenshots and the recent-apps preview — *why: amounts visible in the app switcher*
 - [x] (1.2.0) Local encrypted backup and restore to a user-chosen file (password-protected) — *why: survive a phone change without cloud backup*
-- [ ] Pin the SimpleFIN Bridge certificate chain (with a safe fallback) — *why: defense against a compromised CA*
+- [x] (1.9.1) Certificate pinning: decided against (see README Assumptions); system-only trust anchors stay
 
 ## 3. Sync reliability
 - [x] (0.2.0/0.6.0) Per-connection problems on Home with a "Fix in Bridge" link — *why: quicker diagnosis*
@@ -26,7 +26,7 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 
 ## 4. Test coverage
 - [ ] Compose UI tests (Robolectric) for the detail sheet, review flow and budget edit dialog — *why: guard the main correction paths*
-- [ ] SyncWorker tests with work-testing (retry, Retry-After chain, revoked cancel) — *why: work package coverage is low*
+- [x] (1.9.1) SyncWorker tests with work-testing (retry, Retry-After chain, revoked cancel, KEEP)
 - [x] (1.9.0) 10k-transaction generated SyncMerger test — *why: merge performance regression guard*
 - [x] (1.7.0) First migration (1→2) with MigrationTest seeding realistic v1 data — *why: the first migration must be easy and safe*
 
