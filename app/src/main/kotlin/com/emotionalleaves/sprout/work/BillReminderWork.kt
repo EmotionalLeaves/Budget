@@ -80,6 +80,27 @@ class BillReminderWorker(context: Context, params: WorkerParameters) : Coroutine
             }
         }
         runCatching {
+            // Sunday: "You spent $412 this week, $88 less than last week."
+            val zone = ZoneId.systemDefault()
+            val today = LocalDate.now(zone)
+            if (!c.settings.current().notifyWeekly || today.dayOfWeek != java.time.DayOfWeek.SUNDAY) return@runCatching
+            val store = applicationContext.reminderStore
+            val key = "week:$today"
+            val already = store.data.first()[SENT] ?: emptySet()
+            if (key in already) return@runCatching
+            val end = today.plusDays(1).atStartOfDay(zone).toEpochSecond()
+            val start = today.minusDays(6).atStartOfDay(zone).toEpochSecond()
+            val prevStart = start - 7 * 86_400
+            val thisWeek = c.db.insights().spendingByAccount(start, end).sumOf { it.total }
+            val lastWeek = c.db.insights().spendingByAccount(prevStart, start).sumOf { it.total }
+            if (thisWeek <= 0) return@runCatching
+            val big = c.db.insights().biggestCharge(start, end)
+            val text = com.emotionalleaves.sprout.domain.insights.WeekSummary.text(
+                thisWeek, lastWeek, big?.let { com.emotionalleaves.sprout.domain.categorize.MerchantNormalizer.displayName(it.merchantKey) }, big?.let { -it.amountMinor },
+            )
+            if (c.notifier.showWeekly(text)) store.edit { it[SENT] = (already + key).toList().takeLast(200).toSet() }
+        }
+        runCatching {
             if (!c.settings.current().notifyBills) return@runCatching
             val zone = ZoneId.systemDefault()
             val store = applicationContext.reminderStore

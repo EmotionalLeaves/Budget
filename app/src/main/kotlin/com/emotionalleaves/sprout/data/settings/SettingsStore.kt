@@ -44,6 +44,8 @@ data class Settings(
     val privacyMode: Boolean = false,
     /** A notification the day before a bill is due. Off until you turn it on. */
     val notifyBills: Boolean = false,
+    /** Sunday "your week" summary; off unless you turn it on. */
+    val notifyWeekly: Boolean = false,
     /** "YYYY-MM" of the last monthly recap you closed. */
     val recapDismissed: String? = null,
     /** 0 = a budget per category, 1 = Flex (fixed costs + one Flex amount). */
@@ -94,6 +96,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
             dynamicColor = p[DYNAMIC_COLOR] ?: false,
             privacyMode = p[PRIVACY_MODE] ?: false,
             notifyBills = p[NOTIFY_BILLS] ?: false,
+            notifyWeekly = p[NOTIFY_WEEKLY] ?: false,
             recapDismissed = p[RECAP_DISMISSED],
             budgetMode = p[BUDGET_MODE] ?: 0,
             flexBudgetMinor = p[FLEX_BUDGET] ?: 0,
@@ -146,6 +149,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
     }
     suspend fun setPaydaySource(name: String?) = dataStore.edit { if (name == null) it.remove(PAYDAY_SOURCE) else it[PAYDAY_SOURCE] = name }
     suspend fun setNotifyBills(on: Boolean) = dataStore.edit { it[NOTIFY_BILLS] = on }
+    suspend fun setNotifyWeekly(on: Boolean) = dataStore.edit { it[NOTIFY_WEEKLY] = on }
     suspend fun setPrivacyMode(on: Boolean) = dataStore.edit { it[PRIVACY_MODE] = on }
     suspend fun setUsePurchaseDate(on: Boolean) = dataStore.edit { it[PURCHASE_DATE] = on }
     suspend fun setRateLimitedUntil(at: Long?) = dataStore.edit { if (at == null) it.remove(RATE_LIMITED_UNTIL) else it[RATE_LIMITED_UNTIL] = at }
@@ -179,6 +183,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
         val PRIVACY_MODE = booleanPreferencesKey("privacy_mode")
         val NOTIFY_BILLS = booleanPreferencesKey("notify_bills")
+        val NOTIFY_WEEKLY = booleanPreferencesKey("notify_weekly")
         val RECAP_DISMISSED = stringPreferencesKey("recap_dismissed")
         val LAST_BACKUP = androidx.datastore.preferences.core.longPreferencesKey("last_backup_at")
         val BACKUP_NUDGE = androidx.datastore.preferences.core.longPreferencesKey("backup_nudge_until")

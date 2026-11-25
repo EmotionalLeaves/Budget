@@ -126,6 +126,23 @@ class AndroidNotifier(private val context: Context) : Notifier {
         return try { NotificationManagerCompat.from(context).notify(id, n); true } catch (e: SecurityException) { false }
     }
 
+    /** Sunday "your week" summary. Private on the lock screen. */
+    fun showWeekly(text: String): Boolean {
+        if (!canPost()) return false
+        val intent = Intent(context, MainActivity::class.java).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP }
+        val pending = PendingIntent.getActivity(context, "weekly".hashCode(), intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        val n = NotificationCompat.Builder(context, CH_BILLS)
+            .setSmallIcon(R.drawable.ic_stat_sprout)
+            .setContentTitle("Your week")
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setContentIntent(pending)
+            .setAutoCancel(true)
+            .build()
+        return try { NotificationManagerCompat.from(context).notify("weekly".hashCode(), n); true } catch (e: SecurityException) { false }
+    }
+
     /** A quiet, silent progress bar while an update downloads in the background. Pass null to clear it. */
     fun showUpdateProgress(version: String, percent: Int?) {
         val id = "u-progress".hashCode()

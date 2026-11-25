@@ -1,5 +1,11 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+
 package com.emotionalleaves.sprout.ui.common
 
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.ui.semantics.onLongClick
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.runtime.remember
 import androidx.compose.material.icons.rounded.Spa
 import android.content.Context
@@ -117,6 +123,9 @@ fun TransactionItem(
     showDate: Boolean = false,
     /** On a merchant's own page the name is the same on every row, so the date leads instead. */
     dateAsTitle: Boolean = false,
+    /** Selection mode (Activity): long-press starts it; a selected row gets a tinted background and a check. */
+    selected: Boolean = false,
+    onLongClick: (() -> Unit)? = null,
     onClick: (() -> Unit)? = null,
 ) {
     val merchant = com.emotionalleaves.sprout.ui.common.merchantName(row.merchantKey)
@@ -136,12 +145,29 @@ fun TransactionItem(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 64.dp)
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .then(if (selected) Modifier.background(MaterialTheme.colorScheme.secondaryContainer) else Modifier)
+            .then(
+                when {
+                    onLongClick != null -> Modifier.combinedClickable(onClick = { onClick?.invoke() }, onLongClick = onLongClick, onLongClickLabel = "Select")
+                    onClick != null -> Modifier.clickable(onClick = onClick)
+                    else -> Modifier
+                },
+            )
             .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clearAndSetSemantics { contentDescription = spoken },
+            .clearAndSetSemantics {
+                contentDescription = spoken + if (selected) ", selected" else ""
+                if (onClick != null) this.onClick { onClick(); true }
+                if (onLongClick != null) this.onLongClick(label = "Select") { onLongClick(); true }
+            },
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconBadge(CategoryIcons.forKey(row.categoryIcon), Color(row.categoryColor), 42.dp)
+        if (selected) {
+            Box(Modifier.size(42.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary), contentAlignment = Alignment.Center) {
+                Icon(androidx.compose.material.icons.Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
+            }
+        } else {
+            IconBadge(CategoryIcons.forKey(row.categoryIcon), Color(row.categoryColor), 42.dp)
+        }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(if (dateAsTitle) date else merchant, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)

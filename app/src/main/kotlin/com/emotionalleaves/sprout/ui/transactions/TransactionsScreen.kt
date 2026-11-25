@@ -108,6 +108,33 @@ data class TxFilter(
 }
 
 class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
+    // ---- Several at once (selection mode). Each returns a message and an undo. ----
+
+    suspend fun bulkCategory(ids: Set<String>, categoryId: Long): suspend () -> Unit {
+        val undos = ids.map { c.categoryRepository.recategorizeWithUndo(it, categoryId, alwaysForMerchant = false).undo }
+        return { undos.forEach { it() } }
+    }
+
+    suspend fun bulkExclude(ids: Set<String>): suspend () -> Unit {
+        val before = ids.mapNotNull { c.db.transactions().getById(it) }.associate { it.id to it.excludedFromBudget }
+        val now = System.currentTimeMillis() / 1000
+        before.keys.forEach { c.db.transactions().setExcluded(it, true, now) }
+        return { before.forEach { (id, was) -> c.db.transactions().setExcluded(id, was, System.currentTimeMillis() / 1000) } }
+    }
+
+    suspend fun bulkReviewed(ids: Set<String>): suspend () -> Unit {
+        val unreviewed = ids.mapNotNull { c.db.transactions().getById(it) }.filter { it.reviewedAt == null }.map { it.id }
+        c.db.transactions().markReviewed(ids.toList(), System.currentTimeMillis() / 1000)
+        return { if (unreviewed.isNotEmpty()) c.db.transactions().markUnreviewed(unreviewed) }
+    }
+
+    suspend fun bulkTag(ids: Set<String>, name: String): (suspend () -> Unit)? {
+        val tag = c.tagRepository.getOrCreate(name) ?: return null
+        val had = ids.filter { id -> c.db.tags().tagIdsFor(id).contains(tag) }.toSet()
+        ids.forEach { c.tagRepository.attach(it, tag) }
+        return { (ids - had).forEach { c.db.tags().detach(it, tag) } }
+    }
+
     /** Swipe right → pick a category (just this one). Returns an undo. */
     suspend fun quickCategory(id: String, categoryId: Long): suspend () -> Unit =
         c.categoryRepository.recategorizeWithUndo(id, categoryId, alwaysForMerchant = false).undo
@@ -201,6 +228,54 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     var quickFor by remember { mutableStateOf<com.emotionalleaves.sprout.data.db.TransactionRow?>(null) }
+    var selected by remember { mutableStateOf(emptySet<String>()) }
+    var bulkCategory by remember { mutableStateOf(false) }
+    var bulkTag by remember { mutableStateOf(false) }
+    androidx.activity.compose.BackHandler(enabled = selected.isNotEmpty()) { selected = emptySet() }
+    fun finish(message: String, undo: suspend () -> Unit) {
+        selected = emptySet()
+        scope.showUndoable(snackbar, message, undo)
+    }
+    if (bulkCategory) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { bulkCategory = false },
+            title = { Text("Category for ${selected.size} transactions") },
+            text = {
+                Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+                    com.emotionalleaves.sprout.ui.categories.CategoryGrid(categories.filter { !it.archived }, null) { cat ->
+                        bulkCategory = false
+                        val ids = selected
+                        scope.launch { val undo = vm.bulkCategory(ids, cat.id); finish("Moved ${ids.size} to ${cat.name}", undo) }
+                    }
+                }
+            },
+            confirmButton = { androidx.compose.material3.TextButton(onClick = { bulkCategory = false }) { Text("Cancel") } },
+        )
+    }
+    if (bulkTag) {
+        var name by remember { mutableStateOf("") }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { bulkTag = false },
+            title = { Text("Tag ${selected.size} transactions") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(name, { name = it.take(40) }, singleLine = true, label = { Text("Tag") }, modifier = Modifier.fillMaxWidth())
+                    @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        tags.take(12).forEach { t -> FilterChip(name == t.name, { name = t.name }, label = { Text("#" + t.name) }) }
+                    }
+                }
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(enabled = name.isNotBlank(), onClick = {
+                    bulkTag = false
+                    val ids = selected
+                    scope.launch { vm.bulkTag(ids, name)?.let { finish("Tagged ${ids.size} #${name.trim()}", it) } }
+                }) { Text("Tag") }
+            },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = { bulkTag = false }) { Text("Cancel") } },
+        )
+    }
     quickFor?.let { row ->
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { quickFor = null },
@@ -234,25 +309,47 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
         modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp).zIndex(1f),
     )
     Column(Modifier.fillMaxSize()) {
-        OutlinedTextField(
-            value = filter.query,
-            onValueChange = vm::setQuery,
-            placeholder = { Text("Search, #tag, or an amount like >100", maxLines = 1) },
-            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
-            trailingIcon = {
-                if (filter.query.isNotEmpty()) {
-                    IconButton(onClick = { vm.setQuery("") }) { Icon(Icons.Filled.Clear, contentDescription = "Clear search") }
+        if (selected.isNotEmpty()) {
+            // Selection bar: replaces the search field while picking several.
+            androidx.compose.material3.Surface(color = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = { selected = emptySet() }) { Icon(Icons.Filled.Clear, contentDescription = "Stop selecting") }
+                        Text("${selected.size} selected", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                    }
+                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        androidx.compose.material3.AssistChip(onClick = { bulkCategory = true }, label = { Text("Category") }, modifier = Modifier.heightIn(min = 48.dp))
+                        androidx.compose.material3.AssistChip(onClick = { bulkTag = true }, label = { Text("Tag") }, modifier = Modifier.heightIn(min = 48.dp))
+                        androidx.compose.material3.AssistChip(onClick = {
+                            val ids = selected; scope.launch { val u = vm.bulkExclude(ids); finish("Left ${ids.size} out of budgets", u) }
+                        }, label = { Text("Leave out of budget") }, modifier = Modifier.heightIn(min = 48.dp))
+                        androidx.compose.material3.AssistChip(onClick = {
+                            val ids = selected; scope.launch { val u = vm.bulkReviewed(ids); finish("Marked ${ids.size} reviewed", u) }
+                        }, label = { Text("Mark reviewed") }, modifier = Modifier.heightIn(min = 48.dp))
+                    }
                 }
-            },
-            singleLine = true,
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
-            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                unfocusedBorderColor = androidx.compose.ui.graphics.Color.Transparent,
-            ),
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-        )
+            }
+        } else {
+            OutlinedTextField(
+                value = filter.query,
+                onValueChange = vm::setQuery,
+                placeholder = { Text("Search, #tag, or an amount like >100", maxLines = 1) },
+                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
+                trailingIcon = {
+                    if (filter.query.isNotEmpty()) {
+                        IconButton(onClick = { vm.setQuery("") }) { Icon(Icons.Filled.Clear, contentDescription = "Clear search") }
+                    }
+                },
+                singleLine = true,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
+                colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    unfocusedBorderColor = androidx.compose.ui.graphics.Color.Transparent,
+                ),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+        }
         val inbox by remember { vm.inboxCount }.collectAsStateWithLifecycle(0)
         val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
         if (inbox > 0) {
@@ -342,10 +439,17 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
                     val date = Format.localDate(row.occurredAt)
                     val prev = if (index > 0) items.peek(index - 1)?.let { Format.localDate(it.occurredAt) } else null
                     if (prev != date) DayHeader(Format.dayHeader(date, today), dayTotals[date])
-                    SwipeRow(
-                        onRight = { quickFor = row },
-                        onLeft = { scope.launch { vm.toggleExcluded(row.id)?.let { (msg, undo) -> scope.showUndoable(snackbar, msg, undo) } } },
-                    ) { TransactionItem(row) { openId = row.id } }
+                    if (selected.isNotEmpty()) {
+                        val on = row.id in selected
+                        TransactionItem(row, selected = on, onLongClick = { selected = if (on) selected - row.id else selected + row.id }) {
+                            selected = if (on) selected - row.id else selected + row.id
+                        }
+                    } else {
+                        SwipeRow(
+                            onRight = { quickFor = row },
+                            onLeft = { scope.launch { vm.toggleExcluded(row.id)?.let { (msg, undo) -> scope.showUndoable(snackbar, msg, undo) } } },
+                        ) { TransactionItem(row, onLongClick = { selected = setOf(row.id) }) { openId = row.id } }
+                    }
 
                 }
             }

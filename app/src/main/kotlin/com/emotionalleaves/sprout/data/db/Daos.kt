@@ -629,6 +629,7 @@ interface TagDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun attach(link: TransactionTagEntity)
     @Query("DELETE FROM transaction_tags WHERE transactionId = :transactionId AND tagId = :tagId") suspend fun detach(transactionId: String, tagId: Long)
+    @Query("SELECT tagId FROM transaction_tags WHERE transactionId = :transactionId") suspend fun tagIdsFor(transactionId: String): List<Long>
 }
 
 data class MerchantTotal(val merchantKey: String, val total: Long, val count: Int)

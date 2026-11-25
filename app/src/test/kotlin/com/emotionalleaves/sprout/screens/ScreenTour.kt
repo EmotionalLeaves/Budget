@@ -224,6 +224,15 @@ class ScreenTour {
                         .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); settle()
                     tap("Everything at Hy-Vee"); s("50-merchant"); back()
                 }
+                t("select") {
+                    tap("Activity")
+                    rule.onAllNodes(androidx.compose.ui.test.hasContentDescription("Hy-Vee", substring = true))[0]
+                        .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnLongClick); settle()
+                    rule.onAllNodes(androidx.compose.ui.test.hasContentDescription("Netflix", substring = true))[0]
+                        .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); settle()
+                    s("56-select")
+                    rule.onAllNodes(androidx.compose.ui.test.hasContentDescription("Stop selecting"))[0].performClick(); settle()
+                }
                 t("cats") { tap("More"); tap("Categories"); s("51-categories"); back() }
                 t("rules") { tap("More"); tap("Category rules"); s("52-rules"); back() }
                 t("health") { tap("Home"); tap("Money health"); s("53-health"); back() }

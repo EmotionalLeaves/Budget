@@ -98,6 +98,7 @@ class SettingsViewModel(private val c: AppContainer) : ViewModel() {
     fun setDynamicColor(on: Boolean) = viewModelScope.launch { c.settings.setDynamicColor(on) }
     fun setPrivacyMode(on: Boolean) = viewModelScope.launch { c.settings.setPrivacyMode(on) }
     fun setNotifyBills(on: Boolean) = viewModelScope.launch { c.settings.setNotifyBills(on) }
+    fun setNotifyWeekly(on: Boolean) = viewModelScope.launch { c.settings.setNotifyWeekly(on) }
     fun setBeta(on: Boolean) = viewModelScope.launch { c.settings.setBetaUpdates(on); c.updates.check() }
     val state: StateFlow<SettingsState> = combine(
         c.settings.settings,
@@ -239,6 +240,7 @@ fun SettingsScreen(
                 ToggleRow("Budget alerts", state.settings.notifyBudget, "When a budget reaches 80% and 100%") { vm.setNotifyBudget(it) }
                 ToggleRow("Large or unusual charges", state.settings.notifyUnusual, "Big amounts, and charges unlike your usual ones") { vm.setNotifyUnusual(it) }
                 ToggleRow("Bill reminders", state.settings.notifyBills, "The day before a bill is due") { vm.setNotifyBills(it) }
+                ToggleRow("Weekly summary", state.settings.notifyWeekly, "Sunday: what you spent this week vs last") { vm.setNotifyWeekly(it) }
                 ToggleRow("Sync problems", state.settings.notifySyncProblems, "If your bank connection needs attention") { vm.setNotifySync(it) }
                 ThresholdRow(state.settings.largeTxThresholdMinor) { vm.setThreshold(it) }
             }

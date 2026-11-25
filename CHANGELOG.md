@@ -2,6 +2,14 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.13.0] - 2026-11-25
+
+Round 14: do several at once, and a Sunday summary.
+
+### New
+- **Select several transactions**: in Activity, long-press a row, then tap others. The bar at the top lets you change their **category**, **tag** them, **leave them out of budgets**, or **mark them reviewed** in one go, each with Undo. Back (or ✕) stops selecting. TalkBack users get "Select" in the actions menu.
+- **Weekly summary** (More → Notifications, off until you turn it on): Sunday morning, "You spent $412 this week, $88 less than last week. Biggest: Hy-Vee, $87."
+
 ## [2.12.0] - 2026-11-25
 
 Round 13: calmer transaction details, smarter search, and friendlier first-run screens.
