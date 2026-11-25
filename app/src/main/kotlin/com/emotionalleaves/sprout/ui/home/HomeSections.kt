@@ -1,5 +1,7 @@
 package com.emotionalleaves.sprout.ui.home
 
+import kotlinx.coroutines.launch
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.runtime.collectAsState
 import androidx.compose.material.icons.rounded.CloudUpload
@@ -497,6 +499,7 @@ fun AccountHeader(id: String, onBack: () -> Unit) {
             }
             if (a != null) Text(money(a.balanceMinor), style = MaterialTheme.typography.titleLarge,
                 color = if (a.balanceMinor < 0) c.danger else MaterialTheme.colorScheme.onSurface)
+            if (a != null) AccountMenu(a, onHidden = onBack)
         }
         val pts = h?.points.orEmpty()
         if (pts.size >= 2) {
@@ -510,5 +513,45 @@ fun AccountHeader(id: String, onBack: () -> Unit) {
                 StatTile("Out this month", money(h.outMinor, whole = true), Modifier.tile(), note = "charges & payments")
             }
         }
+    }
+}
+
+/** Rename, count in total, or hide an account right from its page. */
+@Composable
+private fun AccountMenu(a: com.emotionalleaves.sprout.data.db.AccountEntity, onHidden: () -> Unit) {
+    val app = com.emotionalleaves.sprout.ui.common.appContainer()
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var open by remember { mutableStateOf(false) }
+    var renaming by remember { mutableStateOf(false) }
+    Box {
+        androidx.compose.material3.IconButton(onClick = { open = true }) {
+            Icon(androidx.compose.material.icons.Icons.Rounded.MoreVert, contentDescription = "Account options")
+        }
+        androidx.compose.material3.DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            androidx.compose.material3.DropdownMenuItem(text = { Text("Rename") }, onClick = { open = false; renaming = true })
+            androidx.compose.material3.DropdownMenuItem(
+                text = { Text(if (a.includeInTotals) "Leave out of total balance" else "Count in total balance") },
+                onClick = { open = false; scope.launch { app.db.accounts().setIncludeInTotals(a.id, !a.includeInTotals) } },
+            )
+            androidx.compose.material3.DropdownMenuItem(
+                text = { Text("Hide this account") },
+                onClick = { open = false; scope.launch { app.db.accounts().setHidden(a.id, true); onHidden() } },
+            )
+        }
+    }
+    if (renaming) {
+        var name by remember { mutableStateOf(a.label) }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { renaming = false },
+            title = { Text("Rename account") },
+            text = { androidx.compose.material3.OutlinedTextField(name, { name = it.take(60) }, singleLine = true, modifier = Modifier.fillMaxWidth()) },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    renaming = false
+                    scope.launch { app.db.accounts().rename(a.id, name.trim().take(60).ifBlank { null }?.takeIf { it != a.name }) }
+                }) { Text("Save") }
+            },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = { renaming = false }) { Text("Cancel") } },
+        )
     }
 }

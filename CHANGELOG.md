@@ -2,6 +2,12 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.20.0] - 2026-11-25
+
+### New
+- **Account options** on an account's page (⋮): rename it, count it in (or leave it out of) your total balance, or hide it, without a trip to Settings.
+- Account pages no longer repeat the account's name on every row.
+
 ## [2.19.0] - 2026-11-25
 
 Round 20: every account gets its own page.
