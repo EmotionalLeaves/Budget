@@ -2,7 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
-## [1.14.0] - 2026-11-24
+## [1.15.0] - 2026-11-24
+
+### Added
+- CSV import understands European amounts like "1.234,56" (detected automatically; there's a "Comma decimals" switch if it guesses wrong).
+- CSV import uses your bank's own Category column when the file has one: "Food & Drink" becomes Eating Out, "Gas/Automotive" becomes Gas & Fuel, a "Pets" category matches yours by name. Your own merchant rules still win. You can pick or clear the column on the import screen.
+
+ - 2026-11-24
 
 ### Added
 - Category icons: every built-in category has its own icon (a cart for Groceries, a fork and knife for Eating Out…) in the category picker and on transactions, so you can find things faster. Categories you add get a tag icon.

@@ -1,5 +1,7 @@
 package com.emotionalleaves.sprout.data.csv
 
+import com.emotionalleaves.sprout.data.csv.CsvCategories
+import com.emotionalleaves.sprout.domain.categorize.CategorySource
 import androidx.room.withTransaction
 import com.emotionalleaves.sprout.data.db.AccountEntity
 import com.emotionalleaves.sprout.data.db.AccountSource
@@ -53,10 +55,14 @@ class ImportRepository(
             val idByKey = categories.mapNotNull { c -> c.key?.let { it to c.id } }.toMap()
             val resolver = CategoryResolver(db.merchantRules().getAll().map { UserRule(it.id, it.matchType, it.pattern, it.categoryId) }, idByKey)
             val fallback = idByKey[DefaultCategories.UNCATEGORIZED] ?: categories.first { it.kind == CategoryKind.EXPENSE }.id
+            val byName = categories.filter { !it.archived }.associate { it.name to it.id }
             val fresh = result.rows.zip(ids).filter { (_, id) -> id !in existing }.distinctBy { it.second }.map { (row, id) ->
                 val at = row.date.atTime(12, 0).atZone(z).toEpochSecond()
                 val key = MerchantNormalizer.normalize(row.description)
-                val r = resolver.resolve(row.description, key, row.amountMinor)
+                val resolved = resolver.resolve(row.description, key, row.amountMinor)
+                // Your own merchant rules win; then the bank's category column; then built-in rules.
+                val bank = if (resolved.source == CategorySource.MERCHANT_RULE) null else CsvCategories.match(row.category, byName, idByKey)
+                val r = if (bank != null) com.emotionalleaves.sprout.domain.categorize.Resolution(bank, CategorySource.IMPORT) else resolved
                 TransactionEntity(
                     id = id, accountId = accountId, remoteId = id.substringAfterLast(':'), postedAt = at, transactedAt = null,
                     occurredAt = at, amountMinor = row.amountMinor, currency = "USD", description = row.description,

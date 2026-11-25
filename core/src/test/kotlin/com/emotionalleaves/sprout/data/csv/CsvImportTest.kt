@@ -144,4 +144,34 @@ class CsvImportTest {
         val b = CsvImport.ids("k", listOf(CsvRow(9, LocalDate.of(2026, 1, 1), -100, "COFFEE SHOP")))
         assertEquals(a, b)
     }
+
+    @Test fun europeanCommaDecimals() {
+        val (m, r) = load("european_comma_decimals.csv")
+        assertTrue(m.decimalComma)
+        assertEquals(2, m.category)
+        assertTrue(r.errors.isEmpty())
+        assertEquals(listOf(-4_510L, 245_000L, -123_456L, -350L), r.rows.map { it.amountMinor })
+        assertEquals(listOf("Groceries", "Income", "Travel", null), r.rows.map { it.category })
+    }
+
+    @Test fun usFilesStayDecimalPoint() {
+        val (m, _) = load("card_chase_style.csv")
+        assertEquals(false, m.decimalComma)
+        assertEquals(3, m.category)
+        assertEquals(false, CsvImport.detectDecimalComma(listOf("1,234", "1,200.00", "-5.75")))
+        assertEquals(true, CsvImport.detectDecimalComma(listOf("12,34", "1.234,56", "-5,7")))
+        assertEquals(123_456L, CsvImport.parseAmount("1.234,56 €", decimalComma = true))
+        assertEquals(-1_200L, CsvImport.parseAmount("(12,00)", decimalComma = true))
+    }
+
+    @Test fun bankCategoriesMap() {
+        val byName = mapOf("Eating Out" to 5L, "Pets" to 9L, "Groceries" to 4L)
+        val keys = mapOf("eating_out" to 5L, "gas_fuel" to 6L, "transfers" to 7L, "groceries" to 4L)
+        assertEquals(5L, CsvCategories.match("Food & Drink", byName, keys))
+        assertEquals(6L, CsvCategories.match("Gas/Automotive", byName, keys))
+        assertEquals(7L, CsvCategories.match("Payment/Credit", byName, keys))
+        assertEquals(9L, CsvCategories.match(" pets ", byName, keys))
+        assertEquals(null, CsvCategories.match("Spaceships", byName, keys))
+        assertEquals(null, CsvCategories.match("", byName, keys))
+    }
 }

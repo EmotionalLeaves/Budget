@@ -79,4 +79,26 @@ class ImportRepositoryTest {
         assertEquals(4, s.failed.size)
         assertNotNull(env.db.accounts().getAll().single().lastSyncedAt)
     }
+
+    @Test fun bankCategoryColumnIsUsedButYourRulesWin() = runBlocking {
+        val account = repo.createManualAccount("Old Card", AccountType.CREDIT)
+        // A rule of yours: Amazon is Hobbies & Art. The bank says Shopping; your rule wins.
+        val hobbies = env.db.categories().getByKey(DefaultCategories.HOBBIES)!!.id
+        com.emotionalleaves.sprout.data.categories.CategoryRepository(env.db, env.clock).addContainsRule("AMAZON", hobbies)
+        repo.import(account, parsed("card_chase_style.csv"))
+        val all = env.db.transactions().getByIds(CsvImport.ids(account, parsed("card_chase_style.csv").rows))
+        assertEquals(hobbies, all.single { it.description.startsWith("AMAZON") }.categoryId)
+        val joes = all.single { it.description.startsWith("TRADER") }
+        assertEquals(env.db.categories().getByKey(DefaultCategories.GROCERIES)!!.id, joes.categoryId)
+        assertEquals(com.emotionalleaves.sprout.domain.categorize.CategorySource.IMPORT, joes.categorySource)
+    }
+
+    @Test fun europeanFileImportsWithBankCategories() = runBlocking {
+        val account = repo.createManualAccount("Konto", AccountType.CHECKING)
+        val s = repo.import(account, parsed("european_comma_decimals.csv"))
+        assertEquals(4, s.imported)
+        val all = env.db.transactions().getByIds(CsvImport.ids(account, parsed("european_comma_decimals.csv").rows))
+        assertEquals(env.db.categories().getByKey(DefaultCategories.TRANSPORT)!!.id, all.single { it.description.startsWith("BAHN") }.categoryId)
+        assertEquals(-4_510L - 123_456L - 350L + 245_000L, env.db.accounts().getAll().single().balanceMinor)
+    }
 }

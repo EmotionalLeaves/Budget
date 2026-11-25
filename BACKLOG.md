@@ -18,12 +18,14 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [x] (1.1.0) FLAG_SECURE option to hide Sprout from screenshots and the recent-apps preview — *why: amounts visible in the app switcher*
 - [x] (1.2.0) Local encrypted backup and restore to a user-chosen file (password-protected) — *why: survive a phone change without cloud backup*
 - [x] (1.9.1) Certificate pinning: decided against (see README Assumptions); system-only trust anchors stay
+- [ ] Automatic encrypted backup reminder (monthly nudge, never automatic upload) — *why: phone loss is the main data risk*
 
 ## 3. Sync reliability
 - [x] (0.2.0/0.6.0) Per-connection problems on Home with a "Fix in Bridge" link — *why: quicker diagnosis*
 - [x] (1.3.0) Detect SimpleFIN rate-limit warnings in "errors" and slow down automatically — *why: the Bridge disables tokens past the warning level*
 - [x] (1.3.0) Flag accounts missing from syncs for 3+ days as possibly closed (no schema change) — *why: totals stay right*
 - [x] (1.9.0) Purchase-date option (transacted_at) for posted transactions — *why: dates match receipts*
+- [ ] Show per-account "last synced" and a retry button for a single failing account — *why: one broken bank shouldn't hide the rest*
 
 ## 4. Test coverage
 - [x] (1.12.1) Compose UI tests: budget dialog, split dialog, list row semantics (detail sheet/review flow still open below)
@@ -31,6 +33,7 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [x] (1.9.1) SyncWorker tests with work-testing (retry, Retry-After chain, revoked cancel, KEEP)
 - [x] (1.9.0) 10k-transaction generated SyncMerger test — *why: merge performance regression guard*
 - [x] (1.7.0) First migration (1→2) with MigrationTest seeding realistic v1 data — *why: the first migration must be easy and safe*
+- [ ] Fuzz test the CSV parser and amount parser with random input — *why: imports come from anywhere*
 
 ## 5. UX polish and accessibility
 - [x] (1.4.0) Transaction detail: link to its recurring charge — *why: jump from a charge to its bill*
@@ -43,6 +46,7 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [x] (1.5.0) Onboarding: offer Quick budget setup right after the first sync — *why: spec flow; faster to value*
 - [x] (1.12.0) Split label in the transaction list
 - [x] (1.12.0) Rollover breakdown on the category screen
+- [ ] Search transactions by amount ("42.10" or ">100") — *why: find a charge fast*
 
 ## 6. Performance and battery
 - [ ] Baseline profile for faster cold start — *why: opens instantly*
@@ -59,5 +63,7 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [ ] Tags on transactions — *why: track trips or projects across categories*
 - [ ] Home-screen widget (Glance) with safe to spend — *why: check without opening the app*
 - [ ] Custom-currency lookup (GET the currency URL) — *why: show points/crypto accounts properly*
-- [ ] CSV import: European comma decimals and a Category column — *why: more bank formats*
+- [x] (1.15.0) CSV import: comma decimals and the bank's Category column
 - [ ] CSV export: one row per split part (or a "Split" column) — *why: spreadsheets match budgets*
+- [ ] Yearly view: spending per category per month for the last 12 months — *why: spot seasonal costs*
+- [ ] Annual/irregular expenses sinking fund (e.g. car registration) as a goal type — *why: no surprise bills*

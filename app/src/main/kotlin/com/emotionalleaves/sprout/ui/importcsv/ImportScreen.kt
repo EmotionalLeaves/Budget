@@ -222,6 +222,15 @@ fun ImportScreen(onBack: () -> Unit, onDone: () -> Unit) {
             }
             Switch(checked = m.invert, onCheckedChange = null)
         }
+        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(role = Role.Switch) { vm.updateMapping(m.copy(decimalComma = !m.decimalComma)) },
+            verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Comma decimals")
+                Text("Turn on if amounts look like 1.234,56", style = MaterialTheme.typography.bodySmall)
+            }
+            Switch(checked = m.decimalComma, onCheckedChange = null)
+        }
+        ColumnPicker("Bank's category (optional)", header, m.category, allowNone = true) { vm.updateMapping(m.copy(category = it)) }
 
         val parsed = state.parsed
         Text("Preview", style = MaterialTheme.typography.titleMedium)
