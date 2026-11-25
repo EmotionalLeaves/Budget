@@ -88,7 +88,7 @@ fun Banner(
 }
 
 @Composable
-fun CategoryChip(name: String, color: Int) {
+fun CategoryChip(name: String, color: Int, iconKey: String? = null) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -96,7 +96,11 @@ fun CategoryChip(name: String, color: Int) {
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(horizontal = 8.dp, vertical = 2.dp),
     ) {
-        Box(Modifier.size(8.dp).clip(CircleShape).background(Color(color)))
+        if (iconKey != null) {
+            Icon(CategoryIcons.forKey(iconKey), contentDescription = null, tint = Color(color), modifier = Modifier.size(14.dp))
+        } else {
+            Box(Modifier.size(8.dp).clip(CircleShape).background(Color(color)))
+        }
         Spacer(Modifier.width(6.dp))
         Text(name, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
@@ -124,7 +128,7 @@ fun TransactionItem(row: TransactionRow, onClick: (() -> Unit)? = null) {
         Column(Modifier.weight(1f)) {
             Text(merchant, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                CategoryChip(row.categoryName, row.categoryColor)
+                CategoryChip(row.categoryName, row.categoryColor, row.categoryIcon)
                 if (row.splitCount > 0) {
                     Text("+${row.splitCount} split", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary, maxLines = 1)
                 }

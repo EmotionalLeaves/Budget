@@ -38,7 +38,7 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [x] (1.4.0) Filter chips on Transactions for account and category (month: open) — *why: find things fast*
 - [x] (1.4.0) Budgets: "Show all" categories
 - [x] (1.5.0) Category detail month switcher — *why: plan ahead and look back*
-- [ ] Category icons (iconKey) in chips and grids — *why: faster scanning*
+- [x] (1.14.0) Category icons in chips and the picker
 - [ ] TalkBack and 200% font pass on every screen with screenshot tests (Roborazzi) — *why: accessibility regressions are easy to miss*
 - [x] (1.5.0) Onboarding: offer Quick budget setup right after the first sync — *why: spec flow; faster to value*
 - [x] (1.12.0) Split label in the transaction list

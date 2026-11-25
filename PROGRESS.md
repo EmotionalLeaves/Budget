@@ -7,7 +7,7 @@
 Phase 2 – improve forever. v1.0.0 published.
 
 ## Current task
-Phase 2: category icons, then CSV comma decimals + Category column, then tags.
+Phase 2: CSV comma decimals + Category column, then refill backlog, then tags.
 
 ## v1.0 checklist (verified 2026-11-24)
 - [x] F1–F9 acceptance criteria pass, with unit tests where specified (core: token/URL/parser/client, 60+ categorization tests, budget math, alerts, recurring, CSV 6 formats + round trip; app: sync, categories, budgets, alerts, recurring, import, export, connect, 20k-row data).
@@ -22,21 +22,21 @@ Phase 2: category icons, then CSV comma decimals + Category column, then tags.
 - [x] GitHub Release v1.0.0 published with the APK and marked latest (this push).
 
 ## Recent changes
-1. 2026-11-24 – v1.13.0: battery-saver skip for periodic sync (SyncWorker.skipForBatterySaver + tests).
-2. 2026-11-24 – v1.12.1: Compose UI tests (CorrectionUiTest: budget dialog, split dialog, list row).
-3. 2026-11-24 – v1.12.0: split label in lists (TransactionRow.splitCount), rollover breakdown on category screen.
-4. 2026-11-24 – v1.11.1: split-aware everydaySpending query (forecast) + test.
-5. 2026-11-24 – v1.11.0: split transactions (Splits domain rules, transaction_splits table, MIGRATION_3_4, split-aware spending queries, backup).
-6. 2026-11-24 – v1.10.0: budget rollover (BudgetMath.rolloverCarry, budget_rollovers table, MIGRATION_2_3 + tests, backup support).
-7. 2026-11-24 – v1.9.1: SyncWorker tests (work-testing, worker test seam); certificate pinning decided against.
-8. 2026-11-24 – v1.9.0: purchase-date option (SyncMerger.usePurchaseDate, redatePosted DAO, tests); 10k merge test.
-9. 2026-11-24 – v1.8.0: bill calendar (CalendarGrid Sunday-first helper + test, RecurringRepository.observeCalendar + test).
-10. 2026-11-24 – v1.7.0: savings goals (GoalMath 7 tests, GoalRepository 3 tests, Goals screen, Home card); DB v2 with explicit MIGRATION_1_2 and MigrationTest proving v1 data survives; goals in backups.
-11. 2026-11-24 – v1.6.0: CashFlow forecast (low point, next paycheck; 8 tests), income detection via RecurringDetector.detectIncome, spending trend vs same days last month, ForecastRepository (2 Robolectric tests), Home forecast card with breakdown.
-12. 2026-11-24 – v1.5.0: category detail month switcher; onboarding Quick budget step (suggestions applied in one tap).
-13. 2026-11-24 – v1.4.0: undoable recategorization (snapshot + rule restore, 2 tests), account/category filter chips, budgets show-all (BudgetMonth.allLines), bill link in transaction detail.
-14. 2026-11-24 – v1.3.0: 12-hour pause after SimpleFIN rate-limit warnings (SyncErrors.isRateLimitWarning + SyncRepository test); stale/possibly-closed account flag on Home (AccountTypes.isStale).
-15. 2026-11-24 – v1.2.0: password-encrypted backup/restore (BackupCrypto PBKDF2+AES-GCM with authenticated header, 9 tests; BackupRepository JSON codec, all-or-nothing restore, 5 tests).
+1. 2026-11-24 – v1.14.0: category icons (CategoryIcons, TransactionRow.categoryIcon).
+2. 2026-11-24 – v1.13.0: battery-saver skip for periodic sync (SyncWorker.skipForBatterySaver + tests).
+3. 2026-11-24 – v1.12.1: Compose UI tests (CorrectionUiTest: budget dialog, split dialog, list row).
+4. 2026-11-24 – v1.12.0: split label in lists (TransactionRow.splitCount), rollover breakdown on category screen.
+5. 2026-11-24 – v1.11.1: split-aware everydaySpending query (forecast) + test.
+6. 2026-11-24 – v1.11.0: split transactions (Splits domain rules, transaction_splits table, MIGRATION_3_4, split-aware spending queries, backup).
+7. 2026-11-24 – v1.10.0: budget rollover (BudgetMath.rolloverCarry, budget_rollovers table, MIGRATION_2_3 + tests, backup support).
+8. 2026-11-24 – v1.9.1: SyncWorker tests (work-testing, worker test seam); certificate pinning decided against.
+9. 2026-11-24 – v1.9.0: purchase-date option (SyncMerger.usePurchaseDate, redatePosted DAO, tests); 10k merge test.
+10. 2026-11-24 – v1.8.0: bill calendar (CalendarGrid Sunday-first helper + test, RecurringRepository.observeCalendar + test).
+11. 2026-11-24 – v1.7.0: savings goals (GoalMath 7 tests, GoalRepository 3 tests, Goals screen, Home card); DB v2 with explicit MIGRATION_1_2 and MigrationTest proving v1 data survives; goals in backups.
+12. 2026-11-24 – v1.6.0: CashFlow forecast (low point, next paycheck; 8 tests), income detection via RecurringDetector.detectIncome, spending trend vs same days last month, ForecastRepository (2 Robolectric tests), Home forecast card with breakdown.
+13. 2026-11-24 – v1.5.0: category detail month switcher; onboarding Quick budget step (suggestions applied in one tap).
+14. 2026-11-24 – v1.4.0: undoable recategorization (snapshot + rule restore, 2 tests), account/category filter chips, budgets show-all (BudgetMonth.allLines), bill link in transaction detail.
+15. 2026-11-24 – v1.3.0: 12-hour pause after SimpleFIN rate-limit warnings (SyncErrors.isRateLimitWarning + SyncRepository test); stale/possibly-closed account flag on Home (AccountTypes.isStale).
 
 ## Known issues
 - The repo is private, so GitHub Actions minutes are limited (2,000/month free). Keep pushes meaningful.

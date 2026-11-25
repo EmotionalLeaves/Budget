@@ -1,5 +1,7 @@
 package com.emotionalleaves.sprout.ui.categories
 
+import com.emotionalleaves.sprout.ui.common.CategoryIcons
+import androidx.compose.material3.Icon
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -55,7 +57,7 @@ fun CategoryGrid(categories: List<CategoryEntity>, selectedId: Long?, onPick: (C
                     .clickable(role = Role.Button) { onPick(c) }
                     .padding(horizontal = 12.dp, vertical = 8.dp),
             ) {
-                Box(Modifier.size(12.dp).clip(CircleShape).background(Color(c.colorArgb)))
+                Icon(CategoryIcons.forKey(c.iconKey), contentDescription = null, tint = Color(c.colorArgb), modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
                 Text(c.name, style = MaterialTheme.typography.labelLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }

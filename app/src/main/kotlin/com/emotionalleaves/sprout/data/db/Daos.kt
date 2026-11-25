@@ -57,6 +57,7 @@ data class TransactionRow(
     val accountName: String,
     /** How many split parts this transaction has (0 = not split). */
     val splitCount: Int = 0,
+    val categoryIcon: String? = null,
 )
 
 /** Everything the detail sheet shows. */
@@ -177,7 +178,7 @@ interface TransactionDao {
         SELECT t.id, t.accountId, t.description, t.merchantKey, t.amountMinor, t.occurredAt, t.pending, t.note,
                t.categoryId, c.name AS categoryName, c.colorArgb AS categoryColor, t.categorySource,
                COALESCE(a.displayName, a.name) AS accountName,
-               (SELECT COUNT(*) FROM transaction_splits s WHERE s.transactionId = t.id) AS splitCount
+               (SELECT COUNT(*) FROM transaction_splits s WHERE s.transactionId = t.id) AS splitCount, c.iconKey AS categoryIcon
         FROM transactions t
         JOIN categories c ON c.id = t.categoryId
         JOIN accounts a ON a.id = t.accountId
@@ -199,7 +200,7 @@ interface TransactionDao {
         SELECT t.id, t.accountId, t.description, t.merchantKey, t.amountMinor, t.occurredAt, t.pending, t.note,
                t.categoryId, c.name AS categoryName, c.colorArgb AS categoryColor, t.categorySource,
                COALESCE(a.displayName, a.name) AS accountName,
-               (SELECT COUNT(*) FROM transaction_splits s WHERE s.transactionId = t.id) AS splitCount
+               (SELECT COUNT(*) FROM transaction_splits s WHERE s.transactionId = t.id) AS splitCount, c.iconKey AS categoryIcon
         FROM transactions t
         JOIN categories c ON c.id = t.categoryId
         JOIN accounts a ON a.id = t.accountId

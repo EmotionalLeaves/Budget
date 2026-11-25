@@ -2,7 +2,12 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
-## [1.13.0] - 2026-11-24
+## [1.14.0] - 2026-11-24
+
+### Added
+- Category icons: every built-in category has its own icon (a cart for Groceries, a fork and knife for Eating Out…) in the category picker and on transactions, so you can find things faster. Categories you add get a tag icon.
+
+ - 2026-11-24
 
 ### Changed
 - Easier on your battery: while Battery Saver is on, the 6-hourly background sync waits until your data is a day old. Pull-to-refresh and "Sync now" always sync right away.
