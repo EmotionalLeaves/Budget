@@ -222,7 +222,7 @@ class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
 }
 
 @Composable
-fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initialTagId: Long? = null) {
+fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initialTagId: Long? = null, initialAccountId: String? = null) {
     val vm = sproutViewModel { TransactionsViewModel(it) }
     val filter by vm.filter.collectAsStateWithLifecycle()
     val uncategorized by vm.uncategorizedCount.collectAsStateWithLifecycle()
@@ -232,6 +232,8 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
     val tags by vm.tags.collectAsStateWithLifecycle()
     val dayTotals by vm.dayTotals.collectAsStateWithLifecycle()
     LaunchedEffect(initialTagId) { if (initialTagId != null) vm.setTag(initialTagId) }
+    LaunchedEffect(initialAccountId) { if (initialAccountId != null) vm.setAccount(initialAccountId) }
+    val scoped = initialTagId != null || initialAccountId != null
     val items = vm.pages.collectAsLazyPagingItems()
     val today by vm.today.collectAsStateWithLifecycle()
     var openId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -363,10 +365,10 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
         }
         val inbox by remember { vm.inboxCount }.collectAsStateWithLifecycle(0)
         val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
-        if (inbox > 0 && initialTagId == null) {
+        if (inbox > 0 && !scoped) {
             Banner("$inbox new to review", actionLabel = "Review", onAction = { navigate("inbox") }, warning = false)
         }
-        if (uncategorized > 0 && initialTagId == null) {
+        if (uncategorized > 0 && !scoped) {
             Banner(
                 "$uncategorized uncategorized transaction${if (uncategorized == 1) "" else "s"}",
                 actionLabel = "Review",
@@ -452,14 +454,14 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
                     if (prev != date) DayHeader(Format.dayHeader(date, today), dayTotals[date])
                     if (selected.isNotEmpty()) {
                         val on = row.id in selected
-                        TransactionItem(row, selected = on, onLongClick = { selected = if (on) selected - row.id else selected + row.id }) {
+                        TransactionItem(row, selected = on, hideAccount = initialAccountId != null, onLongClick = { selected = if (on) selected - row.id else selected + row.id }) {
                             selected = if (on) selected - row.id else selected + row.id
                         }
                     } else {
                         SwipeRow(
                             onRight = { quickFor = row },
                             onLeft = { scope.launch { vm.toggleExcluded(row.id)?.let { (msg, undo) -> scope.showUndoable(snackbar, msg, undo) } } },
-                        ) { TransactionItem(row, onLongClick = { selected = setOf(row.id) }) { openId = row.id } }
+                        ) { TransactionItem(row, hideAccount = initialAccountId != null, onLongClick = { selected = setOf(row.id) }) { openId = row.id } }
                     }
 
                 }

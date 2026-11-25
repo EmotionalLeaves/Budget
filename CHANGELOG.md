@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.19.0] - 2026-11-25
+
+Round 20: every account gets its own page.
+
+### New
+- **Account pages**: tap any account on Home. You get its balance, when it last updated, a 6-month balance line, money in and out this month, and all its transactions, with search, filters and selection.
+
 ## [2.18.0] - 2026-11-25
 
 Round 19: a gentler first connection.

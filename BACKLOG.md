@@ -114,3 +114,5 @@ What the leaders do well, and what Sprout takes from it. Never copied: anything 
 - [x] (2.13.0) Weekly summary notification (opt-in)
 - [x] (2.14.0) Select all matching a search in Activity — *why: big cleanups*
 - [x] (2.14.0) Category list: reorder (arrows) — *why: personal order*
+- [x] (2.19.0) Account detail page (balance history, in/out, transactions)
+- [ ] Account page: rename/hide right from the page — *why: fewer trips to Settings*

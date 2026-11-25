@@ -263,6 +263,22 @@ class InsightsRepository(private val db: SproutDatabase, private val clock: Cloc
     }
 
     /** Net worth at the end of each of the last [months] months (today for the current one), from included USD accounts. */
+    /** One account: month-end balances (rebuilt from its transactions) and this month's money in and out. */
+    data class AccountHistory(val points: List<Pair<LocalDate, Long>>, val inMinor: Long, val outMinor: Long)
+
+    suspend fun account(id: String, months: Int = 6): AccountHistory? = withContext(Dispatchers.IO) {
+        val z = zone()
+        val a = db.accounts().getAll().firstOrNull { it.id == id } ?: return@withContext null
+        val points = NetWorthHistory.monthEnds(today(), months)
+        val all = db.insights().moves(0, listOf(id)).map { BalanceTx(it.accountId, it.amountMinor, it.occurredAt) }
+        val earliest = NetWorthHistory.earliest(all, z)
+        val series = NetWorthHistory.compute(mapOf(id to a.balanceMinor), all, points, z)
+            .filter { (d, _) -> earliest == null || !d.isBefore(earliest.minusDays(1)) || d == points.last() }
+        val monthStart = today().withDayOfMonth(1).atStartOfDay(z).toEpochSecond()
+        val thisMonth = all.filter { it.occurredAt >= monthStart }
+        AccountHistory(series, thisMonth.filter { it.amountMinor > 0 }.sumOf { it.amountMinor }, -thisMonth.filter { it.amountMinor < 0 }.sumOf { it.amountMinor })
+    }
+
     suspend fun netWorth(months: Int = 12): List<Pair<LocalDate, Long>> = withContext(Dispatchers.IO) {
         val z = zone()
         val accounts = db.accounts().getAll().filter { it.includeInTotals && !it.hidden && AccountTypes.isUsd(it.currency) }

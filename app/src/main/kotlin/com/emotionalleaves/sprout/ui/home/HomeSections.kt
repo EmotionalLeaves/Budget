@@ -1,5 +1,7 @@
 package com.emotionalleaves.sprout.ui.home
 
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.runtime.collectAsState
 import androidx.compose.material.icons.rounded.CloudUpload
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.verticalScroll
@@ -239,9 +241,14 @@ private fun typeIcon(t: AccountType) = when (t) {
 @Composable
 fun AccountsCard(accounts: List<AccountEntity>, lastSuccess: Long?) {
     val c = LocalSproutColors.current
+    val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
     SoftCard {
         accounts.forEach { a ->
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.heightIn(min = 52.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.heightIn(min = 52.dp).fillMaxWidth()
+                    .clickable(onClickLabel = "Open ${a.label}") { navigate("account/" + android.net.Uri.encode(a.id)) },
+            ) {
                 IconBadge(typeIcon(a.type), MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
@@ -460,6 +467,48 @@ fun BackupNudge(lastAt: Long?, onBackup: () -> Unit, onLater: () -> Unit) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             androidx.compose.material3.Button(onClick = onBackup, modifier = Modifier.heightIn(min = 44.dp)) { Text("Back up") }
             androidx.compose.material3.TextButton(onClick = onLater, modifier = Modifier.heightIn(min = 44.dp)) { Text("In 2 weeks") }
+        }
+    }
+}
+
+/** The top of an account's page: balance, kind, freshness, a 6-month balance line, and this month's in/out. */
+@Composable
+fun AccountHeader(id: String, onBack: () -> Unit) {
+    val app = com.emotionalleaves.sprout.ui.common.appContainer()
+    val accounts by androidx.compose.runtime.remember { app.db.accounts().observeAll() }
+        .collectAsState(initial = emptyList<com.emotionalleaves.sprout.data.db.AccountEntity>())
+    val a = accounts.firstOrNull { it.id == id }
+    val h = com.emotionalleaves.sprout.ui.common.rememberLoaded(id to a?.balanceMinor) { runCatching { app.insightsRepository.account(id) }.getOrNull() }
+    val c = LocalSproutColors.current
+    Column {
+        Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 20.dp, top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            androidx.compose.material3.IconButton(onClick = onBack) {
+                Icon(androidx.compose.material.icons.Icons.AutoMirrored.Rounded.ArrowBack, "Back")
+            }
+            Column(Modifier.weight(1f)) {
+                Text(a?.label ?: "Account", style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (a != null) {
+                    Text(
+                        a.type.name.lowercase().replaceFirstChar { it.uppercase() } +
+                            (a.lastSyncedAt?.let { " · updated " + Format.ago(it, System.currentTimeMillis() / 1000) } ?: ""),
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            if (a != null) Text(money(a.balanceMinor), style = MaterialTheme.typography.titleLarge,
+                color = if (a.balanceMinor < 0) c.danger else MaterialTheme.colorScheme.onSurface)
+        }
+        val pts = h?.points.orEmpty()
+        if (pts.size >= 2) {
+            Box(Modifier.padding(horizontal = 16.dp)) {
+                com.emotionalleaves.sprout.ui.common.LineChart(pts.map { it.second }, MaterialTheme.colorScheme.primary, Modifier.height(96.dp))
+            }
+        }
+        if (h != null) {
+            com.emotionalleaves.sprout.ui.common.TileRow(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+                StatTile("In this month", money(h.inMinor, whole = true), Modifier.tile(), noteColor = c.income, note = "deposits")
+                StatTile("Out this month", money(h.outMinor, whole = true), Modifier.tile(), note = "charges & payments")
+            }
         }
     }
 }

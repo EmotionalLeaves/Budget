@@ -323,6 +323,13 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
             composable("networth") { com.emotionalleaves.sprout.ui.insights.NetWorthScreen(onBack = { nav.popBackStack() }) }
             composable("year") { com.emotionalleaves.sprout.ui.insights.YearScreen(onBack = { nav.popBackStack() }, onCategory = { nav.navigate("category/$it") }) }
             composable("tags") { com.emotionalleaves.sprout.ui.tags.TagsScreen(onBack = { nav.popBackStack() }, onOpen = { nav.navigate("tag/$it") }) }
+            composable("account/{id}") { entry ->
+                val id = entry.arguments?.getString("id").orEmpty()
+                androidx.compose.foundation.layout.Column(Modifier.fillMaxSize()) {
+                    com.emotionalleaves.sprout.ui.home.AccountHeader(id, onBack = { nav.popBackStack() })
+                    TransactionsScreen(snackbar, onReview = { nav.navigate("review") }, initialAccountId = id)
+                }
+            }
             composable("tag/{id}") { entry ->
                 val id = entry.arguments?.getString("id")?.toLongOrNull()
                 androidx.compose.foundation.layout.Column(Modifier.fillMaxSize()) {

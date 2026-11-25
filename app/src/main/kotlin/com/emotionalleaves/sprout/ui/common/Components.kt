@@ -125,6 +125,8 @@ fun TransactionItem(
     dateAsTitle: Boolean = false,
     /** Selection mode (Activity): long-press starts it; a selected row gets a tinted background and a check. */
     selected: Boolean = false,
+    /** On an account's own page every row is from that account, so the name is left out. */
+    hideAccount: Boolean = false,
     onLongClick: (() -> Unit)? = null,
     onClick: (() -> Unit)? = null,
 ) {
@@ -179,7 +181,7 @@ fun TransactionItem(
                     Text("+${row.splitCount} split", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary, maxLines = 1)
                 }
                 if (showDate && !dateAsTitle) Text("· $date", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
-                Text("· " + row.accountName, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                if (!hideAccount) Text("· " + row.accountName, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }

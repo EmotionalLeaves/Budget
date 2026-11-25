@@ -262,6 +262,17 @@ class TagAndInsightTest {
         Unit
     }
 
+    @Test fun accountHistoryAndMonthInOut() = runBlocking {
+        sync(Triple("1", "PAYROLL|500.00", at(11, 3)), Triple("2", "RENT|-300.00", at(11, 4)), Triple("3", "GAS|-50.00", at(10, 10)))
+        val id = env.db.accounts().getAll().single().id
+        val h = InsightsRepository(env.db, env.clock) { zone }.account(id)!!
+        assertEquals(50_000L, h.inMinor)
+        assertEquals(30_000L, h.outMinor)
+        assertEquals(100_000L, h.points.last().second) // today = the current balance
+        // October's month end: before November's +500 and −300.
+        assertEquals(100_000L - 50_000L + 30_000L, h.points.first { it.first.monthValue == 10 }.second)
+    }
+
     @Test fun challengesAndHealth() = runBlocking {
         sync(Triple("1", "ACME PAYROLL|3000.00", at(10, 1)), Triple("2", "TARGET|-200.00", at(10, 15)), Triple("3", "PIZZA HUT|-20.00", at(11, 23)))
         val ch = com.emotionalleaves.sprout.data.challenge.ChallengeRepository(env.context, env.db) { zone }

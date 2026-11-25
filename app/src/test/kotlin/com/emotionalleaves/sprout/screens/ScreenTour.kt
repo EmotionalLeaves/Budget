@@ -253,6 +253,14 @@ class ScreenTour {
                     s("56-select")
                     rule.onAllNodes(androidx.compose.ui.test.hasContentDescription("Stop selecting"))[0].performClick(); settle()
                 }
+                t("account") {
+                    // Show only the Accounts card on Home so it's on screen, open Checking, then put Home back.
+                    val app = ApplicationProvider.getApplicationContext<SproutApp>()
+                    runBlocking { com.emotionalleaves.sprout.ui.home.HomeCards.forEach { (k, _) -> if (k != "accounts") app.container.settings.setHomeCard(k, false) } }
+                    tap("Home"); settle()
+                    tap("Everyday Checking"); s("57-account"); back()
+                    runBlocking { com.emotionalleaves.sprout.ui.home.HomeCards.forEach { (k, _) -> app.container.settings.setHomeCard(k, true) } }
+                }
                 t("cats") { tap("More"); tap("Categories"); s("51-categories"); back() }
                 t("rules") { tap("More"); tap("Category rules"); s("52-rules"); back() }
                 t("health") { tap("Home"); tap("Money health"); s("53-health"); back() }
