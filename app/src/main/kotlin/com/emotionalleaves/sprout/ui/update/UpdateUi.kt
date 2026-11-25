@@ -187,6 +187,15 @@ fun UpdateSettings(updates: UpdateRepository, beta: Boolean = false, onBeta: (Bo
         val context = LocalContext.current
         var notes by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<List<com.emotionalleaves.sprout.update.Changelog.Group>?>(null) }
         TextButton(onClick = { scope.launch { notes = bundledNotes(context) } }, modifier = Modifier.heightIn(min = 48.dp)) { Text("What's new in this version") }
+        TextButton(onClick = {
+            scope.launch {
+                val md = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    runCatching { context.assets.open("CHANGELOG.md").bufferedReader().use { it.readText() } }.getOrDefault("")
+                }
+                notes = com.emotionalleaves.sprout.update.Changelog.between(md, "0", BuildConfig.VERSION_NAME)
+                    .flatMap { (v, g) -> listOf(com.emotionalleaves.sprout.update.Changelog.Group("Version $v", emptyList())) + g }
+            }
+        }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Release history") }
         notes?.let { n ->
             androidx.compose.material3.AlertDialog(
                 onDismissRequest = { notes = null },

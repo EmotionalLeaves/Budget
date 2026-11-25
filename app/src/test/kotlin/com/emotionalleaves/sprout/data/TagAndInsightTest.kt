@@ -202,4 +202,25 @@ class TagAndInsightTest {
         val h = InsightsRepository(env.db, env.clock) { zone }.health()
         assertTrue(h.score != null && h.parts.any { it.name == "Savings rate" })
     }
+
+    @Test fun editManualAndExportTagsAndSplits() = runBlocking {
+        val m = com.emotionalleaves.sprout.data.manual.ManualRepository(env.db, env.clock) { zone }
+        env.repo().ensureSeeded()
+        val cash = m.ensureCashAccount()
+        val cat = env.db.categories().getByKey(DefaultCategories.SHOPPING)!!.id
+        val id = m.add(cash, -4_000, "Market", cat, java.time.LocalDate.of(2026, 11, 20), null)
+        assertTrue(m.update(id, -4_500, "Farmers market", java.time.LocalDate.of(2026, 11, 21)))
+        val tx = env.db.transactions().getById(id)!!
+        assertEquals(-4_500L, tx.amountMinor)
+        assertEquals("Farmers market", tx.description)
+        assertEquals(-4_500L, env.db.accounts().getAll().single { it.id == cash }.balanceMinor)
+        val tags = TagRepository(env.db, env.clock)
+        tags.attach(id, tags.getOrCreate("Weekend")!!)
+        com.emotionalleaves.sprout.data.categories.CategoryRepository(env.db, env.clock)
+            .setSplits(id, listOf(com.emotionalleaves.sprout.domain.split.SplitPart(env.db.categories().getByKey(DefaultCategories.GIFTS)!!.id, 1_000)))
+        val rows = env.db.transactions().exportRows(0, Long.MAX_VALUE)
+        val r = rows.single { it.description == "Farmers market" }
+        assertEquals("Weekend", r.tags)
+        assertEquals("Gifts & Donations 10.00", r.splits)
+    }
 }

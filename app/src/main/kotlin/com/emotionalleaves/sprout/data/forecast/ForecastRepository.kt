@@ -83,4 +83,18 @@ class ForecastRepository(
     }
 
     private fun date(epoch: Long, z: ZoneId): LocalDate = Instant.ofEpochSecond(epoch).atZone(z).toLocalDate()
+
+    /** Expected paydays in [month] from your repeating income (name, amount). */
+    suspend fun paydays(month: java.time.YearMonth): List<Expected> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        val z = java.time.ZoneId.systemDefault()
+        val now = clock.instant().epochSecond
+        val incomeRows = db.recurring().inflowsSince(now - RecurringDetector.LOOKBACK_DAYS * 86_400)
+        RecurringDetector.detectIncome(
+            incomeRows.map { ChargeTx(it.merchantKey, it.amountMinor, it.occurredAt, it.categoryId, it.accountId) }, now, z,
+        ).flatMap { r ->
+            val first = java.time.Instant.ofEpochSecond(r.nextDueAt).atZone(z).toLocalDate()
+            Schedule.occurrences(first, r.cadence, month.atDay(1), month.atEndOfMonth(), first.dayOfMonth)
+                .map { Expected(MerchantNormalizer.displayName(r.merchantKey), it, r.typicalAmountMinor) }
+        }.sortedBy { it.date }
+    }
 }

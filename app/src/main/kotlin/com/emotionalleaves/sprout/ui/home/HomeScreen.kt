@@ -179,37 +179,39 @@ fun HomeScreen(
             if (fx != null && fx.month.flexBudgetMinor > 0) item { FlexHero(fx) } else item { SafeToSpendHero(m, state.totals.totalMinor, onSetBudgets) }
             if (inbox > 0) item { com.emotionalleaves.sprout.ui.transactions.InboxCard(inbox) { navigate("inbox") } }
             recap?.let { r -> item { com.emotionalleaves.sprout.ui.insights.RecapCard(r, vm::dismissRecap) } }
-            item { StatsRow(state.totals.totalMinor, outlook?.trend, outlook?.forecast?.endMinor, onNetWorth) }
-            health?.let { h -> item { com.emotionalleaves.sprout.ui.challenge.HealthCard(h) } }
-            challenges.firstOrNull { it.status == com.emotionalleaves.sprout.domain.challenge.ChallengeStatus.ON_TRACK }?.let { p ->
+            val off = state.settings.homeHidden
+            fun on(k: String) = k !in off
+            if (on("stats")) item { StatsRow(state.totals.totalMinor, outlook?.trend, outlook?.forecast?.endMinor, onNetWorth) }
+            if (on("health")) health?.let { h -> item { com.emotionalleaves.sprout.ui.challenge.HealthCard(h) } }
+            if (on("challenge")) challenges.firstOrNull { it.status == com.emotionalleaves.sprout.domain.challenge.ChallengeStatus.ON_TRACK }?.let { p ->
                 item { com.emotionalleaves.sprout.ui.challenge.ChallengeCard(p, onClick = { navigate("challenges") }) }
             }
-            age?.let { a -> item { AgeOfMoneyRow(a) } }
-            if (watch.isNotEmpty()) {
+            if (on("age")) age?.let { a -> item { AgeOfMoneyRow(a) } }
+            if (on("watch") && watch.isNotEmpty()) {
                 item { com.emotionalleaves.sprout.ui.common.SectionHeader("Watching") }
                 item { WatchStrip(watch, navigate) }
             }
-            item { QuickLinks(navigate) }
-            if (insights.isNotEmpty()) {
+            if (on("links")) item { QuickLinks(navigate) }
+            if (on("insights") && insights.isNotEmpty()) {
                 item { com.emotionalleaves.sprout.ui.common.SectionHeader("Insights") }
                 item { com.emotionalleaves.sprout.ui.insights.InsightsStrip(insights, onCategory) }
             }
-            outlook?.forecast?.let { f -> item { ForecastCard(f) } }
-            if (m != null) item { WhereItWentCard(m, onCategory, onSeeBudgets) }
-            item { MonthsCard(months) }
-            calendar?.let { cal -> item { com.emotionalleaves.sprout.ui.insights.SpendCalendarCard(cal) } }
+            if (on("forecast")) outlook?.forecast?.let { f -> item { ForecastCard(f) } }
+            if (on("where") && m != null) item { WhereItWentCard(m, onCategory, onSeeBudgets) }
+            if (on("months")) item { MonthsCard(months) }
+            if (on("calendar")) calendar?.let { cal -> item { com.emotionalleaves.sprout.ui.insights.SpendCalendarCard(cal) } }
 
-            if (bills.isNotEmpty()) {
+            if (on("bills") && bills.isNotEmpty()) {
                 item { com.emotionalleaves.sprout.ui.common.SectionHeader("Coming up", "All bills", onSeeBills) }
                 item { BillsStrip(bills, onSeeBills) }
             }
 
-            if (goals.isNotEmpty()) {
+            if (on("goals") && goals.isNotEmpty()) {
                 item { com.emotionalleaves.sprout.ui.common.SectionHeader("Savings goals", "All goals", onGoals) }
                 items(goals, key = { "goal-" + it.goal.id }) { g -> com.emotionalleaves.sprout.ui.goals.GoalProgressRow(g, onGoals) }
             }
 
-            if (state.accounts.isNotEmpty()) {
+            if (on("accounts") && state.accounts.isNotEmpty()) {
                 item { com.emotionalleaves.sprout.ui.common.SectionHeader("Accounts") }
                 item { AccountsCard(state.accounts, state.settings.lastSuccessfulSyncAt) }
             }
@@ -217,6 +219,11 @@ fun HomeScreen(
             item { com.emotionalleaves.sprout.ui.common.SectionHeader("Recent", "See all", onSeeAllTransactions) }
             items(state.recent, key = { "tx-" + it.id }) { row ->
                 TransactionItem(row) { openId = row.id }
+            }
+            item {
+                var customizing by androidx.compose.runtime.remember { mutableStateOf(false) }
+                TextButton(onClick = { customizing = true }, modifier = Modifier.padding(horizontal = 12.dp).heightIn(min = 48.dp)) { Text("Customize Home") }
+                if (customizing) CustomizeHomeDialog(off, onToggle = vm::setHomeCard) { customizing = false }
             }
             item { BottomSpace() }
         }

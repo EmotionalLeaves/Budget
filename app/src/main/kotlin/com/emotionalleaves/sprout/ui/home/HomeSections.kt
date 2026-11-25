@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.home
 
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -340,4 +341,33 @@ fun QuickLinks(navigate: (String) -> Unit) {
             androidx.compose.material3.AssistChip(onClick = { navigate(route) }, label = { Text(label) }, modifier = Modifier.heightIn(min = 44.dp))
         }
     }
+}
+
+
+/** The Home cards you can hide, in the order they appear. */
+val HomeCards = listOf(
+    "stats" to "Quick stats", "health" to "Money health", "challenge" to "Challenge", "age" to "Age of money", "watch" to "Watchlist",
+    "links" to "Shortcuts", "insights" to "Insights", "forecast" to "Month-end forecast", "where" to "Where it went", "months" to "Last 6 months",
+    "calendar" to "Spending calendar", "bills" to "Coming up", "goals" to "Savings goals", "accounts" to "Accounts",
+)
+
+/** Show or hide Home cards; Safe to spend and Recent always stay. */
+@Composable
+fun CustomizeHomeDialog(hidden: Set<String>, onToggle: (String, Boolean) -> Unit, onDismiss: () -> Unit) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Customize Home") },
+        text = {
+            Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+                Text("Turn off what you don't need. Fewer cards, calmer Home.", style = MaterialTheme.typography.bodySmall)
+                HomeCards.forEach { (k, label) ->
+                    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable { onToggle(k, k in hidden) }, verticalAlignment = Alignment.CenterVertically) {
+                        Text(label, Modifier.weight(1f))
+                        androidx.compose.material3.Switch(checked = k !in hidden, onCheckedChange = null)
+                    }
+                }
+            }
+        },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Done") } },
+    )
 }

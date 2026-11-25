@@ -56,6 +56,8 @@ data class Settings(
     val watchlist: Set<String> = emptySet(),
     /** Get test builds (prereleases) as updates too. */
     val betaUpdates: Boolean = false,
+    /** Home cards you've hidden (keys from HomeCards). */
+    val homeHidden: Set<String> = emptySet(),
 )
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -91,6 +93,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
             fixedCategoryIds = p[FIXED_IDS]?.mapNotNull { it.toLongOrNull() }?.toSet() ?: emptySet(),
             watchlist = p[WATCHLIST] ?: emptySet(),
             betaUpdates = p[BETA] ?: false,
+            homeHidden = p[HOME_HIDDEN] ?: emptySet(),
         )
     }
 
@@ -117,6 +120,10 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
     suspend fun toggleWatch(item: String) = dataStore.edit {
         val cur = it[WATCHLIST] ?: emptySet()
         it[WATCHLIST] = if (item in cur) cur - item else (cur + item).toList().takeLast(8).toSet()
+    }
+    suspend fun setHomeCard(key: String, shown: Boolean) = dataStore.edit {
+        val cur = it[HOME_HIDDEN] ?: emptySet()
+        it[HOME_HIDDEN] = if (shown) cur - key else cur + key
     }
     suspend fun setBetaUpdates(on: Boolean) = dataStore.edit { it[BETA] = on }
     suspend fun setRecapDismissed(month: String) = dataStore.edit { it[RECAP_DISMISSED] = month }
@@ -160,5 +167,6 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         val FIXED_IDS = androidx.datastore.preferences.core.stringSetPreferencesKey("fixed_category_ids")
         val WATCHLIST = androidx.datastore.preferences.core.stringSetPreferencesKey("watchlist")
         val BETA = booleanPreferencesKey("beta_updates")
+        val HOME_HIDDEN = androidx.datastore.preferences.core.stringSetPreferencesKey("home_hidden")
     }
 }

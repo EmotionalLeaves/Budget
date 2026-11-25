@@ -2,7 +2,25 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
-## [2.5.0] - 2026-11-24
+## [2.6.0] - 2026-11-24
+
+Round 7.
+
+### Auto-update
+- **Downloads resume**: if an update download breaks off (bad signal, Wi-Fi drop), the next try picks up where it stopped instead of starting over. The whole file is still checked before installing.
+- **Release history**: Settings → Updates → "Release history" shows the notes for recent versions.
+
+### New look
+- **Customize Home**: at the bottom of Home, turn cards on or off (stats, money health, challenges, insights, charts, bills, goals, accounts…) for a calmer screen.
+- Smooth transitions between screens.
+
+### New features
+- **Monthly PDF report**: Reports → PDF makes a one-page summary of this month (totals, budgets vs spending with bars, where it went, biggest purchase) and opens the share sheet to save, print or send it. Made on your phone.
+- **Paydays on the bill calendar**: expected paychecks show in green on the calendar and in a list under it, next to your bills.
+- **Edit cash transactions**: fix the amount, name or date of anything you added by hand.
+- **CSV export** now includes each transaction's tags and split parts.
+
+ - 2026-11-24
 
 Round 6, bigger again.
 

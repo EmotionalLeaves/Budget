@@ -50,7 +50,7 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [x] (2.1.0) Welcome screen redesign
 - [ ] Redesign Bills, Goals, Settings and the detail sheet in the new style — *why: consistency*
 - [ ] Swipe actions on transactions (swipe to recategorize or tag) — *why: faster corrections*
-- [ ] Home layout editor: hide or reorder Home cards — *why: keep Home calm*
+- [x] (2.6.0) Customize Home (hide cards)
 
 ## 6. Performance and battery
 - [ ] Baseline profile for faster cold start — *why: opens instantly*
@@ -68,7 +68,7 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [x] (2.1.0) Home-screen widget (Glance)
 - [ ] Custom-currency lookup (GET the currency URL) — *why: show points/crypto accounts properly*
 - [x] (1.15.0) CSV import: comma decimals and the bank's Category column
-- [ ] CSV export: one row per split part (or a "Split" column) — *why: spreadsheets match budgets*
+- [x] (2.6.0) CSV export Tags and Split columns
 - [x] (2.0.0) Year view heat grid
 - [ ] Annual/irregular expenses sinking fund (e.g. car registration) as a goal type — *why: no surprise bills*
 - [x] (2.1.0) Debt payoff planner
@@ -82,8 +82,8 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [x] (2.3.0) Monthly recap card
 - [x] (2.4.0) Compared with leading apps: see "Compared with leading apps" below
 - [x] (2.5.0) Manual cash transactions; money health score
-- [ ] Edit manual transactions (amount, date) after adding — *why: fix typos*
-- [ ] Recurring income calendar (paydays) on the bill calendar — *why: see money in and out together*
+- [x] (2.6.0) Edit manual transactions
+- [x] (2.6.0) Paydays on the bill calendar
 
 ## Compared with leading apps (2026-11-24)
 

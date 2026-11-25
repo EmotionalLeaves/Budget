@@ -270,7 +270,15 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
         },
     ) { padding ->
         androidx.compose.runtime.CompositionLocalProvider(com.emotionalleaves.sprout.ui.common.LocalNavigate provides { r: String -> nav.navigate(r) }) {
-        NavHost(nav, startDestination = Tab.HOME.route, modifier = Modifier.padding(padding)) {
+        NavHost(
+            nav, startDestination = Tab.HOME.route, modifier = Modifier.padding(padding),
+            enterTransition = { androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(220)) +
+                androidx.compose.animation.slideInHorizontally(androidx.compose.animation.core.tween(220)) { it / 14 } },
+            exitTransition = { androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(150)) },
+            popEnterTransition = { androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(220)) },
+            popExitTransition = { androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(150)) +
+                androidx.compose.animation.slideOutHorizontally(androidx.compose.animation.core.tween(200)) { it / 14 } },
+        ) {
             composable(Tab.HOME.route) {
                 HomeScreen(
                     snackbar,

@@ -61,6 +61,22 @@ class ManualRepository(private val db: SproutDatabase, private val clock: Clock,
             id
         }
 
+    /** Fixes a transaction you added by hand: amount (signed), what it was, and its date. */
+    suspend fun update(transactionId: String, amountMinor: Long, description: String, date: LocalDate): Boolean = withContext(Dispatchers.IO) {
+        if (!isManual(transactionId)) return@withContext false
+        val tx = db.transactions().getById(transactionId) ?: return@withContext false
+        val now = clock.instant().epochSecond
+        val old = java.time.Instant.ofEpochSecond(tx.occurredAt).atZone(zone())
+        val at = date.atTime(old.toLocalTime()).atZone(zone()).toEpochSecond()
+        val desc = Sanitize.text(description, 120).ifBlank { tx.description }
+        db.withTransaction {
+            db.transactions().upsert(listOf(tx.copy(amountMinor = amountMinor, description = desc, merchantKey = MerchantNormalizer.normalize(desc),
+                postedAt = at, transactedAt = at, occurredAt = at, updatedAt = now)))
+            db.accounts().recomputeManualBalance(tx.accountId, now)
+        }
+        true
+    }
+
     /** Deletes a transaction you added by hand (never a synced one). Returns false if it isn't manual. */
     suspend fun delete(transactionId: String): Boolean = withContext(Dispatchers.IO) {
         if (!isManual(transactionId)) return@withContext false

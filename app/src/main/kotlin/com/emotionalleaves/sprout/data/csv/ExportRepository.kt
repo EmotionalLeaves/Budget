@@ -34,7 +34,7 @@ class ExportRepository(private val db: SproutDatabase, private val zone: () -> Z
                 val end = to?.plusDays(1)?.atStartOfDay(z)?.toEpochSecond() ?: Long.MAX_VALUE
                 CsvExport.transactions(
                     db.transactions().exportRows(start, end).map {
-                        ExportTx(it.occurredAt, it.description, it.amountMinor, it.categoryName, it.accountName, it.pending, it.note, it.merchantKey)
+                        ExportTx(it.occurredAt, it.description, it.amountMinor, it.categoryName, it.accountName, it.pending, it.note, it.merchantKey, it.tags, it.splits)
                     },
                     z,
                 )

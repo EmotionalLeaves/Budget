@@ -14,6 +14,10 @@ data class ExportTx(
     val pending: Boolean,
     val note: String?,
     val merchantKey: String,
+    /** Tag names, joined with "; ". */
+    val tags: String = "",
+    /** Split parts, e.g. "Shopping 30.00; Gifts 10.00". */
+    val splits: String = "",
 )
 
 /**
@@ -22,7 +26,7 @@ data class ExportTx(
  * Exports never contain the SimpleFIN access URL or any credential: callers only pass the fields below.
  */
 object CsvExport {
-    val TRANSACTION_HEADER = listOf("Date", "Description", "Amount", "Category", "Account", "Pending", "Note", "Merchant")
+    val TRANSACTION_HEADER = listOf("Date", "Description", "Amount", "Category", "Account", "Pending", "Note", "Merchant", "Tags", "Split")
 
     fun amount(minor: Long): String = BigDecimal.valueOf(minor, 2).toPlainString()
 
@@ -33,7 +37,7 @@ object CsvExport {
         rows.map { t ->
             listOf(
                 isoDate(t.occurredAt, zone), t.description, amount(t.amountMinor), t.category, t.account,
-                if (t.pending) "yes" else "no", t.note.orEmpty(), t.merchantKey,
+                if (t.pending) "yes" else "no", t.note.orEmpty(), t.merchantKey, t.tags, t.splits,
             )
         },
     )

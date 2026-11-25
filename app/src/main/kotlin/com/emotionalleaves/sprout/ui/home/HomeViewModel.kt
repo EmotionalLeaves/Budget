@@ -159,6 +159,8 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
             .mapLatest { runCatching { c.challengeRepository.progress() }.getOrDefault(emptyList()) }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    fun setHomeCard(key: String, shown: Boolean) = viewModelScope.launch { c.settings.setHomeCard(key, shown) }
+
     val privacy: StateFlow<Boolean> = c.settings.settings.map { it.privacyMode }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
     fun togglePrivacy() = viewModelScope.launch { c.settings.setPrivacyMode(!privacy.value) }

@@ -160,7 +160,10 @@ interface TransactionDao {
     @Query(
         """
         SELECT t.occurredAt AS occurredAt, t.description AS description, t.amountMinor AS amountMinor, c.name AS categoryName,
-               COALESCE(a.displayName, a.name) AS accountName, t.pending AS pending, t.note AS note, t.merchantKey AS merchantKey
+               COALESCE(a.displayName, a.name) AS accountName, t.pending AS pending, t.note AS note, t.merchantKey AS merchantKey,
+               COALESCE((SELECT GROUP_CONCAT(g.name, '; ') FROM transaction_tags tt JOIN tags g ON g.id = tt.tagId WHERE tt.transactionId = t.id), '') AS tags,
+               COALESCE((SELECT GROUP_CONCAT(sc.name || ' ' || printf('%.2f', -s.amountMinor / 100.0), '; ')
+                         FROM transaction_splits s JOIN categories sc ON sc.id = s.categoryId WHERE s.transactionId = t.id), '') AS splits
         FROM transactions t JOIN categories c ON c.id = t.categoryId JOIN accounts a ON a.id = t.accountId
         WHERE t.occurredAt >= :start AND t.occurredAt < :end
         ORDER BY t.occurredAt, t.id
@@ -502,6 +505,8 @@ data class ExportRow(
     val pending: Boolean,
     val note: String?,
     val merchantKey: String,
+    val tags: String = "",
+    val splits: String = "",
 )
 
 /** Full-table reads and writes for backup and restore. */

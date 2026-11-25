@@ -1,5 +1,7 @@
 package com.emotionalleaves.sprout.ui.insights
 
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -105,7 +107,15 @@ fun ReportsScreen(onBack: () -> Unit) {
     val months = ranges[range].first.coerceAtLeast(1)
     val r = com.emotionalleaves.sprout.ui.common.rememberLoaded(months) { runCatching { c.insightsRepository.reports(maxOf(months, 1)) }.getOrNull() }
     Column(Modifier.fillMaxSize()) {
-        TopAppBar(title = { Text("Reports") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } })
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val scope = androidx.compose.runtime.rememberCoroutineScope()
+        TopAppBar(
+            title = { Text("Reports") },
+            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
+            actions = {
+                androidx.compose.material3.TextButton(onClick = { scope.launch { shareMonthPdf(context, c, java.time.YearMonth.now()) } }) { Text("PDF") }
+            },
+        )
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
             ranges.forEachIndexed { i, (_, label) -> SegmentedButton(range == i, { range = i }, SegmentedButtonDefaults.itemShape(i, ranges.size)) { Text(label, maxLines = 1) } }
         }
@@ -233,4 +243,16 @@ fun YearInReviewScreen(onBack: () -> Unit) {
             }
         }
     }
+}
+
+
+/** Builds the month's PDF and opens the share sheet (save to Files, email, print…). */
+suspend fun shareMonthPdf(context: android.content.Context, c: com.emotionalleaves.sprout.AppContainer, month: java.time.YearMonth) {
+    val recap = c.insightsRepository.recap(month)
+    val budget = runCatching { c.budgetRepository.observeMonth(month).first() }.getOrNull()
+    val file = com.emotionalleaves.sprout.data.report.MonthReportPdf.write(context, recap, budget)
+    val uri = androidx.core.content.FileProvider.getUriForFile(context, context.packageName + ".updates", file)
+    val send = android.content.Intent(android.content.Intent.ACTION_SEND).setType("application/pdf")
+        .putExtra(android.content.Intent.EXTRA_STREAM, uri).addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    runCatching { context.startActivity(android.content.Intent.createChooser(send, "Share ${month} report")) }
 }

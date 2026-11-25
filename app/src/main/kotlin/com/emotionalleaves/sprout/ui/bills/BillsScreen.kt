@@ -1,5 +1,7 @@
 package com.emotionalleaves.sprout.ui.bills
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.mapLatest
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -103,6 +105,10 @@ class BillsViewModel(private val c: AppContainer) : ViewModel() {
     private val _calMonth = kotlinx.coroutines.flow.MutableStateFlow(java.time.YearMonth.from(today()))
     val calMonth: StateFlow<java.time.YearMonth> = _calMonth
     fun shiftMonth(by: Long) { _calMonth.value = _calMonth.value.plusMonths(by) }
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val paydays: StateFlow<List<com.emotionalleaves.sprout.domain.forecast.Expected>> =
+        _calMonth.mapLatest { runCatching { c.forecastRepository.paydays(it) }.getOrDefault(emptyList()) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val calendar: StateFlow<List<com.emotionalleaves.sprout.data.recurring.CalendarBill>> =
@@ -242,6 +248,8 @@ private fun BillCalendar(vm: BillsViewModel) {
     val bills by vm.calendar.collectAsStateWithLifecycle()
     var selected by remember(month) { mutableStateOf<LocalDate?>(null) }
     val byDay = bills.groupBy { it.date }
+    val pays by vm.paydays.collectAsStateWithLifecycle()
+    val payByDay = pays.groupBy { it.date }
     val today = vm.today()
     Column(Modifier.padding(horizontal = 8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -284,6 +292,10 @@ private fun BillCalendar(vm: BillsViewModel) {
                                 Text(Money.formatWhole(total), style = MaterialTheme.typography.labelSmall,
                                     color = if (dayBills.all { it.paid }) LocalSproutColors.current.ok else MaterialTheme.colorScheme.tertiary)
                             }
+                            if (payByDay[day] != null) {
+                                Text("+" + Money.formatWhole(payByDay.getValue(day).sumOf { it.amountMinor }), style = MaterialTheme.typography.labelSmall,
+                                    color = LocalSproutColors.current.income)
+                            }
                         }
                     }
                 }
@@ -305,6 +317,15 @@ private fun BillCalendar(vm: BillsViewModel) {
             }
         }
         Text("Total this month: ${Money.format(bills.sumOf { it.amountMinor })}", Modifier.padding(8.dp), style = MaterialTheme.typography.labelLarge)
+        if (pays.isNotEmpty()) {
+            Text("Expected paydays", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(start = 8.dp, top = 8.dp))
+            pays.forEach { p ->
+                Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("${p.name} · ${p.date.format(dueFormat)}", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                    Text("+" + Money.format(p.amountMinor), color = LocalSproutColors.current.income)
+                }
+            }
+        }
     }
 }
 

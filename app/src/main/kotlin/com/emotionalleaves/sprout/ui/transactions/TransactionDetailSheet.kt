@@ -210,6 +210,37 @@ fun TransactionDetailSheet(transactionId: String, onDismiss: () -> Unit, onMessa
             TransactionReceipts(vm.c, d.id)
             SwitchRow("Exclude from budget", d.excludedFromBudget) { vm.setExcluded(it) }
             if (com.emotionalleaves.sprout.data.manual.ManualRepository.isManual(d.id)) {
+                var editingManual by remember { mutableStateOf(false) }
+                TextButton(onClick = { editingManual = true }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Edit amount, name or date") }
+                if (editingManual) {
+                    var amt by remember { mutableStateOf(Money.format(abs(d.amountMinor)).removePrefix("$").replace(",", "")) }
+                    var name by remember { mutableStateOf(d.description) }
+                    var dateText by remember { mutableStateOf(Format.localDate(d.occurredAt).toString()) }
+                    val parsed = Money.parseUserInput(amt)?.takeIf { it > 0 }
+                    val date = runCatching { java.time.LocalDate.parse(dateText) }.getOrNull()
+                    androidx.compose.material3.AlertDialog(
+                        onDismissRequest = { editingManual = false },
+                        title = { Text("Edit transaction") },
+                        text = {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedTextField(amt, { amt = it.take(12) }, label = { Text("Amount") }, prefix = { Text("$") }, singleLine = true, isError = parsed == null)
+                                OutlinedTextField(name, { name = it.take(120) }, label = { Text("What was it") }, singleLine = true)
+                                OutlinedTextField(dateText, { dateText = it.take(10) }, label = { Text("Date (YYYY-MM-DD)") }, singleLine = true, isError = date == null)
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(enabled = parsed != null && date != null, onClick = {
+                                val sign = if (d.amountMinor < 0) -1 else 1
+                                scope.launch {
+                                    vm.c.manualRepository.update(d.id, sign * (parsed ?: 0), name, date ?: return@launch)
+                                    vm.c.alertRepository.evaluateBudgets()
+                                }
+                                editingManual = false
+                            }) { Text("Save") }
+                        },
+                        dismissButton = { TextButton(onClick = { editingManual = false }) { Text("Cancel") } },
+                    )
+                }
                 TextButton(onClick = { scope.launch { vm.c.manualRepository.delete(d.id); vm.c.alertRepository.evaluateBudgets(); onDismiss() } },
                     modifier = Modifier.heightIn(min = 48.dp)) { Text("Delete this transaction", color = MaterialTheme.colorScheme.error) }
             }

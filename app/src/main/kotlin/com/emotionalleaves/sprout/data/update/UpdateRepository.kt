@@ -193,13 +193,18 @@ class UpdateRepository(
             return@withContext
         }
         _state.value = UpdateState.Downloading(release, 0)
-        val dir = File(context.cacheDir, "updates").apply { mkdirs(); listFiles()?.forEach { it.delete() } }
+        // Resume a download that broke off (same version only); anything else in the folder is stale.
+        val dir = File(context.cacheDir, "updates").apply { mkdirs() }
+        val part = File(dir, "sprout-${release.version}.part")
+        dir.listFiles()?.filter { it.name != part.name }?.forEach { it.delete() }
         val out = File(dir, "sprout-update.apk")
         val ok = runCatching {
             var url = UpdateCheck.downloadUrl(release, hasKey = true)
             var hops = 0
             while (true) {
                 val b = Request.Builder().url(url)
+                val resumeFrom = part.length()
+                if (resumeFrom > 0) b.header("Range", "bytes=$resumeFrom-")
                 if (UpdateCheck.mayCarryKey(url)) {
                     b.header("Authorization", "Bearer $key").header("Accept", "application/octet-stream")
                 }
@@ -216,27 +221,32 @@ class UpdateRepository(
                     _state.value = UpdateState.OpenReleasesPage(release.pageUrl.ifEmpty { releasesPage }, release)
                     return@withContext
                 }
+                if (resp.code == 416) { resp.close(); part.delete(); continue } // our partial file is bad: start over
                 if (!resp.isSuccessful) { resp.close(); error("HTTP ${resp.code}") }
-                val digest = MessageDigest.getInstance("SHA-256")
-                val total = resp.body?.contentLength()?.takeIf { it > 0 } ?: release.sizeBytes
+                val resumed = resp.code == 206 && resumeFrom > 0
+                val total = (resp.body?.contentLength()?.takeIf { it > 0 }?.let { if (resumed) it + resumeFrom else it }) ?: release.sizeBytes
                 resp.body!!.byteStream().use { input ->
-                    out.outputStream().use { output ->
+                    java.io.FileOutputStream(part, resumed).use { output ->
                         val buf = ByteArray(64 * 1024)
-                        var done = 0L
+                        var done = if (resumed) resumeFrom else 0L
                         var last = -1
                         while (true) {
                             val n = input.read(buf)
                             if (n < 0) break
                             output.write(buf, 0, n)
-                            digest.update(buf, 0, n)
                             done += n
                             val pct = if (total > 0) ((done * 100) / total).toInt().coerceIn(0, 100) else 0
                             if (pct != last) { last = pct; _state.value = UpdateState.Downloading(release, pct) }
                         }
                     }
                 }
+                // Check the whole file (including any resumed part) before it's offered for install.
+                val digest = MessageDigest.getInstance("SHA-256")
+                part.inputStream().use { input -> val buf = ByteArray(64 * 1024); while (true) { val n = input.read(buf); if (n < 0) break; digest.update(buf, 0, n) } }
                 val hex = digest.digest().joinToString("") { "%02x".format(it) }
-                if (release.sha256 != null && hex != release.sha256) { out.delete(); error("checksum mismatch") }
+                if (release.sha256 != null && hex != release.sha256) { part.delete(); error("checksum mismatch") }
+                out.delete()
+                if (!part.renameTo(out)) { part.copyTo(out, overwrite = true); part.delete() }
                 break
             }
             true

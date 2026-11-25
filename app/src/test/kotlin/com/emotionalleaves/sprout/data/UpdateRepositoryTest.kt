@@ -157,4 +157,22 @@ class UpdateRepositoryTest {
         assertEquals("sprout-v1.15.0-47.apk", (r.state.value as UpdateState.Available).release.apkName)
         assertTrue(server.takeRequest().path!!.startsWith("/repos/EmotionalLeaves/Budget/releases?per_page="))
     }
+
+    @Test fun brokenDownloadResumesFromWhereItStopped() = runBlocking {
+        val r = repo()
+        server.enqueue(MockResponse().setBody(release("1.19.0")))
+        r.check()
+        val rel = (r.state.value as UpdateState.Available).release
+        // First try: the connection drops halfway.
+        server.enqueue(MockResponse().setBody(Buffer().write(apk.copyOfRange(0, 100_000))).setHeader("Content-Length", apk.size.toString())
+            .setSocketPolicy(okhttp3.mockwebserver.SocketPolicy.DISCONNECT_DURING_RESPONSE_BODY))
+        r.download(rel)
+        assertTrue(r.state.value is UpdateState.DownloadFailed)
+        // Second try asks for the rest only.
+        server.takeRequest(); server.takeRequest()
+        server.enqueue(MockResponse().setResponseCode(206).setBody(Buffer().write(apk.copyOfRange(0, apk.size))))
+        r.download(rel)
+        val range = server.takeRequest().getHeader("Range")
+        assertTrue(range != null && range.startsWith("bytes="))
+    }
 }

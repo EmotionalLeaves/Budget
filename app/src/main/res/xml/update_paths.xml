@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Only the update folder in the cache. Nothing else in Sprout's storage is ever shared. -->
+<!-- Only these cache folders: the downloaded update (for the installer) and a report you chose to share. -->
 <paths>
     <cache-path name="updates" path="updates/" />
+    <cache-path name="reports" path="reports/" />
 </paths>
