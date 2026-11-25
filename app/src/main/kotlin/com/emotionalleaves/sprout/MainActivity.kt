@@ -1,5 +1,12 @@
 package com.emotionalleaves.sprout
 
+import androidx.compose.ui.unit.dp
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.DonutLarge
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
 import com.emotionalleaves.sprout.ui.common.showUndoable
 import android.content.Intent
 import android.view.WindowManager
@@ -112,7 +119,8 @@ class MainActivity : ComponentActivity() {
             }
         }
         setContent {
-            SproutTheme {
+            val look by settings.settings.collectAsState(initial = initial)
+            SproutTheme(themeMode = look.themeMode, dynamicColor = look.dynamicColor) {
                 Surface(Modifier.fillMaxSize()) {
                     if (locked.value) {
                         LockScreen(onUnlock = ::requestUnlock)
@@ -176,11 +184,11 @@ class MainActivity : ComponentActivity() {
 }
 
 private enum class Tab(val route: String, val label: String, val icon: ImageVector) {
-    HOME("home", "Home", Icons.Filled.Home),
-    TRANSACTIONS("transactions", "Transactions", Icons.AutoMirrored.Filled.ReceiptLong),
-    BUDGETS("budgets", "Budgets", Icons.Filled.PieChart),
-    BILLS("bills", "Bills", Icons.Filled.CalendarMonth),
-    SETTINGS("settings", "Settings", Icons.Filled.Settings),
+    HOME("home", "Home", Icons.Rounded.Home),
+    TRANSACTIONS("transactions", "Activity", Icons.AutoMirrored.Rounded.ReceiptLong),
+    BUDGETS("budgets", "Budgets", Icons.Rounded.DonutLarge),
+    BILLS("bills", "Bills", Icons.Rounded.CalendarMonth),
+    SETTINGS("settings", "More", Icons.Rounded.Tune),
 }
 
 @Composable
@@ -238,7 +246,7 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
             if (showBar) {
-                NavigationBar {
+                NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainerLow, tonalElevation = 0.dp) {
                     Tab.entries.forEach { tab ->
                         NavigationBarItem(
                             selected = route == tab.route,
@@ -263,6 +271,7 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
                     onSeeBills = { goTab(Tab.BILLS) },
                     onImport = { nav.navigate("import") },
                     onGoals = { nav.navigate("goals") },
+                    onNetWorth = { nav.navigate("networth") },
                 )
             }
             composable(Tab.TRANSACTIONS.route) { TransactionsScreen(snackbar, onReview = { nav.navigate("review") }) }
@@ -278,6 +287,16 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
             }
             composable("import") { ImportScreen(onBack = { nav.popBackStack() }, onDone = { nav.popBackStack() }) }
             composable("goals") { GoalsScreen(onBack = { nav.popBackStack() }) }
+            composable("networth") { com.emotionalleaves.sprout.ui.insights.NetWorthScreen(onBack = { nav.popBackStack() }) }
+            composable("year") { com.emotionalleaves.sprout.ui.insights.YearScreen(onBack = { nav.popBackStack() }, onCategory = { nav.navigate("category/$it") }) }
+            composable("tags") { com.emotionalleaves.sprout.ui.tags.TagsScreen(onBack = { nav.popBackStack() }, onOpen = { nav.navigate("tag/$it") }) }
+            composable("tag/{id}") { entry ->
+                val id = entry.arguments?.getString("id")?.toLongOrNull()
+                androidx.compose.foundation.layout.Column(Modifier.fillMaxSize()) {
+                    androidx.compose.material3.TextButton(onClick = { nav.popBackStack() }, modifier = Modifier.padding(start = 8.dp)) { Text("← Tags") }
+                    TransactionsScreen(snackbar, onReview = { nav.navigate("review") }, initialTagId = id)
+                }
+            }
             composable("quick-setup") { QuickSetupScreen(onBack = { nav.popBackStack() }) }
             composable(
                 "category/{id}",
@@ -300,6 +319,7 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
                     onImport = { nav.navigate("import") },
                     onExport = { nav.navigate("export") },
                     onBackup = { nav.navigate("backup") },
+                    onRoute = { nav.navigate(it) },
                 )
             }
             composable("export") { ExportScreen(snackbar, onBack = { nav.popBackStack() }) }

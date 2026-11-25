@@ -1,5 +1,7 @@
 package com.emotionalleaves.sprout.ui.settings
 
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -74,6 +76,10 @@ data class SettingsState(
 )
 
 class SettingsViewModel(private val c: AppContainer) : ViewModel() {
+    val updates get() = c.updates
+    fun setThemeMode(m: Int) = viewModelScope.launch { c.settings.setThemeMode(m) }
+    fun setDynamicColor(on: Boolean) = viewModelScope.launch { c.settings.setDynamicColor(on) }
+    fun setPrivacyMode(on: Boolean) = viewModelScope.launch { c.settings.setPrivacyMode(on) }
     val state: StateFlow<SettingsState> = combine(
         c.settings.settings,
         c.db.connections().observeAll(),
@@ -124,6 +130,7 @@ fun SettingsScreen(
     onImport: () -> Unit,
     onExport: () -> Unit,
     onBackup: () -> Unit,
+    onRoute: (String) -> Unit = {},
 ) {
     val vm = sproutViewModel { SettingsViewModel(it) }
     val state by vm.state.collectAsStateWithLifecycle()
@@ -136,6 +143,11 @@ fun SettingsScreen(
     LaunchedEffect(vm) { vm.messages.collect { snackbar.showSnackbar(it) } }
 
     LazyColumn(Modifier.fillMaxSize()) {
+        item { SectionTitle("Explore") }
+        item { NavRow("Net worth over time", "How your total has changed month by month", { onRoute("networth") }) }
+        item { NavRow("Year view", "Every category, every month, at a glance", { onRoute("year") }) }
+        item { NavRow("Tags", "Spending you've tagged, like a trip or a project", { onRoute("tags") }) }
+        item { NavRow("Savings goals", "Track what you're saving for", { onRoute("goals") }) }
         item { SectionTitle("Bank connections") }
         if (!state.connected) {
             item { Text("No bank connected.", Modifier.padding(horizontal = 16.dp)) }
@@ -272,6 +284,27 @@ fun SettingsScreen(
                 ToggleRow("Hide in screenshots and recent apps", state.settings.hideInRecents) { vm.setHideInRecents(it) }
             }
         }
+        item { SectionTitle("Appearance") }
+        item {
+            Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("Theme", style = MaterialTheme.typography.labelLarge)
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    listOf("Phone", "Light", "Dark").forEachIndexed { i, label ->
+                        SegmentedButton(
+                            selected = state.settings.themeMode == i,
+                            onClick = { vm.setThemeMode(i) },
+                            shape = androidx.compose.material3.SegmentedButtonDefaults.itemShape(i, 3),
+                        ) { Text(label) }
+                    }
+                }
+            }
+        }
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            item { ToggleRow("Use wallpaper colors", state.settings.dynamicColor) { vm.setDynamicColor(it) } }
+        }
+        item { ToggleRow("Hide amounts on Home (tap the eye to show)", state.settings.privacyMode) { vm.setPrivacyMode(it) } }
+        item { SectionTitle("Updates") }
+        item { Column(Modifier.padding(horizontal = 16.dp)) { com.emotionalleaves.sprout.ui.update.UpdateSettings(vm.updates) } }
         item { SectionTitle("About") }
         item {
             Column(Modifier.padding(horizontal = 16.dp)) {

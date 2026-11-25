@@ -8,7 +8,7 @@ one POST to claim a setup token (once), and GETs to read your accounts.
 
 ## Your data stays on your phone
 - No backend server, no analytics, no crash reporting, no ads, no cloud sync.
-- The only network destination is your SimpleFIN server.
+- Financial data has one network destination: your SimpleFIN server. The only other host is api.github.com (and GitHub's download CDN) for the self-updater, which fetches release metadata and the APK and sends nothing about you. The optional read-only update key is sent only to api.github.com over HTTPS (unit-tested) and is stripped before following the CDN redirect. Downloads are checked against GitHub's SHA-256 digest, and Android refuses an APK signed with any other key.
 - Android backups are turned off (`allowBackup="false"` plus rules that exclude everything), so your data isn't copied to Google's cloud or to a new phone.
 - HTTPS only: plain HTTP is blocked by the network security config.
 
@@ -31,7 +31,7 @@ Backups are files you create and place yourself. Each is encrypted with AES-256-
 If Sprout crashes, a short report is saved in the app's private storage: exception class names and code locations only, never exception messages (which could contain transaction text). It is shown to you on the next start and leaves the phone only if you tap Share and choose where to send it.
 
 ## Permissions
-Only internet, network state and notifications (plus what WorkManager needs for background sync: wake lock, boot completed, foreground service). No storage, contacts, location, phone or SMS. Only the launcher screen is exported, plus WorkManager's job service, which Android binds and protects with the system-only BIND_JOB_SERVICE permission. Library diagnostic receivers are removed. CI checks the merged manifest on every build.
+Only internet, network state, notifications and REQUEST_INSTALL_PACKAGES (so the updater can open Android's installer; Android still asks you every time) (plus what WorkManager needs for background sync: wake lock, boot completed, foreground service). No storage, contacts, location, phone or SMS. Only the launcher screen is exported, plus WorkManager's job service, which Android binds and protects with the system-only BIND_JOB_SERVICE permission. Library diagnostic receivers are removed. A non-exported FileProvider shares only cache/updates/ with the system installer. CI checks the merged manifest on every build.
 
 ## Signing key (why it's in the repo)
 Every APK is signed with the same key, committed at `keystore/ci-release.keystore` with public, documented passwords (`sprout-ci`, alias `sprout`).

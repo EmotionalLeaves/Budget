@@ -42,6 +42,8 @@ class BackupRepositoryTest {
             cats.setNote("sf:CON-111:ACT-CHK-1:TX-1001", "weekly shop")
             BudgetRepository(env.db, env.clock).setBudget(env.db.categories().getByKey(DefaultCategories.GROCERIES)!!.id, 40_000, false, YearMonth.of(2026, 11))
             cats.setSplits("sf:CON-111:ACT-CHK-1:TX-1001", listOf(com.emotionalleaves.sprout.domain.split.SplitPart(env.db.categories().getByKey(DefaultCategories.SHOPPING)!!.id, 500)))
+            val tags = com.emotionalleaves.sprout.data.tags.TagRepository(env.db, env.clock)
+            tags.attach("sf:CON-111:ACT-CHK-1:TX-1001", tags.getOrCreate("Groceries run")!!)
             BudgetRepository(env.db, env.clock).setRollover(env.db.categories().getByKey(DefaultCategories.GROCERIES)!!.id, true, YearMonth.of(2026, 10))
         }
     }
@@ -57,6 +59,8 @@ class BackupRepositoryTest {
             env.db.budgets().observeDefaults().first().toString(),
             env.db.backup().budgetRollovers().toString(),
             env.db.backup().transactionSplits().toString(),
+            env.db.backup().tags().toString(),
+            env.db.backup().transactionTags().toString(),
             env.db.connections().getAll().toString(),
         )
     }

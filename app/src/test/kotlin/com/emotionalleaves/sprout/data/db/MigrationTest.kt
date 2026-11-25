@@ -95,6 +95,25 @@ class MigrationTest {
         room.close()
     }
 
+    @Test fun migrate4To5KeepsAllData() {
+        helper.createDatabase(name, 4).use { db ->
+            seedV1(db)
+            db.execSQL("INSERT INTO categories (id, `key`, name, kind, iconKey, colorArgb, sortOrder, archived) VALUES (3, 'shopping', 'Shopping', 'EXPENSE', 'shopping', 0, 3, 0)")
+            db.execSQL("INSERT INTO transaction_splits (id, transactionId, categoryId, amountMinor, createdAt) VALUES (1, 'sf:C:A:1', 3, -1000, 5)")
+        }
+        helper.runMigrationsAndValidate(name, 5, true, Migrations.MIGRATION_4_5).use { db ->
+            db.query("SELECT COUNT(*) FROM tags").use { c -> c.moveToFirst(); assertEquals(0, c.getInt(0)) }
+            db.query("SELECT amountMinor FROM transaction_splits WHERE id = 1").use { c -> c.moveToFirst(); assertEquals(-1000L, c.getLong(0)) }
+        }
+        val room = Room.databaseBuilder(ApplicationProvider.getApplicationContext(), SproutDatabase::class.java, name)
+            .addMigrations(*SproutDatabase.MIGRATIONS).allowMainThreadQueries().build()
+        runBlocking {
+            assertEquals("weekly shop", room.backup().transactions().single().note)
+            assertEquals(1, room.backup().transactionSplits().size)
+        }
+        room.close()
+    }
+
     @Test fun migrate1ToLatestInOneGo() {
         helper.createDatabase(name, 1).use { seedV1(it) }
         helper.runMigrationsAndValidate(name, SproutDatabase.VERSION, true, *SproutDatabase.MIGRATIONS).close()

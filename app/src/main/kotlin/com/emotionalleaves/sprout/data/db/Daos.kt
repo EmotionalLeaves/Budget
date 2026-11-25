@@ -211,10 +211,21 @@ interface TransactionDao {
                OR EXISTS (SELECT 1 FROM transaction_splits s WHERE s.transactionId = t.id AND s.categoryId = :categoryId))
           AND (:pendingOnly = 0 OR t.pending = 1)
           AND (:accountId IS NULL OR t.accountId = :accountId)
+          AND (:tagId IS NULL OR EXISTS (SELECT 1 FROM transaction_tags tt WHERE tt.transactionId = t.id AND tt.tagId = :tagId))
+          AND (:minAbs IS NULL OR ABS(t.amountMinor) >= :minAbs)
+          AND (:maxAbs IS NULL OR ABS(t.amountMinor) <= :maxAbs)
         ORDER BY t.occurredAt DESC, t.id DESC
         """,
     )
-    fun pagingRows(query: String, categoryId: Long?, pendingOnly: Boolean, accountId: String? = null): PagingSource<Int, TransactionRow>
+    fun pagingRows(
+        query: String,
+        categoryId: Long?,
+        pendingOnly: Boolean,
+        accountId: String? = null,
+        minAbs: Long? = null,
+        maxAbs: Long? = null,
+        tagId: Long? = null,
+    ): PagingSource<Int, TransactionRow>
 }
 
 @Dao
@@ -481,6 +492,12 @@ interface BackupDao {
     @Query("SELECT * FROM budget_alerts") suspend fun budgetAlerts(): List<BudgetAlertEntity>
     @Query("SELECT * FROM budget_rollovers") suspend fun budgetRollovers(): List<BudgetRolloverEntity>
     @Query("SELECT * FROM transaction_splits") suspend fun transactionSplits(): List<TransactionSplitEntity>
+    @Query("SELECT * FROM tags") suspend fun tags(): List<TagEntity>
+    @Query("SELECT * FROM transaction_tags") suspend fun transactionTags(): List<TransactionTagEntity>
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putTags(items: List<TagEntity>)
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putTransactionTags(items: List<TransactionTagEntity>)
+    @Query("DELETE FROM transaction_tags") suspend fun wipeTransactionTags()
+    @Query("DELETE FROM tags") suspend fun wipeTags()
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putTransactionSplits(items: List<TransactionSplitEntity>)
     @Query("DELETE FROM transaction_splits") suspend fun wipeTransactionSplits()
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putBudgetRollovers(items: List<BudgetRolloverEntity>)
@@ -536,4 +553,66 @@ interface SplitDao {
         deleteFor(transactionId)
         if (items.isNotEmpty()) insert(items)
     }
+}
+
+/** A tag with how many transactions carry it and their total (signed cents; hidden accounts skipped). */
+data class TagSummary(val id: Long, val name: String, val colorArgb: Int, val count: Int, val total: Long)
+
+@Dao
+interface TagDao {
+    @Query(
+        """
+        SELECT g.id AS id, g.name AS name, g.colorArgb AS colorArgb,
+               COUNT(t.id) AS count, COALESCE(SUM(CASE WHEN a.hidden = 0 THEN t.amountMinor ELSE 0 END), 0) AS total
+        FROM tags g
+        LEFT JOIN transaction_tags tt ON tt.tagId = g.id
+        LEFT JOIN transactions t ON t.id = tt.transactionId
+        LEFT JOIN accounts a ON a.id = t.accountId
+        GROUP BY g.id ORDER BY g.name COLLATE NOCASE
+        """,
+    )
+    fun observeSummaries(): Flow<List<TagSummary>>
+
+    @Query("SELECT * FROM tags ORDER BY name COLLATE NOCASE") fun observeAll(): Flow<List<TagEntity>>
+    @Query("SELECT * FROM tags WHERE id = :id") suspend fun getById(id: Long): TagEntity?
+    @Query("SELECT * FROM tags WHERE name = :name COLLATE NOCASE LIMIT 1") suspend fun getByName(name: String): TagEntity?
+
+    @Query("SELECT g.* FROM tags g JOIN transaction_tags tt ON tt.tagId = g.id WHERE tt.transactionId = :transactionId ORDER BY g.name COLLATE NOCASE")
+    fun observeFor(transactionId: String): Flow<List<TagEntity>>
+
+    @Insert suspend fun insert(tag: TagEntity): Long
+    @Query("UPDATE tags SET name = :name WHERE id = :id") suspend fun rename(id: Long, name: String)
+    @Query("DELETE FROM tags WHERE id = :id") suspend fun delete(id: Long)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun attach(link: TransactionTagEntity)
+    @Query("DELETE FROM transaction_tags WHERE transactionId = :transactionId AND tagId = :tagId") suspend fun detach(transactionId: String, tagId: Long)
+}
+
+data class MerchantTotal(val merchantKey: String, val total: Long, val count: Int)
+data class AccountMove(val accountId: String, val amountMinor: Long, val occurredAt: Long)
+
+/** Read-only queries for insights, net worth and the year view. */
+@Dao
+interface InsightDao {
+    @Query(
+        """
+        SELECT t.merchantKey AS merchantKey, -SUM(t.amountMinor) AS total, COUNT(*) AS count
+        FROM transactions t JOIN accounts a ON a.id = t.accountId JOIN categories c ON c.id = t.categoryId
+        WHERE t.occurredAt >= :start AND t.occurredAt < :end AND t.amountMinor < 0 AND c.kind = 'EXPENSE'
+          AND t.excludedFromBudget = 0 AND a.hidden = 0
+        GROUP BY t.merchantKey ORDER BY total DESC LIMIT 20
+        """,
+    )
+    suspend fun merchantTotals(start: Long, end: Long): List<MerchantTotal>
+
+    @Query(
+        """
+        SELECT COALESCE(SUM(t.amountMinor), 0) FROM transactions t JOIN accounts a ON a.id = t.accountId JOIN categories c ON c.id = t.categoryId
+        WHERE t.occurredAt >= :start AND t.occurredAt < :end AND c.kind = 'INCOME' AND t.amountMinor > 0 AND a.hidden = 0
+        """,
+    )
+    suspend fun income(start: Long, end: Long): Long
+
+    @Query("SELECT accountId, amountMinor, occurredAt FROM transactions WHERE occurredAt >= :since AND accountId IN (:accountIds)")
+    suspend fun moves(since: Long, accountIds: List<String>): List<AccountMove>
 }

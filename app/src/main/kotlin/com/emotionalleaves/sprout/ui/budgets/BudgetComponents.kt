@@ -1,5 +1,12 @@
 package com.emotionalleaves.sprout.ui.budgets
 
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Spacer
+import com.emotionalleaves.sprout.ui.common.FatProgress
+import com.emotionalleaves.sprout.ui.common.CategoryIcons
+import com.emotionalleaves.sprout.ui.common.IconBadge
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Switch
 import androidx.compose.foundation.clickable
@@ -79,24 +86,37 @@ fun CategoryBudgetRow(line: CategoryLine, onClick: () -> Unit) {
     val budget = line.budgetMinor ?: 0L
     val remaining = line.remainingMinor ?: 0L
     val desc = "${line.category.name}: ${Money.format(line.spentMinor)} of ${Money.format(budget)}, ${leftOrOver(remaining)}"
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp)
-            .semantics(mergeDescendants = true) { contentDescription = desc },
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+    val tint = if (line.category.colorArgb != 0) Color(line.category.colorArgb) else MaterialTheme.colorScheme.primary
+    Surface(
+        shape = RoundedCornerShape(22.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 5.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(line.category.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-            Text(leftOrOver(remaining), style = MaterialTheme.typography.labelLarge, color = levelColor(line.level))
+        Column(
+            Modifier
+                .clickable(onClick = onClick)
+                .padding(16.dp)
+                .semantics(mergeDescendants = true) { contentDescription = desc },
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconBadge(CategoryIcons.forKey(line.category.iconKey), tint, 40.dp)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(line.category.name, style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        "${Money.format(line.spentMinor)} of ${Money.format(budget)}" + carryNote(line),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Text(leftOrOver(remaining), style = MaterialTheme.typography.titleSmall, color = levelColor(line.level))
+            }
+            FatProgress(
+                if (budget <= 0) (if (line.spentMinor > 0) 1f else 0f) else line.spentMinor.toFloat() / budget,
+                levelColor(line.level),
+            )
         }
-        BudgetProgress(line.spentMinor, budget, line.level)
-        Text(
-            "${Money.format(line.spentMinor)} of ${Money.format(budget)}" + carryNote(line),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
@@ -132,33 +152,38 @@ fun SafeToSpendCard(month: BudgetMonth, onSetBudget: () -> Unit) {
             }
         }
     }
-    if (showBreakdown && safe != null) {
-        AlertDialog(
-            onDismissRequest = { showBreakdown = false },
-            title = { Text("How it's worked out") },
-            text = {
-                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Left in your budgets: ${Money.format(safe.budgetRemainingMinor)}")
-                    month.budgeted.forEach { l ->
-                        Text("  ${l.category.name}: ${leftOrOver(l.remainingMinor ?: 0)}", style = MaterialTheme.typography.bodySmall)
-                    }
-                    if (safe.upcomingUnbudgeted.isNotEmpty()) {
-                        Text("Minus bills still due this month (not in a budget):")
-                        safe.upcomingUnbudgeted.forEach { ch ->
-                            Text("  ${ch.name} on ${Format.dateTime(ch.dueAt).substringBefore(',' )}: −${Money.format(ch.amountMinor)}",
-                                style = MaterialTheme.typography.bodySmall)
-                        }
-                    }
-                    Text("= ${Money.format(safe.amountMinor)} safe to spend", style = MaterialTheme.typography.titleMedium)
-                    safe.daysRemaining?.let { d ->
-                        Text("$d day${if (d == 1) "" else "s"} left including today" +
-                            (safe.perDayMinor?.let { " ≈ ${Money.format(it)}/day" } ?: ""))
+    if (showBreakdown && safe != null) SafeToSpendBreakdown(month) { showBreakdown = false }
+}
+
+/** How safe to spend is worked out, line by line. */
+@Composable
+fun SafeToSpendBreakdown(month: BudgetMonth, onDismiss: () -> Unit) {
+    val safe = month.safeToSpend ?: return
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("How it's worked out") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("Left in your budgets: ${Money.format(safe.budgetRemainingMinor)}")
+                month.budgeted.forEach { l ->
+                    Text("  ${l.category.name}: ${leftOrOver(l.remainingMinor ?: 0)}", style = MaterialTheme.typography.bodySmall)
+                }
+                if (safe.upcomingUnbudgeted.isNotEmpty()) {
+                    Text("Minus bills still due this month (not in a budget):")
+                    safe.upcomingUnbudgeted.forEach { ch ->
+                        Text("  ${ch.name} on ${Format.dateTime(ch.dueAt).substringBefore(',' )}: −${Money.format(ch.amountMinor)}",
+                            style = MaterialTheme.typography.bodySmall)
                     }
                 }
-            },
-            confirmButton = { TextButton(onClick = { showBreakdown = false }) { Text("OK") } },
-        )
-    }
+                Text("= ${Money.format(safe.amountMinor)} safe to spend", style = MaterialTheme.typography.titleMedium)
+                safe.daysRemaining?.let { d ->
+                    Text("$d day${if (d == 1) "" else "s"} left including today" +
+                        (safe.perDayMinor?.let { " ≈ ${Money.format(it)}/day" } ?: ""))
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("OK") } },
+    )
 }
 
 /** Edit a category's budget: amount plus "This month only" or "Every month". */

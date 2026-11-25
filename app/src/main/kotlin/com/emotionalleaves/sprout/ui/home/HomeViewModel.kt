@@ -54,6 +54,7 @@ data class HomeState(
 }
 
 class HomeViewModel(private val c: AppContainer) : ViewModel() {
+    val updates get() = c.updates
 
     private val base = combine(
         c.db.accounts().observeVisible(),
@@ -91,6 +92,25 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
     ) { _, _, _ -> Unit }
         .mapLatest { runCatching { c.forecastRepository.outlook() }.getOrNull() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /** Spending for the last 6 months, for the bar chart. Refreshes when transactions change. */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val months: StateFlow<List<Pair<java.time.YearMonth, Long>>> = combine(
+        c.budgetRepository.todayFlow(), c.db.transactions().observeCount(),
+    ) { _, _ -> Unit }
+        .mapLatest { runCatching { c.budgetRepository.spendingByMonth(6) }.getOrDefault(emptyList()) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val insights: StateFlow<List<com.emotionalleaves.sprout.domain.insights.Insight>> = combine(
+        c.budgetRepository.todayFlow(), c.db.transactions().observeCount(),
+    ) { _, _ -> Unit }
+        .mapLatest { runCatching { c.insightsRepository.insights() }.getOrDefault(emptyList()) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val privacy: StateFlow<Boolean> = c.settings.settings.map { it.privacyMode }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+    fun togglePrivacy() = viewModelScope.launch { c.settings.setPrivacyMode(!privacy.value) }
 
     val goals: StateFlow<List<com.emotionalleaves.sprout.data.goals.GoalView>> = c.goalRepository.observe().map { it.take(2) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())

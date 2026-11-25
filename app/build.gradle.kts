@@ -37,6 +37,11 @@ android {
         versionCode = appVersionCode
         versionName = appVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Auto-update: where releases live, and an optional read-only key for this private repo. The key comes
+        // only from the UPDATE_TOKEN repo secret (never committed). Without it, Sprout offers the Releases page.
+        buildConfigField("String", "UPDATE_REPO", "\"EmotionalLeaves/Budget\"")
+        val updateToken = (env("UPDATE_TOKEN") ?: "").filter { it.isLetterOrDigit() || it == '_' }
+        buildConfigField("String", "UPDATE_TOKEN", "\"$updateToken\"")
     }
 
     signingConfigs {

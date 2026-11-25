@@ -2,7 +2,36 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
-## [1.15.0] - 2026-11-24
+## [2.0.0] - 2026-11-24
+
+A big round: Sprout updates itself, looks completely new, and does a lot more.
+
+### Auto-update
+- Sprout checks for new versions (at most every 6 hours, and from Settings → Updates). A calm card on Home says "Sprout X is ready" with what's new: tap **Update**, then **Install**. Your data stays. The first time, Android asks you to allow Sprout to install updates. Downloads are checked before installing.
+- Until a read-only update key is set up for this private repo (see the README), the card opens the Releases page instead.
+
+### New look
+- A new design: Sprout's own evergreen palette, the Manrope typeface (built in), rounded cards and smooth animations, in light and dark. Settings → Appearance lets you pick Light, Dark or your phone's setting, or use your wallpaper colors.
+- New Home: a greeting, a big "Safe to spend" card with a progress ring and your daily amount, quick stats (net worth, spending vs last month, month-end cash), a "Where it went" donut chart, a 6-month spending chart, upcoming bills you can swipe through, and your accounts with icons.
+- Transactions show their category's icon, with cleaner rows. Budgets are cards with icons and thicker progress bars.
+- The eye on Home hides amounts for using Sprout in public (or turn it on in Settings).
+
+### New features
+- **Insights**: plain-language notes on Home, like "Eating Out is above usual", "Most spent at Target" or "Keeping 20% of your income".
+- **Net worth over time**: tap Net worth on Home for a 12-month chart and month-by-month numbers.
+- **Year view**: every category, every month, as a heat grid (Settings → Explore).
+- **Tags**: add tags like "Chicago trip" to any transaction, see totals per tag, and filter by tag.
+- **Search by amount**: type 42.10, >100, <5 or 20-50 in the search box.
+- **Subscriptions total** at the top of Bills: what your repeating charges cost per month and per year.
+- Accounts on Home show when each was last updated.
+
+### Fixed
+- A CSV with an absurdly long number no longer stops the import (found by new random-input tests).
+
+### Data safety
+- Database version 5 adds two tables for tags. Updating keeps all your data (tested from every earlier version). Backups include tags; older backups still restore.
+
+ - 2026-11-24
 
 ### Added
 - CSV import understands European amounts like "1.234,56" (detected automatically; there's a "Comma decimals" switch if it guesses wrong).

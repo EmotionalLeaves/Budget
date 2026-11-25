@@ -133,6 +133,7 @@ fun BillsScreen() {
     Box(Modifier.fillMaxSize()) {
         val list = upcoming
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 96.dp)) {
+            item { com.emotionalleaves.sprout.ui.insights.SubscriptionsSummary() }
             item {
                 Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     androidx.compose.material3.FilterChip(!calendarView, { calendarView = false }, label = { Text("List") },

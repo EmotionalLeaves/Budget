@@ -25,7 +25,7 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [x] (1.3.0) Detect SimpleFIN rate-limit warnings in "errors" and slow down automatically — *why: the Bridge disables tokens past the warning level*
 - [x] (1.3.0) Flag accounts missing from syncs for 3+ days as possibly closed (no schema change) — *why: totals stay right*
 - [x] (1.9.0) Purchase-date option (transacted_at) for posted transactions — *why: dates match receipts*
-- [ ] Show per-account "last synced" and a retry button for a single failing account — *why: one broken bank shouldn't hide the rest*
+- [x] (1.15.1) Per-account "updated X ago" on Home (per-account errors were already shown; a single-account retry would spend the same daily request budget as "Sync now", so it isn't worth a separate button)
 
 ## 4. Test coverage
 - [x] (1.12.1) Compose UI tests: budget dialog, split dialog, list row semantics (detail sheet/review flow still open below)
@@ -33,7 +33,7 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [x] (1.9.1) SyncWorker tests with work-testing (retry, Retry-After chain, revoked cancel, KEEP)
 - [x] (1.9.0) 10k-transaction generated SyncMerger test — *why: merge performance regression guard*
 - [x] (1.7.0) First migration (1→2) with MigrationTest seeding realistic v1 data — *why: the first migration must be easy and safe*
-- [ ] Fuzz test the CSV parser and amount parser with random input — *why: imports come from anywhere*
+- [x] (2.0.0) CSV fuzz tests (found and fixed an overflow)
 
 ## 5. UX polish and accessibility
 - [x] (1.4.0) Transaction detail: link to its recurring charge — *why: jump from a charge to its bill*
@@ -46,7 +46,9 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [x] (1.5.0) Onboarding: offer Quick budget setup right after the first sync — *why: spec flow; faster to value*
 - [x] (1.12.0) Split label in the transaction list
 - [x] (1.12.0) Rollover breakdown on the category screen
-- [ ] Search transactions by amount ("42.10" or ">100") — *why: find a charge fast*
+- [x] (2.0.0) Search by amount
+- [ ] Onboarding redesign to match the new look, with a short tour — *why: first impression*
+- [ ] Redesign Bills, Goals, Settings and the detail sheet in the new style — *why: consistency*
 
 ## 6. Performance and battery
 - [ ] Baseline profile for faster cold start — *why: opens instantly*
@@ -60,10 +62,14 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [x] (1.8.0) Bill calendar view — *why: see bills by date*
 - [x] (1.10.0) Budget rollover (opt-in per category, schema 3 + MIGRATION_2_3)
 - [x] (1.11.0) Split a transaction across categories (schema 4 + MIGRATION_3_4)
-- [ ] Tags on transactions — *why: track trips or projects across categories*
+- [x] (2.0.0) Tags on transactions (schema 5)
 - [ ] Home-screen widget (Glance) with safe to spend — *why: check without opening the app*
 - [ ] Custom-currency lookup (GET the currency URL) — *why: show points/crypto accounts properly*
 - [x] (1.15.0) CSV import: comma decimals and the bank's Category column
 - [ ] CSV export: one row per split part (or a "Split" column) — *why: spreadsheets match budgets*
-- [ ] Yearly view: spending per category per month for the last 12 months — *why: spot seasonal costs*
+- [x] (2.0.0) Year view heat grid
 - [ ] Annual/irregular expenses sinking fund (e.g. car registration) as a goal type — *why: no surprise bills*
+- [ ] Debt payoff planner (snowball/avalanche) for credit and loan accounts — *why: a plan to get to zero*
+- [ ] Cash-flow calendar: projected balance per day for the next 30 days — *why: avoid overdrafts*
+- [ ] Budget templates (50/30/20, zero-based) in quick setup — *why: a starting point*
+- [ ] Merchant detail screen (history, average, chart) from any transaction — *why: "how much do I spend at Target?"*

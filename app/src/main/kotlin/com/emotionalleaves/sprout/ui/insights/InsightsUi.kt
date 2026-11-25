@@ -1,0 +1,239 @@
+package com.emotionalleaves.sprout.ui.insights
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Lightbulb
+import androidx.compose.material.icons.rounded.Warning
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import com.emotionalleaves.sprout.AppContainer
+import com.emotionalleaves.sprout.data.insights.YearRow
+import com.emotionalleaves.sprout.domain.insights.Insight
+import com.emotionalleaves.sprout.domain.insights.Tone
+import com.emotionalleaves.sprout.domain.money.Money
+import com.emotionalleaves.sprout.ui.common.CategoryIcons
+import com.emotionalleaves.sprout.ui.common.EmptyState
+import com.emotionalleaves.sprout.ui.common.IconBadge
+import com.emotionalleaves.sprout.ui.common.LineChart
+import com.emotionalleaves.sprout.ui.common.SoftCard
+import com.emotionalleaves.sprout.ui.common.StatTile
+import com.emotionalleaves.sprout.ui.common.appContainer
+import com.emotionalleaves.sprout.ui.common.money
+import com.emotionalleaves.sprout.ui.theme.LocalSproutColors
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+
+@Composable
+private fun toneColor(t: Tone): Color = when (t) {
+    Tone.GOOD -> LocalSproutColors.current.ok
+    Tone.HEADS_UP -> LocalSproutColors.current.warning
+    Tone.NEUTRAL -> MaterialTheme.colorScheme.secondary
+}
+
+private fun toneIcon(t: Tone) = when (t) {
+    Tone.GOOD -> Icons.Rounded.CheckCircle
+    Tone.HEADS_UP -> Icons.Rounded.Warning
+    Tone.NEUTRAL -> Icons.Rounded.Lightbulb
+}
+
+/** Insights as a swipeable strip of cards on Home. */
+@Composable
+fun InsightsStrip(insights: List<Insight>, onCategory: (Long) -> Unit) {
+    if (insights.isEmpty()) return
+    LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        items(insights, key = { it.key }) { i ->
+            Surface(
+                shape = RoundedCornerShape(22.dp),
+                color = toneColor(i.tone).copy(alpha = 0.12f),
+                modifier = Modifier.width(250.dp).heightIn(min = 120.dp)
+                    .then(i.categoryId?.let { id -> Modifier.clickable { onCategory(id) } } ?: Modifier),
+            ) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Icon(toneIcon(i.tone), contentDescription = null, tint = toneColor(i.tone))
+                    Text(i.title, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(i.body, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 3)
+                }
+            }
+        }
+    }
+}
+
+private val monthLabel = DateTimeFormatter.ofPattern("MMM yyyy", Locale.US)
+private val shortMonth = DateTimeFormatter.ofPattern("MMM", Locale.US)
+
+/** Net worth over the last 12 months, rebuilt from your transactions. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NetWorthScreen(onBack: () -> Unit) {
+    val c: AppContainer = appContainer()
+    val series by produceState<List<Pair<java.time.LocalDate, Long>>?>(null) { value = runCatching { c.insightsRepository.netWorth(12) }.getOrDefault(emptyList()) }
+    Column(Modifier.fillMaxSize()) {
+        TopAppBar(title = { Text("Net worth") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } })
+        val s = series ?: return@Column
+        if (s.size < 2) {
+            EmptyState("Not enough history yet", "Net worth over time appears once Sprout has a month or two of your transactions.")
+            return@Column
+        }
+        val now = s.last().second
+        val first = s.first().second
+        val lastMonth = s[s.size - 2].second
+        LazyColumn {
+            item {
+                SoftCard {
+                    Text("Today", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(money(now), style = MaterialTheme.typography.displaySmall)
+                    LineChart(s.map { it.second }, MaterialTheme.colorScheme.primary)
+                    Row(Modifier.fillMaxWidth()) {
+                        Text(s.first().first.format(monthLabel), style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
+                        Text("Today", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
+            item {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val c1 = now - lastMonth
+                    val c2 = now - first
+                    StatTile("This month", (if (c1 >= 0) "+" else "") + money(c1, whole = true), Modifier.weight(1f),
+                        noteColor = if (c1 >= 0) LocalSproutColors.current.ok else LocalSproutColors.current.danger, note = if (c1 >= 0) "up" else "down")
+                    StatTile("Since ${s.first().first.format(shortMonth)}", (if (c2 >= 0) "+" else "") + money(c2, whole = true), Modifier.weight(1f),
+                        noteColor = if (c2 >= 0) LocalSproutColors.current.ok else LocalSproutColors.current.danger, note = if (c2 >= 0) "up" else "down")
+                }
+            }
+            items(s.reversed(), key = { it.first.toString() }) { (d, v) ->
+                Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).padding(horizontal = 24.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(if (d == s.last().first) "Today" else d.format(monthLabel), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                    Text(money(v), style = MaterialTheme.typography.titleSmall)
+                }
+            }
+            item {
+                Text("Counted: accounts included in your total. Rebuilt from transactions, so months before your first synced or imported transaction aren't shown.",
+                    Modifier.padding(20.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+/** A year at a glance: every category's spending per month, as a heat grid. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun YearScreen(onBack: () -> Unit, onCategory: (Long) -> Unit) {
+    val c: AppContainer = appContainer()
+    val data by produceState<Pair<List<java.time.YearMonth>, List<YearRow>>?>(null) { value = runCatching { c.insightsRepository.yearGrid(12) }.getOrNull() }
+    Column(Modifier.fillMaxSize()) {
+        TopAppBar(title = { Text("Year view") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } })
+        val (months, rows) = data ?: return@Column
+        if (rows.isEmpty()) {
+            EmptyState("Nothing to show yet", "Your spending by month appears here after your first sync or CSV import.")
+            return@Column
+        }
+        val totals = months.indices.map { i -> rows.sumOf { it.byMonth[i] } }
+        val maxCell = rows.maxOf { r -> r.byMonth.max() }.coerceAtLeast(1)
+        val scroll = rememberScrollState()
+        val heat = MaterialTheme.colorScheme.primary
+        LazyColumn {
+            item {
+                Text("Darker = more spent. Scroll sideways for every month; tap a row to open the category.",
+                    Modifier.padding(horizontal = 20.dp, vertical = 8.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            item {
+                Row(Modifier.padding(start = 16.dp)) {
+                    Spacer(Modifier.width(132.dp))
+                    Row(Modifier.horizontalScroll(scroll)) {
+                        months.forEach { Text(it.format(shortMonth), Modifier.width(64.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall) }
+                        Text("Avg", Modifier.width(72.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
+            items(rows, key = { it.categoryId }) { r ->
+                Row(Modifier.padding(start = 16.dp, top = 3.dp, bottom = 3.dp).clickable { onCategory(r.categoryId) }, verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.width(132.dp), verticalAlignment = Alignment.CenterVertically) {
+                        IconBadge(CategoryIcons.forKey(r.iconKey), Color(r.colorArgb), 28.dp)
+                        Spacer(Modifier.width(6.dp))
+                        Text(r.name, style = MaterialTheme.typography.labelMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    }
+                    Row(Modifier.horizontalScroll(scroll)) {
+                        r.byMonth.forEach { v ->
+                            val a = (v.toFloat() / maxCell).coerceIn(0f, 1f)
+                            Box(
+                                Modifier.width(60.dp).height(36.dp).padding(horizontal = 2.dp).clip(RoundedCornerShape(8.dp))
+                                    .background(heat.copy(alpha = 0.06f + 0.7f * a)),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(if (v == 0L) "–" else Money.formatWhole(v), style = MaterialTheme.typography.labelSmall,
+                                    color = if (a > 0.55f) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface, maxLines = 1)
+                            }
+                            Spacer(Modifier.width(4.dp))
+                        }
+                        Text(Money.formatWhole(r.average), Modifier.width(72.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelMedium)
+                    }
+                }
+            }
+            item {
+                Row(Modifier.padding(start = 16.dp, top = 8.dp, bottom = 24.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Total", Modifier.width(132.dp), style = MaterialTheme.typography.titleSmall)
+                    Row(Modifier.horizontalScroll(scroll)) {
+                        totals.forEach { Text(Money.formatWhole(it), Modifier.width(64.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelMedium) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Header card for the Bills tab: what your repeating charges cost per month and per year. */
+@Composable
+fun SubscriptionsSummary() {
+    val c: AppContainer = appContainer()
+    val subs by produceState<com.emotionalleaves.sprout.data.insights.Subscriptions?>(null) { value = runCatching { c.insightsRepository.subscriptions() }.getOrNull() }
+    val s = subs ?: return
+    if (s.count == 0) return
+    SoftCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconBadge(Icons.Rounded.AutoAwesome, MaterialTheme.colorScheme.secondary)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("${s.count} repeating charges", style = MaterialTheme.typography.titleSmall)
+                Text("≈ ${Money.formatWhole(s.yearlyMinor)} a year", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Text("${Money.formatWhole(s.monthlyMinor)}/mo", style = MaterialTheme.typography.titleMedium)
+        }
+    }
+}

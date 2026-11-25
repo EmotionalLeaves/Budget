@@ -4,7 +4,7 @@ set -uo pipefail
 M=$(find app/build/intermediates/merged_manifest/release -name AndroidManifest.xml | head -1)
 [ -f "$M" ] || { echo "::error::merged release manifest not found"; exit 1; }
 fail=0
-ALLOWED_PERMS='android.permission.(INTERNET|ACCESS_NETWORK_STATE|POST_NOTIFICATIONS|WAKE_LOCK|RECEIVE_BOOT_COMPLETED|FOREGROUND_SERVICE)|com.emotionalleaves.sprout(.debug)?.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION'
+ALLOWED_PERMS='android.permission.(INTERNET|ACCESS_NETWORK_STATE|POST_NOTIFICATIONS|REQUEST_INSTALL_PACKAGES|WAKE_LOCK|RECEIVE_BOOT_COMPLETED|FOREGROUND_SERVICE)|com.emotionalleaves.sprout(.debug)?.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION'
 perms=$(grep -oE '<uses-permission[^>]*android:name="[^"]+"' "$M" | sed -E 's/.*android:name="([^"]+)"/\1/')
 for p in $perms; do
   if ! echo "$p" | grep -qE "^($ALLOWED_PERMS)$"; then echo "::error::Unexpected permission $p"; fail=1; fi

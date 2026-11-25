@@ -98,6 +98,9 @@ jobs:
       # here: switching keys would force an uninstall and wipe the user's data. See SECURITY.md.
       - name: Build release APK (R8)
         run: ./gradlew --console=plain assembleRelease
+        env:
+          # Optional read-only key so the app can fetch updates from this private repo. Missing = Releases page fallback.
+          UPDATE_TOKEN: ${{ secrets.UPDATE_TOKEN }}
 
       - name: Check merged manifest (permissions and exported components)
         run: bash .github/scripts/manifest_check.sh

@@ -56,6 +56,8 @@ class AppContainer(context: Context) {
     val syncRepository = SyncRepository(db, secureStore, settings, client, clock, postSync)
     val connectRepository = ConnectRepository(client, secureStore, settings)
     val categoryRepository = CategoryRepository(db, clock)
+    val tagRepository = com.emotionalleaves.sprout.data.tags.TagRepository(db, clock)
+    val insightsRepository = com.emotionalleaves.sprout.data.insights.InsightsRepository(db, clock)
     val exportRepository = ExportRepository(db)
     val backupRepository = BackupRepository(db, clock)
     val dataManager = DataManager(appContext, db, settings, secureStore, syncRepository)
@@ -65,6 +67,9 @@ class AppContainer(context: Context) {
     })
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     val network = NetworkMonitor(appContext)
+    val updates = com.emotionalleaves.sprout.data.update.UpdateRepository(
+        appContext, BuildConfig.VERSION_NAME, BuildConfig.UPDATE_REPO, BuildConfig.UPDATE_TOKEN,
+    )
 }
 
 class SproutApp : Application() {
@@ -81,6 +86,7 @@ class SproutApp : Application() {
             val s = container.settings.current()
             val connected = container.secureStore.hasAccessUrlNow()
             if (connected && !s.accessRevoked) SyncScheduler.schedulePeriodic(this@SproutApp)
+            runCatching { container.updates.checkIfDue(System.currentTimeMillis() / 1000) }
         }
     }
 }

@@ -62,7 +62,7 @@ class BudgetRepository(
                 zone = zone(),
                 today = today(),
                 // Archived categories still count if they have a budget or spending this month.
-                categories = cats.map { BudgetCategory(it.id, it.name, it.kind, it.archived) },
+                categories = cats.map { BudgetCategory(it.id, it.name, it.kind, it.archived, it.iconKey, it.colorArgb) },
                 defaultBudgets = defaultMap,
                 overrides = overrides.associate { it.categoryId to it.amountMinor },
                 sumsByCategory = sums.associate { it.categoryId to it.total },
@@ -167,6 +167,20 @@ class BudgetRepository(
     suspend fun applySuggestions(amounts: Map<Long, Long>) = withContext(Dispatchers.IO) {
         val now = clock.instant().epochSecond
         db.budgets().upsertDefaults(amounts.filterValues { it >= 0 }.map { (id, a) -> CategoryBudgetEntity(id, a, now) })
+    }
+
+    /** All everyday spending (EXPENSE categories) per month for the last [months] months, oldest first. */
+    suspend fun spendingByMonth(months: Int = 6): List<Pair<YearMonth, Long>> = withContext(Dispatchers.IO) {
+        val z = zone()
+        val current = currentMonth()
+        val start = MonthWindow.of(current.minusMonths((months - 1).toLong()), z).start
+        val end = MonthWindow.of(current, z).end
+        val expense = db.categories().getAll().filter { it.kind == CategoryKind.EXPENSE }.map { it.id }.toSet()
+        val byMonth = db.budgets().spendRows(start, end)
+            .filter { it.categoryId in expense }
+            .groupBy { MonthWindow.monthOf(it.occurredAt, z) }
+            .mapValues { (_, l) -> l.groupBy { it.categoryId }.values.sumOf { c -> maxOf(0L, -c.sumOf { it.amountMinor }) } }
+        (months - 1 downTo 0).map { current.minusMonths(it.toLong()) }.map { it to (byMonth[it] ?: 0L) }
     }
 
     /** Spending per month for the last [months] months (oldest first), including the current one. */

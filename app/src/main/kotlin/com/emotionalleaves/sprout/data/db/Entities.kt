@@ -176,6 +176,27 @@ data class TransactionSplitEntity(
     val createdAt: Long,
 )
 
+/** A label you put on transactions across categories ("Chicago trip", "Wedding"). Schema 5. */
+@Entity(tableName = "tags", indices = [Index(value = ["name"], unique = true)])
+data class TagEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val colorArgb: Int,
+    val createdAt: Long,
+)
+
+/** Which transactions carry which tags. Schema 5. */
+@Entity(
+    tableName = "transaction_tags",
+    primaryKeys = ["transactionId", "tagId"],
+    foreignKeys = [
+        ForeignKey(entity = TransactionEntity::class, parentColumns = ["id"], childColumns = ["transactionId"], onDelete = ForeignKey.CASCADE),
+        ForeignKey(entity = TagEntity::class, parentColumns = ["id"], childColumns = ["tagId"], onDelete = ForeignKey.CASCADE),
+    ],
+    indices = [Index("tagId")],
+)
+data class TransactionTagEntity(val transactionId: String, val tagId: Long)
+
 /** Rollover is on for a category (schema 3). Leftover money carries forward starting after [sinceMonth]. */
 @Entity(
     tableName = "budget_rollovers",

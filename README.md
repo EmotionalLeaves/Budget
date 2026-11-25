@@ -16,9 +16,16 @@ Sprout is a private budgeting app for Android that reads your bank accounts (rea
 
 ## Update
 
-1. Download the newer .apk the same way.
-2. Install it. Your data stays.
-3. **Never uninstall first.** Uninstalling deletes your data.
+Sprout updates itself. When a new version is out, a card on Home says "Sprout X is ready": tap **Update**, then **Install**. The first time, Android asks you to allow Sprout to install updates (one switch, then come back). Settings → Updates has "Check for updates" and an automatic-check switch.
+
+This repo is private, so the in-app download needs a read-only key. Until it's set up, the card offers **Open Releases** instead (you're signed in to GitHub in your browser, so that works). To set up the key from your phone, once:
+
+1. github.com → your picture → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token.
+2. Repository access: Only select repositories → **Budget**. Permissions → Contents: **Read-only**. Longest expiry.
+3. Copy it, then go to the Budget repo → Settings → Secrets and variables → Actions → New repository secret. Name `UPDATE_TOKEN`, paste, save.
+4. The next build has it. Install that one by hand once; after that, updates arrive in the app.
+
+Updating by hand still works: download the newer .apk and install it. **Never uninstall first.** Uninstalling deletes your data.
 
 Only install Sprout from this repo's Releases page.
 
@@ -55,7 +62,7 @@ Sprout can't recover a forgotten backup password.
 
 - Read-only: Sprout can never move money.
 - Everything stays on this phone. No analytics, no servers, no ads.
-- The only place Sprout connects to is SimpleFIN.
+- Your financial data only ever goes to SimpleFIN. The updater talks to GitHub, and only to fetch the newest release; it sends nothing about you.
 - Your bank connection is stored encrypted with a key that never leaves your phone.
 
 ## Troubleshooting
@@ -117,6 +124,10 @@ Decisions made while building, one per line:
 - No certificate pinning for SimpleFIN. Pins break sync the day the server changes certificates, and you can't fix that from a phone without a new release. Sprout trusts only the system's certificates (never user-installed ones) and refuses plain HTTP, which covers the realistic risks.
 - Rollover looks back with today's every-month amount for past months (plus any one-off amount set for that month). Sprout doesn't keep a history of every-month amounts, so changing one also changes what carried over.
 - Splits are only for posted transactions: a pending charge can still change amount or disappear. A split stores the parts moved out; the rest stays in the transaction's own category, so a later amount change never leaves money unassigned.
+- Auto-update was added at your request (2.0.0). It needs the REQUEST_INSTALL_PACKAGES permission and talks to api.github.com for release info and the APK. No financial data is ever sent there. Android still asks you to confirm each install, and refuses any APK not signed with Sprout's key.
+- The update key comes only from the `UPDATE_TOKEN` repo secret (never committed). Anyone with a copy of the APK could pull a key out of it, which would only let them read this one repo.
+- Net worth over time is rebuilt from today's balances and your transactions, not stored snapshots, so it only goes back as far as your transactions do.
+- Tags are free labels on transactions; deleting a tag never deletes transactions.
 
 ## For developers
 

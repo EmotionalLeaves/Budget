@@ -51,7 +51,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class TransactionDetailViewModel(private val c: AppContainer, private val id: String) : ViewModel() {
+class TransactionDetailViewModel(val c: AppContainer, private val id: String) : ViewModel() {
     val detail: StateFlow<TransactionDetail?> =
         c.db.transactions().observeDetail(id).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
     val categories: StateFlow<List<CategoryEntity>> =
@@ -193,6 +193,7 @@ fun TransactionDetailSheet(transactionId: String, onDismiss: () -> Unit, onMessa
                     vm.saveNote(note)
                 }
             }
+            com.emotionalleaves.sprout.ui.tags.TransactionTags(vm.c, d.id)
             SwitchRow("Exclude from budget", d.excludedFromBudget) { vm.setExcluded(it) }
             Text(" ", Modifier.heightIn(min = 16.dp))
         }

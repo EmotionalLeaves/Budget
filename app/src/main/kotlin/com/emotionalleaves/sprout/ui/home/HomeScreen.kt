@@ -72,6 +72,7 @@ fun HomeScreen(
     onSeeBills: () -> Unit,
     onImport: () -> Unit,
     onGoals: () -> Unit,
+    onNetWorth: () -> Unit = {},
 ) {
     val vm = sproutViewModel { HomeViewModel(it) }
     val state by vm.state.collectAsStateWithLifecycle()
@@ -90,8 +91,13 @@ fun HomeScreen(
         TransactionDetailSheet(id, onDismiss = { openId = null }, onMessage = { msg, undo -> scope.showUndoable(snackbar, msg, undo) })
     }
 
+    val months by vm.months.collectAsStateWithLifecycle()
+    val insights by vm.insights.collectAsStateWithLifecycle()
+    val hidden by vm.privacy.collectAsStateWithLifecycle()
+    androidx.compose.runtime.CompositionLocalProvider(com.emotionalleaves.sprout.ui.common.LocalHideAmounts provides hidden) {
     PullToRefreshBox(isRefreshing = syncing, onRefresh = vm::syncNow, modifier = Modifier.fillMaxSize()) {
         LazyColumn(Modifier.fillMaxSize()) {
+            item { HomeHeader(hidden, vm::togglePrivacy) }
             crash?.let { report ->
                 item {
                     CrashCard(
@@ -107,6 +113,7 @@ fun HomeScreen(
                     )
                 }
             }
+            item { com.emotionalleaves.sprout.ui.update.UpdateCard(vm.updates) }
             item { SyncStatusLine(state, vm.now()) }
             val partial = state.lastLog?.takeIf { it.result == SyncResult.PARTIAL }
             if (partial != null) {
@@ -151,83 +158,40 @@ fun HomeScreen(
                 return@LazyColumn
             }
 
-            item { BalanceCard(state) }
+            val m = budget
+            item { SafeToSpendHero(m, state.totals.totalMinor, onSetBudgets) }
+            item { StatsRow(state.totals.totalMinor, outlook?.trend, outlook?.forecast?.endMinor, onNetWorth) }
+            if (insights.isNotEmpty()) {
+                item { com.emotionalleaves.sprout.ui.common.SectionHeader("Insights") }
+                item { com.emotionalleaves.sprout.ui.insights.InsightsStrip(insights, onCategory) }
+            }
+            outlook?.forecast?.let { f -> item { ForecastCard(f) } }
+            if (m != null) item { WhereItWentCard(m, onCategory, onSeeBudgets) }
+            item { MonthsCard(months) }
 
-            budget?.let { m ->
-                if (m.totalBudgetMinor > 0) item { SpentThisMonth(m) }
-                item { SafeToSpendCard(m, onSetBudget = onSetBudgets) }
-                outlook?.trend?.let { t -> item { TrendLine(t) } }
-                outlook?.forecast?.let { f -> item { ForecastCard(f) } }
-                val top = (m.budgeted + m.unbudgetedWithSpending).filter { it.spentMinor > 0 }.sortedByDescending { it.spentMinor }.take(5)
-                if (top.isNotEmpty()) {
-                    item {
-                        Row(Modifier.fillMaxWidth().padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            SectionTitle("Top spending this month", Modifier.weight(1f))
-                            TextButton(onClick = onSeeBudgets, modifier = Modifier.heightIn(min = 48.dp)) { Text("Budgets") }
-                        }
-                    }
-                    items(top, key = { "top-" + it.category.id }) { line -> TopCategoryRow(line) { onCategory(line.category.id) } }
-                }
+            if (bills.isNotEmpty()) {
+                item { com.emotionalleaves.sprout.ui.common.SectionHeader("Coming up", "All bills", onSeeBills) }
+                item { BillsStrip(bills, onSeeBills) }
             }
 
             if (goals.isNotEmpty()) {
-                item {
-                    Row(Modifier.fillMaxWidth().padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        SectionTitle("Savings goals", Modifier.weight(1f))
-                        TextButton(onClick = onGoals, modifier = Modifier.heightIn(min = 48.dp)) { Text("All goals") }
-                    }
-                }
+                item { com.emotionalleaves.sprout.ui.common.SectionHeader("Savings goals", "All goals", onGoals) }
                 items(goals, key = { "goal-" + it.goal.id }) { g -> com.emotionalleaves.sprout.ui.goals.GoalProgressRow(g, onGoals) }
             }
 
-            if (bills.isNotEmpty()) {
-                item {
-                    Row(Modifier.fillMaxWidth().padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        SectionTitle("Upcoming bills", Modifier.weight(1f))
-                        TextButton(onClick = onSeeBills, modifier = Modifier.heightIn(min = 48.dp)) { Text("All bills") }
-                    }
-                }
-                items(bills, key = { "bill-${it.charge.id}-${it.dueAt}" }) { b ->
-                    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text(b.charge.displayName, style = MaterialTheme.typography.bodyLarge)
-                            Text(dueText(b.dueAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Text(Money.format(b.charge.typicalAmountMinor))
-                    }
-                }
-            }
-
             if (state.accounts.isNotEmpty()) {
-                item { SectionTitle("Accounts") }
-                items(state.accounts, key = { "acct-" + it.id }) { AccountRow(it, state.settings.lastSuccessfulSyncAt) }
+                item { com.emotionalleaves.sprout.ui.common.SectionHeader("Accounts") }
+                item { AccountsCard(state.accounts, state.settings.lastSuccessfulSyncAt) }
             }
 
-            item {
-                Row(Modifier.fillMaxWidth().padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    SectionTitle("Recent transactions", Modifier.weight(1f))
-                    TextButton(onClick = onSeeAllTransactions, modifier = Modifier.heightIn(min = 48.dp)) { Text("See all") }
-                }
-            }
+            item { com.emotionalleaves.sprout.ui.common.SectionHeader("Recent", "See all", onSeeAllTransactions) }
             items(state.recent, key = { "tx-" + it.id }) { row ->
                 TransactionItem(row) { openId = row.id }
-                HorizontalDivider(Modifier.padding(start = 16.dp))
             }
+            item { BottomSpace() }
         }
     }
-}
-
-@Composable
-private fun TrendLine(t: com.emotionalleaves.sprout.domain.forecast.CashFlow.Trend) {
-    val p = t.percent
-    val text = when {
-        p == null -> "Spent ${Money.format(t.thisMonthMinor)} so far this month"
-        p > 0 -> "Spent ${Money.format(t.thisMonthMinor)} so far — $p% more than this time last month"
-        p < 0 -> "Spent ${Money.format(t.thisMonthMinor)} so far — ${-p}% less than this time last month"
-        else -> "Spent ${Money.format(t.thisMonthMinor)} so far — same as this time last month"
     }
-    Text(text, Modifier.padding(horizontal = 16.dp, vertical = 4.dp), style = MaterialTheme.typography.bodyMedium,
-        color = if ((p ?: 0) > 10) LocalSproutColors.current.warning else MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 @Composable
@@ -293,37 +257,6 @@ private fun CrashCard(onShare: () -> Unit, onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun SpentThisMonth(m: BudgetMonth) {
-    val level = when {
-        m.totalSpentBudgetedMinor * 100 >= m.totalBudgetMinor * 100L -> ProgressLevel.RED
-        m.totalSpentBudgetedMinor * 100 >= m.totalBudgetMinor * 80L -> ProgressLevel.AMBER
-        else -> ProgressLevel.GREEN
-    }
-    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text("Spent this month", style = MaterialTheme.typography.labelLarge)
-        BudgetProgress(m.totalSpentBudgetedMinor, m.totalBudgetMinor, level)
-        Text(
-            "${Money.format(m.totalSpentBudgetedMinor)} of ${Money.format(m.totalBudgetMinor)} budgeted · ${leftOrOver(m.totalBudgetMinor - m.totalSpentBudgetedMinor)}",
-            style = MaterialTheme.typography.bodySmall,
-        )
-    }
-}
-
-@Composable
-private fun TopCategoryRow(line: CategoryLine, onClick: () -> Unit) {
-    Column(Modifier.fillMaxWidth().clickable(onClick = onClick).heightIn(min = 48.dp).padding(horizontal = 16.dp, vertical = 6.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(line.category.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-            Text(
-                Money.format(line.spentMinor) + (line.budgetMinor?.let { " of ${Money.formatWhole(it)}" } ?: ""),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
-        line.budgetMinor?.let { b -> BudgetProgress(line.spentMinor, b, line.level, Modifier.padding(top = 4.dp)) }
-    }
-}
-
-@Composable
 private fun SyncStatusLine(state: HomeState, now: Long) {
     val log = state.lastLog
     val last = state.settings.lastSuccessfulSyncAt
@@ -346,55 +279,3 @@ private fun SyncStatusLine(state: HomeState, now: Long) {
     }
 }
 
-@Composable
-private fun BalanceCard(state: HomeState) {
-    val t = state.totals
-    Card(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("Total balance", style = MaterialTheme.typography.labelLarge, modifier = Modifier.semantics { heading() })
-            Text(Money.format(t.totalMinor), style = MaterialTheme.typography.displaySmall)
-            Text(
-                "Cash ${Money.format(t.cashMinor)} · Credit ${Money.format(t.creditMinor)}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            if (t.excludedNonUsd > 0) {
-                Text("${t.excludedNonUsd} non-USD account(s) not included", style = MaterialTheme.typography.bodySmall)
-            }
-        }
-    }
-}
-
-@Composable
-private fun AccountRow(a: AccountEntity, lastSuccess: Long?) {
-    Row(
-        Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 16.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(a.label, style = MaterialTheme.typography.bodyLarge)
-            Text(
-                a.type.name.lowercase().replaceFirstChar { it.uppercase() } + if (!a.includeInTotals) " · not in total" else "",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            if (a.source == com.emotionalleaves.sprout.data.db.AccountSource.SIMPLEFIN && AccountTypes.isStale(a.lastSyncedAt, lastSuccess)) {
-                Text(
-                    "Not updated since ${Format.dateTime(a.lastSyncedAt ?: 0).substringBefore(',')} — closed? You can hide it in Settings.",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = LocalSproutColors.current.warning,
-                )
-            }
-            if (a.lastErrorMessage != null) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.Warning, contentDescription = "Account warning", tint = LocalSproutColors.current.warning)
-                    Text(a.lastErrorMessage, style = MaterialTheme.typography.labelSmall)
-                }
-            }
-        }
-        Text(
-            if (AccountTypes.isUsd(a.currency)) Money.format(a.balanceMinor) else "${a.balanceMinor / 100} ${AccountTypes.currencyLabel(a.currency)}",
-            style = MaterialTheme.typography.bodyLarge,
-        )
-    }
-}

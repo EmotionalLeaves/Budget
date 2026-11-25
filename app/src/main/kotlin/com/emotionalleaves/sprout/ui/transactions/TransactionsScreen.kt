@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.transactions
 
+import androidx.compose.runtime.LaunchedEffect
 import com.emotionalleaves.sprout.ui.common.showUndoable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -77,6 +78,7 @@ data class TxFilter(
     val pendingOnly: Boolean = false,
     val accountId: String? = null,
     val categoryId: Long? = null,
+    val tagId: Long? = null,
 )
 
 class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
@@ -96,11 +98,15 @@ class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
     val pages: Flow<PagingData<TransactionRow>> = combine(_filter.debounce(200), uncategorizedId) { f, uncat -> f to uncat }
         .flatMapLatest { (f, uncat) ->
             Pager(PagingConfig(pageSize = 60, prefetchDistance = 60, enablePlaceholders = false)) {
+                val sq = com.emotionalleaves.sprout.domain.search.SearchQuery.parse(f.query)
                 c.db.transactions().pagingRows(
-                    query = f.query.trim().take(80),
+                    query = sq.text,
                     categoryId = if (f.uncategorizedOnly) uncat ?: -1 else f.categoryId,
                     pendingOnly = f.pendingOnly,
                     accountId = f.accountId,
+                    minAbs = sq.minAbsMinor,
+                    maxAbs = sq.maxAbsMinor,
+                    tagId = f.tagId,
                 )
             }.flow
         }
@@ -111,6 +117,9 @@ class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
     fun togglePending() { _filter.value = _filter.value.copy(pendingOnly = !_filter.value.pendingOnly) }
     fun setAccount(id: String?) { _filter.value = _filter.value.copy(accountId = id) }
     fun setCategory(id: Long?) { _filter.value = _filter.value.copy(categoryId = id, uncategorizedOnly = false) }
+    fun setTag(id: Long?) { _filter.value = _filter.value.copy(tagId = id) }
+    val tags: StateFlow<List<com.emotionalleaves.sprout.data.db.TagEntity>> = c.db.tags().observeAll()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val accounts: StateFlow<List<com.emotionalleaves.sprout.data.db.AccountEntity>> = c.db.accounts().observeVisible()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -122,13 +131,15 @@ class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
 }
 
 @Composable
-fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit) {
+fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initialTagId: Long? = null) {
     val vm = sproutViewModel { TransactionsViewModel(it) }
     val filter by vm.filter.collectAsStateWithLifecycle()
     val uncategorized by vm.uncategorizedCount.collectAsStateWithLifecycle()
     val total by vm.total.collectAsStateWithLifecycle()
     val accounts by vm.accounts.collectAsStateWithLifecycle()
     val categories by vm.categories.collectAsStateWithLifecycle()
+    val tags by vm.tags.collectAsStateWithLifecycle()
+    LaunchedEffect(initialTagId) { if (initialTagId != null) vm.setTag(initialTagId) }
     val items = vm.pages.collectAsLazyPagingItems()
     val today by vm.today.collectAsStateWithLifecycle()
     var openId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -143,7 +154,7 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit) {
         OutlinedTextField(
             value = filter.query,
             onValueChange = vm::setQuery,
-            placeholder = { Text("Search description, merchant or note") },
+            placeholder = { Text("Search, or an amount like 42.10 or >100") },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
             trailingIcon = {
                 if (filter.query.isNotEmpty()) {
@@ -181,6 +192,14 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit) {
                 options = listOf<Pair<Long?, String>>(null to "Any category") + categories.map { it.id to it.name },
                 onPick = vm::setCategory,
             )
+            if (tags.isNotEmpty()) {
+                PickerChip(
+                    label = tags.firstOrNull { it.id == filter.tagId }?.let { "#" + it.name } ?: "Any tag",
+                    selected = filter.tagId != null,
+                    options = listOf<Pair<Long?, String>>(null to "Any tag") + tags.map { it.id to "#" + it.name },
+                    onPick = vm::setTag,
+                )
+            }
         }
 
         if (items.itemCount == 0) {
@@ -208,7 +227,7 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit) {
                     val prev = if (index > 0) items.peek(index - 1)?.let { Format.localDate(it.occurredAt) } else null
                     if (prev != date) DayHeader(Format.dayHeader(date, today))
                     TransactionItem(row) { openId = row.id }
-                    HorizontalDivider(Modifier.padding(start = 16.dp))
+
                 }
             }
             val d = floatingDate

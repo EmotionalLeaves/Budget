@@ -35,6 +35,12 @@ data class Settings(
     val rateLimitedUntil: Long? = null,
     /** Date transactions by purchase date (transacted_at) when the bank sends it. */
     val usePurchaseDate: Boolean = false,
+    /** 0 = follow the phone, 1 = light, 2 = dark. */
+    val themeMode: Int = 0,
+    /** Use the wallpaper's colors (Android 12+) instead of Sprout's own palette. */
+    val dynamicColor: Boolean = false,
+    /** Hide amounts on Home behind dots until tapped (for using the app in public). */
+    val privacyMode: Boolean = false,
 )
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -60,6 +66,9 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
             hideInRecents = p[HIDE_RECENTS] ?: false,
             rateLimitedUntil = p[RATE_LIMITED_UNTIL],
             usePurchaseDate = p[PURCHASE_DATE] ?: false,
+            themeMode = p[THEME_MODE] ?: 0,
+            dynamicColor = p[DYNAMIC_COLOR] ?: false,
+            privacyMode = p[PRIVACY_MODE] ?: false,
         )
     }
 
@@ -78,6 +87,9 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
     suspend fun setNotificationsAsked() = dataStore.edit { it[NOTIFY_ASKED] = true }
     suspend fun setAppLock(on: Boolean) = dataStore.edit { it[APP_LOCK] = on }
     suspend fun setHideInRecents(on: Boolean) = dataStore.edit { it[HIDE_RECENTS] = on }
+    suspend fun setThemeMode(mode: Int) = dataStore.edit { it[THEME_MODE] = mode.coerceIn(0, 2) }
+    suspend fun setDynamicColor(on: Boolean) = dataStore.edit { it[DYNAMIC_COLOR] = on }
+    suspend fun setPrivacyMode(on: Boolean) = dataStore.edit { it[PRIVACY_MODE] = on }
     suspend fun setUsePurchaseDate(on: Boolean) = dataStore.edit { it[PURCHASE_DATE] = on }
     suspend fun setRateLimitedUntil(at: Long?) = dataStore.edit { if (at == null) it.remove(RATE_LIMITED_UNTIL) else it[RATE_LIMITED_UNTIL] = at }
 
@@ -106,5 +118,8 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         val HIDE_RECENTS = booleanPreferencesKey("hide_in_recents")
         val RATE_LIMITED_UNTIL = longPreferencesKey("rate_limited_until")
         val PURCHASE_DATE = booleanPreferencesKey("use_purchase_date")
+        val THEME_MODE = intPreferencesKey("theme_mode")
+        val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
+        val PRIVACY_MODE = booleanPreferencesKey("privacy_mode")
     }
 }

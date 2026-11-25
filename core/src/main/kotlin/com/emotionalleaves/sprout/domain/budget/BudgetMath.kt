@@ -21,7 +21,14 @@ data class MonthWindow(val month: YearMonth, val start: Long, val end: Long) {
     }
 }
 
-data class BudgetCategory(val id: Long, val name: String, val kind: CategoryKind, val archived: Boolean = false)
+data class BudgetCategory(
+    val id: Long,
+    val name: String,
+    val kind: CategoryKind,
+    val archived: Boolean = false,
+    val iconKey: String? = null,
+    val colorArgb: Int = 0,
+)
 
 /** A transaction as budget math sees it. */
 data class BudgetTx(val categoryId: Long, val amountMinor: Long, val occurredAt: Long, val excluded: Boolean = false)

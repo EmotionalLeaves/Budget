@@ -127,8 +127,12 @@ object CsvImport {
         if (s.startsWith("-")) { negative = !negative; s = s.drop(1).trim() } else if (s.startsWith("+")) s = s.drop(1).trim()
         s = s.removePrefix("USD").trim().removePrefix("$").trim().replace(",", "").replace(" ", "")
         if (s.startsWith("-")) { negative = !negative; s = s.drop(1) }
-        if (!Regex("""\d+(\.\d+)?|\.\d+""").matches(s)) return null
-        val minor = BigDecimal(s).movePointRight(2).setScale(0, RoundingMode.HALF_UP).longValueExact()
+        if (s.length > 20 || !Regex("""\d+(\.\d+)?|\.\d+""").matches(s)) return null
+        val minor = try {
+            BigDecimal(s).movePointRight(2).setScale(0, RoundingMode.HALF_UP).longValueExact()
+        } catch (e: ArithmeticException) {
+            return null
+        }
         return if (negative) -minor else minor
     }
 
