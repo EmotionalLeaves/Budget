@@ -2,6 +2,17 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.16.0] - 2026-11-25
+
+Round 17: fairness fixes and steadier releases.
+
+### Fixed
+- **Challenges start when you tap start.** Spending earlier that same day no longer fails a challenge you just began.
+- **Savings goals**: each goal is one clean card again (it was a card inside a card), and "Add money" no longer shows on a goal you've already reached.
+
+### Updates
+- Publishing a new version now retries if GitHub has a brief outage, so a release can't go missing the way 2.13.0's did.
+
 ## [2.15.0] - 2026-11-25
 
 Round 16: Sprout works with big text.

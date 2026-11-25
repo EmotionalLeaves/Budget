@@ -250,6 +250,18 @@ class TagAndInsightTest {
         assertEquals(after, env.db.categories().getAll().filter { !it.archived }.map { it.id })
     }
 
+    @Test fun challengeIgnoresSpendingBeforeYouStarted() = runBlocking {
+        val startOfToday = java.time.LocalDate.now(zone).atStartOfDay(zone).toEpochSecond()
+        sync(Triple("1", "PIZZA HUT|-20.00", startOfToday))
+        val ch = com.emotionalleaves.sprout.data.challenge.ChallengeRepository(env.context, env.db) { zone }
+        val eating = env.db.backup().transactions().first { it.description.startsWith("PIZZA") }.categoryId
+        ch.add(com.emotionalleaves.sprout.domain.challenge.ChallengeType.NO_SPEND_CATEGORY, "Fresh start", 7, eating)
+        val p = ch.progress(java.time.LocalDate.now(zone)).first { it.challenge.title == "Fresh start" }
+        assertEquals(com.emotionalleaves.sprout.domain.challenge.ChallengeStatus.ON_TRACK, p.status)
+        ch.remove(p.challenge.id)
+        Unit
+    }
+
     @Test fun challengesAndHealth() = runBlocking {
         sync(Triple("1", "ACME PAYROLL|3000.00", at(10, 1)), Triple("2", "TARGET|-200.00", at(10, 15)), Triple("3", "PIZZA HUT|-20.00", at(11, 23)))
         val ch = com.emotionalleaves.sprout.data.challenge.ChallengeRepository(env.context, env.db) { zone }

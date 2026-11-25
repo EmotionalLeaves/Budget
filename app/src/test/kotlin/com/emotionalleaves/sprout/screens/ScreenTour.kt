@@ -170,6 +170,11 @@ class ScreenTour {
         listOfNotNull(b("groceries", 40_000), b("eating_out", 12_000), b("shopping", 15_000), b("gas", 8_000), b("entertainment", 5_000))
             .let { c.db.budgets().upsertDefaults(it) }
         c.recurringRepository.detect()
+        // Some extras so goal, challenge and tag screens have something to show.
+        c.goalRepository.save(null, "Trip to Denver", 120_000, today.plusMonths(5), "sav", 45_000)
+        c.goalRepository.save(null, "New laptop", 90_000, null, null, 12_000)
+        idByKey["eating_out"]?.let { c.challengeRepository.add(com.emotionalleaves.sprout.domain.challenge.ChallengeType.NO_SPEND_CATEGORY, "No eating out", 7, it) }
+        c.tagRepository.getOrCreate("Gifts")?.let { tag -> txs.filter { it.description.startsWith("TARGET") }.take(3).forEach { t -> c.tagRepository.attach(t.id, tag) } }
     }
 
     private fun acct(id: String, name: String, type: AccountType, bal: Long) = AccountEntity(
@@ -252,6 +257,14 @@ class ScreenTour {
                 t("health") { tap("Home"); tap("Money health"); s("53-health"); back() }
                 t("networth") { tap("More"); tap("Net worth over time"); s("54-networth"); back() }
                 t("challenge") { tap("More"); tap("Challenges"); tap("No eating out"); s("55-challenge"); back() }
+                return@use
+            }
+            if (only == "extras") {
+                fun t(n: String, block: () -> Unit) = runCatching(block).onFailure { System.err.println("TOUR $n: " + it.toString().take(200)) }
+                t("goals") { tap("More"); tap("Savings goals"); s("60-goals"); back() }
+                t("challenges") { tap("More"); tap("Challenges"); s("61-challenges"); back() }
+                t("tags") { tap("More"); tap("Tags"); s("62-tags"); tap("Gifts"); s("63-tag"); back(); back() }
+                t("debt") { tap("More"); tap("Debt payoff plan"); s("64-debt"); back() }
                 return@use
             }
             if (only == "settings") {

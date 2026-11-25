@@ -21,6 +21,8 @@ data class Challenge(
     val categoryId: Long? = null,
     val amountMinor: Long = 0,
     val goal: Int = 0,
+    /** When you tapped start (epoch seconds). Spending earlier that same day doesn't count against you. */
+    val startedAt: Long? = null,
 ) {
     val end: LocalDate get() = start.plusDays(days.toLong() - 1)
 }

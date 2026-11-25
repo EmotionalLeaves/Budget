@@ -84,14 +84,14 @@ class GoalsViewModel(private val c: AppContainer) : ViewModel() {
 private val dateFmt = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.US)
 
 @Composable
-fun GoalProgressRow(v: GoalView, onClick: (() -> Unit)? = null) {
+fun GoalProgressRow(v: GoalView, footer: (@Composable () -> Unit)? = null, onClick: (() -> Unit)? = null) {
     val p = v.progress
     val desc = "${v.goal.name}: ${Money.format(p.savedMinor)} of ${Money.format(p.targetMinor)}, ${p.percent} percent"
     androidx.compose.material3.Surface(
         shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp),
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 5.dp),
-    ) {
+    ) { Column {
     Column(
         Modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(16.dp).semantics(mergeDescendants = true) { contentDescription = desc },
@@ -118,7 +118,8 @@ fun GoalProgressRow(v: GoalView, onClick: (() -> Unit)? = null) {
                 (v.goal.targetDate?.let { LocalDate.parse(it).format(dateFmt) } ?: ""), style = MaterialTheme.typography.labelSmall)
         }
     }
-    }
+    footer?.let { Box(Modifier.padding(start = 8.dp, bottom = 6.dp)) { it() } }
+    } }
 }
 
 @Composable
@@ -147,12 +148,12 @@ fun GoalsScreen(onBack: () -> Unit) {
                 }
             }
             items(list.orEmpty(), key = { it.goal.id }) { v ->
-                Card(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
-                    GoalProgressRow(v) { editing = v }
-                    if (v.account == null) {
-                        TextButton(onClick = { adjusting = v }, modifier = Modifier.padding(start = 8.dp).heightIn(min = 48.dp)) { Text("Add money") }
-                    }
-                }
+                GoalProgressRow(
+                    v,
+                    footer = if (v.account == null && !v.progress.reached) ({
+                        TextButton(onClick = { adjusting = v }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Add money") }
+                    }) else null,
+                ) { editing = v }
             }
         }
         ExtendedFloatingActionButton(

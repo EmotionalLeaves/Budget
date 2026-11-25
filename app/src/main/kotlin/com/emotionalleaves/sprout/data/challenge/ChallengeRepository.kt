@@ -42,7 +42,8 @@ class ChallengeRepository(context: Context, private val db: SproutDatabase, priv
     val challenges: Flow<List<Challenge>> = store.data.map { p -> decode(p[key]) }
 
     suspend fun add(type: ChallengeType, title: String, days: Int, categoryId: Long? = null, amountMinor: Long = 0, goal: Int = 0) {
-        val ch = Challenge(UUID.randomUUID().toString(), type, title.take(60), LocalDate.now(zone()), days.coerceIn(1, 90), categoryId, amountMinor, goal)
+        val ch = Challenge(UUID.randomUUID().toString(), type, title.take(60), LocalDate.now(zone()), days.coerceIn(1, 90), categoryId, amountMinor, goal,
+            startedAt = System.currentTimeMillis() / 1000)
         store.edit { it[key] = encode((decode(it[key]) + ch).takeLast(20)) }
     }
 
@@ -55,10 +56,11 @@ class ChallengeRepository(context: Context, private val db: SproutDatabase, priv
         val z = zone()
         val from = list.minOf { it.start }.atStartOfDay(z).toEpochSecond()
         val to = today.plusDays(1).atStartOfDay(z).toEpochSecond()
-        val spend = db.budgets().spendRows(from, to).filter { it.amountMinor < 0 }
+        val rows = db.budgets().spendRows(from, to).filter { it.amountMinor < 0 }
+        fun spendFrom(since: Long) = rows.filter { it.occurredAt >= since }
             .groupBy { Instant.ofEpochSecond(it.occurredAt).atZone(z).toLocalDate() }
             .mapValues { (_, l) -> l.groupBy { it.categoryId }.mapValues { (_, x) -> -x.sumOf { it.amountMinor } } }
-        list.reversed().map { Challenges.evaluate(it, spend, today) }
+        list.reversed().map { ch -> Challenges.evaluate(ch, spendFrom(ch.startedAt ?: 0L), today) }
     }
 
     private fun encode(list: List<Challenge>): String = buildJsonArray {
@@ -66,6 +68,7 @@ class ChallengeRepository(context: Context, private val db: SproutDatabase, priv
             add(buildJsonObject {
                 put("id", c.id); put("type", c.type.name); put("title", c.title); put("start", c.start.toString()); put("days", c.days)
                 c.categoryId?.let { put("categoryId", it) }; put("amountMinor", c.amountMinor); put("goal", c.goal)
+                c.startedAt?.let { put("startedAt", it) }
             })
         }
     }.toString()
@@ -79,6 +82,7 @@ class ChallengeRepository(context: Context, private val db: SproutDatabase, priv
                     o.getValue("title").jsonPrimitive.content, LocalDate.parse(o.getValue("start").jsonPrimitive.content),
                     o.getValue("days").jsonPrimitive.int, (o["categoryId"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull(),
                     o.getValue("amountMinor").jsonPrimitive.long, o.getValue("goal").jsonPrimitive.int,
+                    (o["startedAt"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull(),
                 )
             }.getOrNull()
         }
