@@ -41,10 +41,14 @@ class AppContainer(context: Context) {
     private val client = SimpleFinClient()
     val notifier = AndroidNotifier(appContext)
     val recurringRepository = RecurringRepository(db, clock)
-    val budgetRepository = BudgetRepository(db, clock, expectedCharges = recurringRepository::expectedCharges)
+    val goalRepository = GoalRepository(db, clock)
+    val budgetRepository = BudgetRepository(db, clock, expectedCharges = recurringRepository::expectedCharges,
+        plannedSetAside = { goalRepository.observePlannedSetAside() })
+    val flexRepository = com.emotionalleaves.sprout.data.budget.FlexRepository(
+        db, settings, budgetRepository, recurringRepository::expectedCharges, { goalRepository.observePlannedSetAside() },
+    )
     val alertRepository = AlertRepository(db, settings, budgetRepository, notifier, clock)
     val forecastRepository = ForecastRepository(db, budgetRepository, recurringRepository, clock)
-    val goalRepository = GoalRepository(db, clock)
 
     /** After every sync: refresh recurring charges first (they feed safe to spend), then alerts. */
     private val postSync = object : AlertSink {
@@ -58,6 +62,7 @@ class AppContainer(context: Context) {
     val connectRepository = ConnectRepository(client, secureStore, settings)
     val categoryRepository = CategoryRepository(db, clock)
     val tagRepository = com.emotionalleaves.sprout.data.tags.TagRepository(db, clock)
+    val receiptRepository = com.emotionalleaves.sprout.data.receipts.ReceiptRepository(appContext, db, clock)
     val insightsRepository = com.emotionalleaves.sprout.data.insights.InsightsRepository(db, clock)
     val exportRepository = ExportRepository(db)
     val backupRepository = BackupRepository(db, clock)
@@ -71,6 +76,8 @@ class AppContainer(context: Context) {
     val updates = com.emotionalleaves.sprout.data.update.UpdateRepository(
         appContext, BuildConfig.VERSION_NAME, BuildConfig.UPDATE_REPO, BuildConfig.UPDATE_TOKEN,
         storedKey = { secureStore.readUpdateKey() },
+        currentCode = BuildConfig.VERSION_CODE,
+        beta = { settings.current().betaUpdates },
         saveStoredKey = { k -> if (k.isEmpty()) secureStore.clearUpdateKey() else secureStore.saveUpdateKey(k) },
     )
 }

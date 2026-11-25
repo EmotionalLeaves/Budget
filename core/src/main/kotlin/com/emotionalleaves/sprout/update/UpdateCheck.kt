@@ -28,9 +28,25 @@ data class ReleaseInfo(
 object UpdateCheck {
     const val API_HOST = "api.github.com"
 
-    fun parseRelease(json: String): ReleaseInfo? = runCatching {
-        val o = Json.parseToJsonElement(json).jsonObject
-        if (o.bool("draft") == true || o.bool("prerelease") == true) return null
+    fun parseRelease(json: String): ReleaseInfo? = runCatching { fromObject(Json.parseToJsonElement(json).jsonObject, allowPrerelease = false) }.getOrNull()
+
+    /** Beta channel: every release and test build in the list, newest build (by version code) first. */
+    fun parseReleases(json: String): List<ReleaseInfo> = runCatching {
+        (Json.parseToJsonElement(json) as JsonArray).mapNotNull { runCatching { fromObject(it.jsonObject, allowPrerelease = true) }.getOrNull() }
+            .sortedByDescending { versionCode(it.apkName) ?: -1 }
+    }.getOrDefault(emptyList())
+
+    /** "sprout-v2.3.0-45.apk" → 45 (the build's version code, which always increases). */
+    fun versionCode(apkName: String): Int? = Regex("""-(\d+)\.apk$""").find(apkName)?.groupValues?.get(1)?.toIntOrNull()
+
+    /** Newer by version code when both are known (works across channels), else by version name. */
+    fun isNewerBuild(release: ReleaseInfo, currentVersion: String, currentCode: Int?): Boolean {
+        val code = versionCode(release.apkName)
+        return if (code != null && currentCode != null && currentCode > 0) code > currentCode else isNewer(release.version, currentVersion)
+    }
+
+    private fun fromObject(o: JsonObject, allowPrerelease: Boolean): ReleaseInfo? = run {
+        if (o.bool("draft") == true || (!allowPrerelease && o.bool("prerelease") == true)) return null
         val tag = o.str("tag_name") ?: return null
         val asset = (o["assets"] as? JsonArray)?.map { it.jsonObject }
             ?.firstOrNull { it.str("name")?.endsWith(".apk", ignoreCase = true) == true } ?: return null
@@ -45,7 +61,7 @@ object UpdateCheck {
                 ?.takeIf { Regex("[0-9a-f]{64}").matches(it) },
             pageUrl = o.str("html_url").orEmpty(),
         )
-    }.getOrNull()
+    }
 
     /** "1.10.0" > "1.9.3". Non-numeric parts count as 0; a missing part counts as 0. */
     fun isNewer(candidate: String, current: String): Boolean {

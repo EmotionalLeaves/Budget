@@ -81,6 +81,7 @@ class SettingsViewModel(private val c: AppContainer) : ViewModel() {
     fun setDynamicColor(on: Boolean) = viewModelScope.launch { c.settings.setDynamicColor(on) }
     fun setPrivacyMode(on: Boolean) = viewModelScope.launch { c.settings.setPrivacyMode(on) }
     fun setNotifyBills(on: Boolean) = viewModelScope.launch { c.settings.setNotifyBills(on) }
+    fun setBeta(on: Boolean) = viewModelScope.launch { c.settings.setBetaUpdates(on); c.updates.check() }
     val state: StateFlow<SettingsState> = combine(
         c.settings.settings,
         c.db.connections().observeAll(),
@@ -145,6 +146,8 @@ fun SettingsScreen(
 
     LazyColumn(Modifier.fillMaxSize()) {
         item { SectionTitle("Explore") }
+        item { NavRow("Reports", "Cash flow, spending by category and by account, any range", { onRoute("reports") }) }
+        item { NavRow("Year in review", "Your year's totals, top categories and places", { onRoute("year-review") }) }
         item { NavRow("Net worth over time", "How your total has changed month by month", { onRoute("networth") }) }
         item { NavRow("Year view", "Every category, every month, at a glance", { onRoute("year") }) }
         item { NavRow("Tags", "Spending you've tagged, like a trip or a project", { onRoute("tags") }) }
@@ -307,7 +310,7 @@ fun SettingsScreen(
         }
         item { ToggleRow("Hide amounts on Home (tap the eye to show)", state.settings.privacyMode) { vm.setPrivacyMode(it) } }
         item { SectionTitle("Updates") }
-        item { Column(Modifier.padding(horizontal = 16.dp)) { com.emotionalleaves.sprout.ui.update.UpdateSettings(vm.updates) } }
+        item { Column(Modifier.padding(horizontal = 16.dp)) { com.emotionalleaves.sprout.ui.update.UpdateSettings(vm.updates, state.settings.betaUpdates) { vm.setBeta(it) } } }
         item { SectionTitle("About") }
         item {
             Column(Modifier.padding(horizontal = 16.dp)) {

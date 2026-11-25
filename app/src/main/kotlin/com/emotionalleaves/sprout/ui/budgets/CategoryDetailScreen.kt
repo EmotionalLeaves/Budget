@@ -127,6 +127,7 @@ fun CategoryDetailScreen(categoryId: Long, snackbar: SnackbarHostState, onBack: 
             Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
                 Text(category?.name ?: "", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                com.emotionalleaves.sprout.ui.insights.PinButton("c:$categoryId")
                 TextButton(onClick = onEditCategories, modifier = Modifier.heightIn(min = 48.dp)) { Text("Edit") }
             }
         }

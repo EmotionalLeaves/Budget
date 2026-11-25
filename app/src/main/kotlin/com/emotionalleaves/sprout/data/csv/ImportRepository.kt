@@ -69,7 +69,7 @@ class ImportRepository(
                     merchantKey = key, pending = false, categoryId = r.categoryId ?: fallback, categorySource = r.source,
                     note = null, excludedFromBudget = false, recurringChargeId = null,
                     // Imports never trigger unusual-charge alerts: mark them as already handled.
-                    alertedAt = now, importedAt = now, updatedAt = now,
+                    alertedAt = now, importedAt = now, updatedAt = now, reviewedAt = now,
                 )
             }
             fresh.chunked(500).forEach { db.transactions().upsert(it) }

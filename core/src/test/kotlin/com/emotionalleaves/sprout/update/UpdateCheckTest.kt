@@ -49,4 +49,17 @@ class UpdateCheckTest {
         assertFalse(UpdateCheck.mayCarryKey("http://api.github.com/x"))
         assertFalse(UpdateCheck.mayCarryKey("https://api.github.com.evil.test/x"))
     }
+
+    @Test fun betaChannelPicksTheNewestBuild() {
+        val list = """[
+          {"tag_name":"v2.3.0","prerelease":false,"body":"","assets":[{"name":"sprout-v2.3.0-44.apk","url":"https://api.github.com/a/1","browser_download_url":"https://github.com/x/1","size":1}]},
+          {"tag_name":"v2.3.0-build.46","prerelease":true,"body":"","assets":[{"name":"sprout-v2.3.0-46.apk","url":"https://api.github.com/a/2","browser_download_url":"https://github.com/x/2","size":1}]},
+          {"tag_name":"v2.2.0","prerelease":false,"draft":true,"body":"","assets":[{"name":"sprout-v2.2.0-40.apk","url":"https://api.github.com/a/3","browser_download_url":"https://github.com/x/3","size":1}]}
+        ]"""
+        val r = UpdateCheck.parseReleases(list)
+        assertEquals(listOf(46, 44), r.map { UpdateCheck.versionCode(it.apkName) })
+        assertTrue(UpdateCheck.isNewerBuild(r[0], "2.3.0", 44))
+        assertFalse(UpdateCheck.isNewerBuild(r[1], "2.3.0", 44))
+        assertTrue(UpdateCheck.isNewerBuild(r[1], "2.2.0", null))
+    }
 }

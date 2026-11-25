@@ -119,6 +119,8 @@ data class TransactionEntity(
     val alertedAt: Long?,
     val importedAt: Long,
     val updatedAt: Long,
+    /** Schema 6: when you marked it seen in the review inbox; null = new, still to review. */
+    val reviewedAt: Long? = null,
 )
 
 @Entity(tableName = "categories", indices = [Index(value = ["key"], unique = true)])
@@ -287,4 +289,20 @@ data class SavingsGoalEntity(
     val archived: Boolean,
     val createdAt: Long,
     val updatedAt: Long,
+    /** Schema 6: SAVINGS (a goal) or PLANNED (a sinking fund for a known future expense, set aside from safe to spend). */
+    @androidx.room.ColumnInfo(defaultValue = "SAVINGS") val kind: String = "SAVINGS",
+)
+
+/** Schema 6: a photo of a receipt, kept in Sprout's private storage. */
+@Entity(
+    tableName = "receipts",
+    foreignKeys = [ForeignKey(entity = TransactionEntity::class, parentColumns = ["id"], childColumns = ["transactionId"], onDelete = ForeignKey.CASCADE)],
+    indices = [Index("transactionId")],
+)
+data class ReceiptEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val transactionId: String,
+    /** File name inside filesDir/receipts. */
+    val fileName: String,
+    val createdAt: Long,
 )

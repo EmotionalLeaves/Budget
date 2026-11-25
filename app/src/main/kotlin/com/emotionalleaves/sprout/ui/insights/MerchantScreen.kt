@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.insights
 
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -59,6 +60,7 @@ fun MerchantScreen(merchantKey: String, snackbar: androidx.compose.material3.Sna
         TopAppBar(
             title = { Text(MerchantNormalizer.displayName(merchantKey)) },
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
+            actions = { PinButton("m:$merchantKey") },
         )
         LazyColumn {
             item {
@@ -80,5 +82,18 @@ fun MerchantScreen(merchantKey: String, snackbar: androidx.compose.material3.Sna
             }
             items(rows, key = { it.id }) { r -> TransactionItem(r) { openId = r.id } }
         }
+    }
+}
+
+
+/** Pin/unpin a category ("c:<id>") or merchant ("m:<key>") to the Home watchlist. */
+@Composable
+fun PinButton(item: String) {
+    val c = appContainer()
+    val pinned by remember { c.settings.settings }.collectAsStateWithLifecycle(com.emotionalleaves.sprout.data.settings.Settings())
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val on = item in pinned.watchlist
+    androidx.compose.material3.TextButton(onClick = { scope.launch { c.settings.toggleWatch(item) } }) {
+        Text(if (on) "Pinned to Home" else "Pin to Home")
     }
 }

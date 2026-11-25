@@ -90,6 +90,8 @@ data class SafeToSpend(
     val daysRemaining: Int?,
     /** "≈ $Y/day": only when the amount is positive and it's the current month. */
     val perDayMinor: Long?,
+    /** This month's set-aside for planned (non-monthly) expenses, already taken out of [amountMinor]. */
+    val plannedMinor: Long = 0,
 )
 
 data class BudgetMonth(
@@ -149,6 +151,7 @@ object BudgetMath {
         expectedCharges: List<ExpectedCharge> = emptyList(),
         /** Rollover carry into [month] per category, for categories with rollover on (see [rolloverCarry]). */
         carries: Map<Long, Long> = emptyMap(),
+        plannedSetAsideMinor: Long = 0,
     ): BudgetMonth {
         val window = MonthWindow.of(month, zone)
         val expense = categories.filter { it.kind == CategoryKind.EXPENSE }
@@ -176,10 +179,11 @@ object BudgetMath {
             val upcoming = expectedCharges.filter { ch ->
                 !ch.matchedThisMonth && ch.categoryId !in budgetedIds && ch.dueAt >= from && ch.dueAt < window.end
             }.sortedBy { it.dueAt }
-            val amount = remaining - upcoming.sumOf { it.amountMinor }
+            val planned = if (YearMonth.from(today) == month) plannedSetAsideMinor else 0L
+            val amount = remaining - upcoming.sumOf { it.amountMinor } - planned
             val days = if (YearMonth.from(today) == month) month.lengthOfMonth() - today.dayOfMonth + 1 else null
             val perDay = if (days != null && amount > 0) amount / days else null
-            SafeToSpend(remaining, upcoming, amount, days, perDay)
+            SafeToSpend(remaining, upcoming, amount, days, perDay, planned)
         }
 
         return BudgetMonth(

@@ -88,6 +88,117 @@ class InsightsRepository(private val db: SproutDatabase, private val clock: Cloc
         com.emotionalleaves.sprout.domain.calendar.SpendCalendar.of(month, today, rows, z)
     }
 
+    /** YNAB-style Age of Money over cash accounts (checking, savings, cash), in days; null without enough history. */
+    suspend fun ageOfMoney(): Int? = withContext(Dispatchers.IO) {
+        val accounts = db.accounts().getAll().filter { it.includeInTotals && !it.hidden && AccountTypes.isUsd(it.currency) && AccountTypes.isCashLike(it.type) }
+        if (accounts.isEmpty()) return@withContext null
+        val since = clock.instant().epochSecond - 365 * 86_400L
+        val moves = accounts.map { it.id }.chunked(500).flatMap { db.insights().moves(since, it) }.map { it.amountMinor to it.occurredAt }
+        com.emotionalleaves.sprout.domain.insights.AgeOfMoney.days(moves)
+    }
+
+    /** Repeating charges whose latest price differs from the one before. */
+    suspend fun priceChanges(): List<com.emotionalleaves.sprout.domain.insights.PriceChange> = withContext(Dispatchers.IO) {
+        db.recurring().getAll().filter { it.status != RecurringStatus.DISMISSED }.mapNotNull { r ->
+            com.emotionalleaves.sprout.domain.insights.PriceChange.detect(r.displayName, db.insights().recentCharges(r.merchantKey).reversed())
+        }
+    }
+
+    /** This month's totals for pinned categories ("c:<id>") and merchants ("m:<key>"). */
+    suspend fun watch(items: Set<String>): List<Triple<String, String, Long>> = withContext(Dispatchers.IO) {
+        if (items.isEmpty()) return@withContext emptyList()
+        val z = zone()
+        val w = MonthWindow.of(YearMonth.from(today()), z)
+        val cats = db.categories().getAll().associateBy { it.id }
+        val sums = db.budgets().spendRows(w.start, w.end).groupBy { it.categoryId }.mapValues { (_, l) -> maxOf(0L, -l.sumOf { it.amountMinor }) }
+        val merchants = db.insights().merchantTotals(w.start, w.end).associate { it.merchantKey to it.total }
+        items.mapNotNull { item ->
+            when {
+                item.startsWith("c:") -> item.drop(2).toLongOrNull()?.let { id -> cats[id]?.let { Triple(item, it.name, sums[id] ?: 0L) } }
+                item.startsWith("m:") -> item.drop(2).let { k -> Triple(item, MerchantNormalizer.displayName(k), maxOf(0L, merchants[k] ?: 0L)) }
+                else -> null
+            }
+        }
+    }
+
+    data class Reports(
+        val months: List<YearMonth>,
+        val incomeByMonth: List<Long>,
+        val spendingByMonth: List<Long>,
+        val categories: List<Pair<String, Long>>,
+        val accounts: List<Pair<String, Long>>,
+    )
+
+    /** Reports for the last [months] months: cash flow per month, and spending by category and by account. */
+    suspend fun reports(months: Int): Reports = withContext(Dispatchers.IO) {
+        val z = zone()
+        val current = YearMonth.from(today())
+        val list = (months - 1 downTo 0).map { current.minusMonths(it.toLong()) }
+        val start = MonthWindow.of(list.first(), z).start
+        val end = MonthWindow.of(current, z).end
+        val expense = db.categories().getAll().filter { it.kind == CategoryKind.EXPENSE }.associateBy { it.id }
+        val rows = db.budgets().spendRows(start, end).filter { it.categoryId in expense }
+        val spendMonth = rows.groupBy { MonthWindow.monthOf(it.occurredAt, z) }
+            .mapValues { (_, l) -> l.groupBy { it.categoryId }.values.sumOf { c -> maxOf(0L, -c.sumOf { it.amountMinor }) } }
+        val byCat = rows.groupBy { it.categoryId }.mapValues { (_, l) -> maxOf(0L, -l.sumOf { it.amountMinor }) }
+            .filterValues { it > 0 }.entries.sortedByDescending { it.value }.map { expense.getValue(it.key).name to it.value }
+        Reports(
+            months = list,
+            incomeByMonth = list.map { m -> MonthWindow.of(m, z).let { w -> db.insights().income(w.start, w.end) } },
+            spendingByMonth = list.map { spendMonth[it] ?: 0L },
+            categories = byCat,
+            accounts = db.insights().spendingByAccount(start, end).map { it.name to it.total },
+        )
+    }
+
+    data class YearReview(
+        val year: Int,
+        val spentMinor: Long,
+        val incomeMinor: Long,
+        val topCategories: List<Pair<String, Long>>,
+        val topMerchants: List<Pair<String, Long>>,
+        val biggest: Pair<String, Long>?,
+        val priciestMonth: Pair<YearMonth, Long>?,
+        val cheapestMonth: Pair<YearMonth, Long>?,
+        val noSpendDays: Int,
+        val transactions: Int,
+        val byMonth: List<Pair<YearMonth, Long>>,
+    )
+
+    /** A whole year in review (this year so far by default). */
+    suspend fun yearReview(year: Int = today().year): YearReview = withContext(Dispatchers.IO) {
+        val z = zone()
+        val first = YearMonth.of(year, 1)
+        val last = minOf(YearMonth.of(year, 12), YearMonth.from(today()))
+        val start = MonthWindow.of(first, z).start
+        val end = MonthWindow.of(last, z).end
+        val expense = db.categories().getAll().filter { it.kind == CategoryKind.EXPENSE }.associateBy { it.id }
+        val rows = db.budgets().spendRows(start, end).filter { it.categoryId in expense }
+        val byCat = rows.groupBy { it.categoryId }.mapValues { (_, l) -> maxOf(0L, -l.sumOf { it.amountMinor }) }
+        val months = generateSequence(first) { it.plusMonths(1) }.takeWhile { !it.isAfter(last) }.toList()
+        val byMonth = rows.groupBy { MonthWindow.monthOf(it.occurredAt, z) }
+            .mapValues { (_, l) -> l.groupBy { it.categoryId }.values.sumOf { c -> maxOf(0L, -c.sumOf { it.amountMinor }) } }
+        val monthList = months.map { it to (byMonth[it] ?: 0L) }
+        val spentDays = rows.map { java.time.Instant.ofEpochSecond(it.occurredAt).atZone(z).toLocalDate() }.toSet()
+        val firstDay = rows.minOfOrNull { it.occurredAt }?.let { java.time.Instant.ofEpochSecond(it).atZone(z).toLocalDate() }
+        val endDay = minOf(last.atEndOfMonth(), today())
+        val daysCovered = firstDay?.let { java.time.temporal.ChronoUnit.DAYS.between(it, endDay).toInt() + 1 } ?: 0
+        val withSpend = monthList.filter { it.second > 0 }
+        YearReview(
+            year = year,
+            spentMinor = byCat.values.sum(),
+            incomeMinor = db.insights().income(start, end),
+            topCategories = byCat.entries.sortedByDescending { it.value }.take(5).map { expense.getValue(it.key).name to it.value },
+            topMerchants = db.insights().merchantTotals(start, end).take(5).map { MerchantNormalizer.displayName(it.merchantKey) to it.total },
+            biggest = db.insights().biggestCharge(start, end)?.let { MerchantNormalizer.displayName(it.merchantKey) to -it.amountMinor },
+            priciestMonth = withSpend.maxByOrNull { it.second },
+            cheapestMonth = withSpend.minByOrNull { it.second },
+            noSpendDays = (daysCovered - spentDays.size).coerceAtLeast(0),
+            transactions = db.insights().countIn(start, end),
+            byMonth = monthList,
+        )
+    }
+
     suspend fun insights(): List<Insight> = withContext(Dispatchers.IO) {
         val z = zone()
         val today = today()
@@ -98,7 +209,12 @@ class InsightsRepository(private val db: SproutDatabase, private val clock: Cloc
         val merchants = db.insights().merchantTotals(w.start, w.end).map { MerchantSpend(MerchantNormalizer.displayName(it.merchantKey), it.total, it.count) }
         val subs = subscriptions()
         val spent = grid.sumOf { it.byMonth.last() }
-        InsightEngine.build(today, categoryMonths, merchants, subs.monthlyMinor, subs.count, db.insights().income(w.start, w.end), spent)
+        val base = InsightEngine.build(today, categoryMonths, merchants, subs.monthlyMinor, subs.count, db.insights().income(w.start, w.end), spent)
+        val changes = priceChanges().filter { it.up }.map {
+            Insight("price-${it.name}", "${it.name} went up", "From ${com.emotionalleaves.sprout.domain.money.Money.format(it.fromMinor)} to " +
+                "${com.emotionalleaves.sprout.domain.money.Money.format(it.toMinor)}. Still worth it?", com.emotionalleaves.sprout.domain.insights.Tone.HEADS_UP)
+        }
+        (changes + base).take(8)
     }
 
     /** Net worth at the end of each of the last [months] months (today for the current one), from included USD accounts. */

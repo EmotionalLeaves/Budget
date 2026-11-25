@@ -223,8 +223,20 @@ fun YearScreen(onBack: () -> Unit, onCategory: (Long) -> Unit) {
 fun SubscriptionsSummary() {
     val c: AppContainer = appContainer()
     val subs by produceState<com.emotionalleaves.sprout.data.insights.Subscriptions?>(null) { value = runCatching { c.insightsRepository.subscriptions() }.getOrNull() }
+    val changes by produceState<List<com.emotionalleaves.sprout.domain.insights.PriceChange>>(emptyList()) {
+        value = runCatching { c.insightsRepository.priceChanges() }.getOrDefault(emptyList())
+    }
     val s = subs ?: return
     if (s.count == 0) return
+    changes.forEach { ch ->
+        SoftCard {
+            Text("${ch.name} ${if (ch.up) "went up" else "went down"}", style = MaterialTheme.typography.titleSmall,
+                color = if (ch.up) LocalSproutColors.current.warning else LocalSproutColors.current.ok)
+            Text("From ${Money.format(ch.fromMinor)} to ${Money.format(ch.toMinor)} on the latest charge" +
+                if (ch.up) ". If it's not worth it any more, cancel it with the company directly." else ".",
+                style = MaterialTheme.typography.bodySmall)
+        }
+    }
     SoftCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconBadge(Icons.Rounded.AutoAwesome, MaterialTheme.colorScheme.secondary)

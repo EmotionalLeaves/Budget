@@ -46,6 +46,16 @@ data class Settings(
     val notifyBills: Boolean = false,
     /** "YYYY-MM" of the last monthly recap you closed. */
     val recapDismissed: String? = null,
+    /** 0 = a budget per category, 1 = Flex (fixed costs + one Flex amount). */
+    val budgetMode: Int = 0,
+    /** The one Flex amount (cents) in Flex mode. */
+    val flexBudgetMinor: Long = 0,
+    /** Categories counted as fixed in Flex mode (besides bills). */
+    val fixedCategoryIds: Set<Long> = emptySet(),
+    /** Pinned to Home: "c:<categoryId>" or "m:<merchantKey>". */
+    val watchlist: Set<String> = emptySet(),
+    /** Get test builds (prereleases) as updates too. */
+    val betaUpdates: Boolean = false,
 )
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -76,6 +86,11 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
             privacyMode = p[PRIVACY_MODE] ?: false,
             notifyBills = p[NOTIFY_BILLS] ?: false,
             recapDismissed = p[RECAP_DISMISSED],
+            budgetMode = p[BUDGET_MODE] ?: 0,
+            flexBudgetMinor = p[FLEX_BUDGET] ?: 0,
+            fixedCategoryIds = p[FIXED_IDS]?.mapNotNull { it.toLongOrNull() }?.toSet() ?: emptySet(),
+            watchlist = p[WATCHLIST] ?: emptySet(),
+            betaUpdates = p[BETA] ?: false,
         )
     }
 
@@ -96,6 +111,14 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
     suspend fun setHideInRecents(on: Boolean) = dataStore.edit { it[HIDE_RECENTS] = on }
     suspend fun setThemeMode(mode: Int) = dataStore.edit { it[THEME_MODE] = mode.coerceIn(0, 2) }
     suspend fun setDynamicColor(on: Boolean) = dataStore.edit { it[DYNAMIC_COLOR] = on }
+    suspend fun setBudgetMode(mode: Int) = dataStore.edit { it[BUDGET_MODE] = mode.coerceIn(0, 1) }
+    suspend fun setFlexBudget(minor: Long) = dataStore.edit { it[FLEX_BUDGET] = minor.coerceAtLeast(0) }
+    suspend fun setFixedCategories(ids: Set<Long>) = dataStore.edit { it[FIXED_IDS] = ids.map { id -> id.toString() }.toSet() }
+    suspend fun toggleWatch(item: String) = dataStore.edit {
+        val cur = it[WATCHLIST] ?: emptySet()
+        it[WATCHLIST] = if (item in cur) cur - item else (cur + item).toList().takeLast(8).toSet()
+    }
+    suspend fun setBetaUpdates(on: Boolean) = dataStore.edit { it[BETA] = on }
     suspend fun setRecapDismissed(month: String) = dataStore.edit { it[RECAP_DISMISSED] = month }
     suspend fun setNotifyBills(on: Boolean) = dataStore.edit { it[NOTIFY_BILLS] = on }
     suspend fun setPrivacyMode(on: Boolean) = dataStore.edit { it[PRIVACY_MODE] = on }
@@ -132,5 +155,10 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         val PRIVACY_MODE = booleanPreferencesKey("privacy_mode")
         val NOTIFY_BILLS = booleanPreferencesKey("notify_bills")
         val RECAP_DISMISSED = stringPreferencesKey("recap_dismissed")
+        val BUDGET_MODE = intPreferencesKey("budget_mode")
+        val FLEX_BUDGET = longPreferencesKey("flex_budget_minor")
+        val FIXED_IDS = androidx.datastore.preferences.core.stringSetPreferencesKey("fixed_category_ids")
+        val WATCHLIST = androidx.datastore.preferences.core.stringSetPreferencesKey("watchlist")
+        val BETA = booleanPreferencesKey("beta_updates")
     }
 }

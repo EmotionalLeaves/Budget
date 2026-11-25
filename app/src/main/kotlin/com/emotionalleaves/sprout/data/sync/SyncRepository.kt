@@ -303,8 +303,11 @@ class SyncRepository(
                 val byId = existing.associateBy { it.id }
                 if (result.deleteIds.isNotEmpty()) result.deleteIds.chunked(500).forEach { db.transactions().deleteByIds(it) }
                 if (result.upserts.isNotEmpty()) {
+                    // History from a first sync or backfill doesn't go to the review inbox; only new activity does.
+                    val historical = existingAccounts[key]?.firstSyncCompleted != true || key in backfilled
                     db.transactions().upsert(result.upserts.map { st ->
-                        st.toEntity(a.currency, fallbackCategory, byId[st.id], now)
+                        val e = st.toEntity(a.currency, fallbackCategory, byId[st.id], now)
+                        if (historical && e.reviewedAt == null) e.copy(reviewedAt = now) else e
                     })
                 }
                 newCount += result.newCount
@@ -365,6 +368,7 @@ internal fun TransactionEntity.toStored() = StoredTx(
     merchantKey = merchantKey, postedAt = postedAt, transactedAt = transactedAt, pending = pending,
     effectiveAt = occurredAt, categoryId = categoryId, categorySource = categorySource, note = note,
     alertedAt = alertedAt, createdAt = importedAt, excludedFromBudget = excludedFromBudget,
+    reviewedAt = reviewedAt,
 )
 
 internal fun StoredTx.toEntity(currency: String, fallbackCategory: Long, old: TransactionEntity?, now: Long) = TransactionEntity(
@@ -373,4 +377,5 @@ internal fun StoredTx.toEntity(currency: String, fallbackCategory: Long, old: Tr
     merchantKey = merchantKey, pending = pending, categoryId = categoryId ?: fallbackCategory,
     categorySource = categorySource, note = note, excludedFromBudget = old?.excludedFromBudget ?: excludedFromBudget,
     recurringChargeId = old?.recurringChargeId, alertedAt = alertedAt, importedAt = createdAt, updatedAt = now,
+    reviewedAt = old?.reviewedAt ?: reviewedAt,
 )

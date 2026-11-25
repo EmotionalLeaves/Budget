@@ -173,6 +173,27 @@ interface TransactionDao {
 
     @Query("SELECT COUNT(*) FROM transactions") fun observeCount(): Flow<Int>
 
+    /** The review inbox: new transactions you haven't marked seen, newest first. */
+    @Query(
+        """
+        SELECT t.id, t.accountId, t.description, t.merchantKey, t.amountMinor, t.occurredAt, t.pending, t.note,
+               t.categoryId, c.name AS categoryName, c.colorArgb AS categoryColor, t.categorySource,
+               COALESCE(a.displayName, a.name) AS accountName,
+               (SELECT COUNT(*) FROM transaction_splits s WHERE s.transactionId = t.id) AS splitCount, c.iconKey AS categoryIcon
+        FROM transactions t JOIN categories c ON c.id = t.categoryId JOIN accounts a ON a.id = t.accountId
+        WHERE t.reviewedAt IS NULL AND a.hidden = 0
+        ORDER BY t.occurredAt DESC, t.id DESC LIMIT 500
+        """,
+    )
+    fun observeInbox(): Flow<List<TransactionRow>>
+
+    @Query("SELECT COUNT(*) FROM transactions t JOIN accounts a ON a.id = t.accountId WHERE t.reviewedAt IS NULL AND a.hidden = 0")
+    fun observeInboxCount(): Flow<Int>
+
+    @Query("UPDATE transactions SET reviewedAt = :now WHERE id IN (:ids)") suspend fun markReviewed(ids: List<String>, now: Long)
+    @Query("UPDATE transactions SET reviewedAt = :now WHERE reviewedAt IS NULL") suspend fun markAllReviewed(now: Long): Int
+    @Query("UPDATE transactions SET reviewedAt = NULL WHERE id IN (:ids)") suspend fun markUnreviewed(ids: List<String>)
+
     @Query(
         """
         SELECT t.id, t.accountId, t.description, t.merchantKey, t.amountMinor, t.occurredAt, t.pending, t.note,
@@ -639,6 +660,35 @@ interface InsightDao {
         """,
     )
     suspend fun biggestCharge(start: Long, end: Long): MerchantCharge?
+
+    /** Charges at a merchant, oldest first (for price-change detection). */
+    @Query("SELECT -amountMinor FROM transactions WHERE merchantKey = :merchantKey AND amountMinor < 0 AND pending = 0 ORDER BY occurredAt DESC LIMIT :limit")
+    suspend fun recentCharges(merchantKey: String, limit: Int = 3): List<Long>
+
+    /** Spending per account in a range (positive cents). */
+    @Query(
+        """
+        SELECT COALESCE(a.displayName, a.name) AS name, -SUM(t.amountMinor) AS total
+        FROM transactions t JOIN accounts a ON a.id = t.accountId JOIN categories c ON c.id = t.categoryId
+        WHERE t.occurredAt >= :start AND t.occurredAt < :end AND c.kind = 'EXPENSE' AND t.excludedFromBudget = 0 AND a.hidden = 0
+        GROUP BY a.id HAVING total > 0 ORDER BY total DESC
+        """,
+    )
+    suspend fun spendingByAccount(start: Long, end: Long): List<NamedTotal>
+
+    @Query("SELECT COUNT(*) FROM transactions t JOIN accounts a ON a.id = t.accountId WHERE t.occurredAt >= :start AND t.occurredAt < :end AND a.hidden = 0")
+    suspend fun countIn(start: Long, end: Long): Int
 }
 
+data class NamedTotal(val name: String, val total: Long)
+
 data class MerchantCharge(val merchantKey: String, val amountMinor: Long)
+
+@Dao
+interface ReceiptDao {
+    @Query("SELECT * FROM receipts WHERE transactionId = :transactionId ORDER BY createdAt") fun observeFor(transactionId: String): Flow<List<ReceiptEntity>>
+    @Query("SELECT * FROM receipts") suspend fun getAll(): List<ReceiptEntity>
+    @Insert suspend fun insert(item: ReceiptEntity): Long
+    @Query("DELETE FROM receipts WHERE id = :id") suspend fun delete(id: Long)
+    @Query("SELECT COUNT(*) FROM receipts WHERE transactionId = :transactionId") suspend fun countFor(transactionId: String): Int
+}

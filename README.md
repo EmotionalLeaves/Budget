@@ -130,6 +130,9 @@ Decisions made while building, one per line:
 - The update key comes only from the `UPDATE_TOKEN` repo secret (never committed). Anyone with a copy of the APK could pull a key out of it, which would only let them read this one repo.
 - Net worth over time is rebuilt from today's balances and your transactions, not stored snapshots, so it only goes back as far as your transactions do.
 - Tags are free labels on transactions; deleting a tag never deletes transactions.
+- Features modeled on other apps (Flex budgeting, review inbox, Age of Money, pace and others) are Sprout's own implementations from public descriptions. Nothing that moves money (bill negotiation, cancellation services, automatic transfers) is copied, ever.
+- Receipt photos aren't included in backups (backups stay small enough to email); they stay on the phone.
+- Age of Money uses checking, savings and cash accounts counted in your total, first-in-first-out, averaged over your last 10 outflows.
 
 ## For developers
 

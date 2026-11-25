@@ -114,6 +114,28 @@ class MigrationTest {
         room.close()
     }
 
+    @Test fun migrate5To6MarksHistoryReviewedAndKeepsGoals() {
+        helper.createDatabase(name, 5).use { db ->
+            seedV1(db)
+            db.execSQL("INSERT INTO savings_goals (id, name, targetMinor, targetDate, accountId, savedMinor, archived, createdAt, updatedAt) VALUES (1, 'Trip', 100000, NULL, NULL, 2500, 0, 1, 2)")
+            db.execSQL("INSERT INTO tags (id, name, colorArgb, createdAt) VALUES (1, 'Trip', 0, 1)")
+            db.execSQL("INSERT INTO transaction_tags (transactionId, tagId) VALUES ('sf:C:A:1', 1)")
+        }
+        helper.runMigrationsAndValidate(name, 6, true, Migrations.MIGRATION_5_6).use { db ->
+            db.query("SELECT reviewedAt FROM transactions WHERE id = 'sf:C:A:1'").use { c -> c.moveToFirst(); assertEquals(95L, c.getLong(0)) }
+            db.query("SELECT kind, savedMinor FROM savings_goals WHERE id = 1").use { c -> c.moveToFirst(); assertEquals("SAVINGS", c.getString(0)); assertEquals(2500L, c.getLong(1)) }
+            db.query("SELECT COUNT(*) FROM receipts").use { c -> c.moveToFirst(); assertEquals(0, c.getInt(0)) }
+            db.query("SELECT COUNT(*) FROM transaction_tags").use { c -> c.moveToFirst(); assertEquals(1, c.getInt(0)) }
+        }
+        val room = Room.databaseBuilder(ApplicationProvider.getApplicationContext(), SproutDatabase::class.java, name)
+            .addMigrations(*SproutDatabase.MIGRATIONS).allowMainThreadQueries().build()
+        runBlocking {
+            assertEquals(95L, room.backup().transactions().single().reviewedAt)
+            assertEquals("SAVINGS", room.goals().getAll().single().kind)
+        }
+        room.close()
+    }
+
     @Test fun migrate1ToLatestInOneGo() {
         helper.createDatabase(name, 1).use { seedV1(it) }
         helper.runMigrationsAndValidate(name, SproutDatabase.VERSION, true, *SproutDatabase.MIGRATIONS).close()

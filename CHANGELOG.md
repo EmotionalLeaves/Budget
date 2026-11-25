@@ -2,7 +2,34 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
-## [2.3.0] - 2026-11-24
+## [2.4.0] - 2026-11-24
+
+Round 5, the biggest yet: the best ideas from the leading budgeting apps (YNAB, Monarch, Copilot, Rocket Money, PocketGuard), done Sprout's way: private, read-only, on your phone.
+
+### Auto-update
+- **Test builds channel**: Settings → Updates → "Get test builds too" to get newer builds before they're a release. Updates are now compared by build number, so nothing is ever offered twice or skipped.
+
+### New look
+- **Reports** (like Monarch and Copilot's Cash Flow): income vs spending per month, the share of each category as a donut, and spending by account, for this month, 3, 6 or 12 months. Totals for what came in, what went out and what you kept.
+- **Year in review** (like Copilot): your year's spending, what you kept, month-by-month bars, top categories, top places, lightest and biggest month, biggest purchase and no-spend days. Flip back through earlier years.
+- Home gets quick links (Reports, Year in review, Net worth, Tags, Debt plan, Goals), an Age of Money card and your watchlist.
+- A badge on the Activity tab shows how many new transactions are waiting for review.
+
+### New features
+- **Review inbox** (like Copilot): new transactions wait in "To review" until you've seen them. Fix a category, then swipe right or tap ✓, or "All reviewed". Undo is one tap. Your history and imports don't fill it up.
+- **Flex budgeting** (like Monarch): switch Budgets to "Flex" for one amount for everyday spending, with fixed costs (rent, bills, subscriptions; you choose) tracked separately. Safe to spend follows it. Your category budgets are kept if you switch back.
+- **Pace** (like PocketGuard): each budget shows "On pace for $X" and warns early if you're heading over.
+- **Planned expenses** (like YNAB targets and Monarch's non-monthly expenses): add a planned expense such as "Car registration, $240, due June". Sprout works out a little to set aside each month and keeps it out of safe to spend.
+- **Age of Money** (like YNAB): how many days old the money you spend is. Aim for 30+.
+- **Price change alerts** (like Copilot and Rocket Money): "Netflix went up from $15.49 to $17.99" in Insights and on the Bills tab.
+- **Receipt photos**: attach photos to any transaction with Android's photo picker (no permission needed). They're kept privately in Sprout; tap to view or delete.
+- **Watchlist** (like Rocket Money): "Pin to Home" on any category or merchant page to see this month's total on Home.
+- **What your month costs** (like YNAB's "Cost to be me"): your budgets plus bills outside them, as one number.
+
+### Data safety
+- Database version 6 adds a review date to transactions, a type to goals, and a receipts table. Updating keeps all your data (tested from every earlier version), and everything you already have counts as reviewed. Backups include review dates and goal types; receipt photos aren't in backups.
+
+ - 2026-11-24
 
 Round 4 of the overhaul.
 

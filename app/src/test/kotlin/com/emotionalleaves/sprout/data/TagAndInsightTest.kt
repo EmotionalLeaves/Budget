@@ -113,4 +113,57 @@ class TagAndInsightTest {
         assertEquals(300_000L, income) // averaged over the months that had income
         assertTrue(plan.values.sum() <= 240_000L)
     }
+
+    @Test fun inboxOnlyHoldsNewActivityAfterTheFirstSync() = runBlocking {
+        sync(Triple("1", "KROGER|-10.00", at(11, 2)))
+        assertEquals(0, env.db.transactions().observeInboxCount().first())
+        sync(Triple("1", "KROGER|-10.00", at(11, 2)), Triple("2", "TARGET|-20.00", at(11, 20)))
+        val inbox = env.db.transactions().observeInbox().first()
+        assertEquals(listOf("TARGET"), inbox.map { it.description })
+        env.db.transactions().markReviewed(inbox.map { it.id }, 5)
+        assertEquals(0, env.db.transactions().observeInboxCount().first())
+        // A re-sync never puts it back.
+        sync(Triple("1", "KROGER|-10.00", at(11, 2)), Triple("2", "TARGET|-20.00", at(11, 20)))
+        assertEquals(0, env.db.transactions().observeInboxCount().first())
+    }
+
+    @Test fun plannedExpenseComesOutOfSafeToSpend() = runBlocking {
+        sync(Triple("1", "KROGER|-10.00", at(11, 2)))
+        val goals = com.emotionalleaves.sprout.data.goals.GoalRepository(env.db, env.clock) { zone }
+        val budgets = com.emotionalleaves.sprout.data.budget.BudgetRepository(env.db, env.clock, { zone }, plannedSetAside = { goals.observePlannedSetAside() })
+        val g = env.db.categories().getByKey(DefaultCategories.GROCERIES)!!.id
+        val nov = java.time.YearMonth.of(2026, 11)
+        budgets.setBudget(g, 30_000, false, nov)
+        assertEquals(29_000L, budgets.observeMonth(nov).first().safeToSpend!!.amountMinor)
+        goals.save(null, "Car registration", 24_000, java.time.LocalDate.of(2027, 6, 1), null, 0, com.emotionalleaves.sprout.data.goals.GoalRepository.KIND_PLANNED)
+        val safe = budgets.observeMonth(nov).first().safeToSpend!!
+        assertEquals(3_000L, safe.plannedMinor)
+        assertEquals(26_000L, safe.amountMinor)
+    }
+
+    @Test fun flexModeReportsAndYearReview() = runBlocking {
+        sync(
+            Triple("1", "ACME PAYROLL|3000.00", at(11, 1)), Triple("2", "RENT CO|-1000.00", at(11, 2)),
+            Triple("3", "TARGET|-200.00", at(11, 15)), Triple("4", "TARGET|-50.00", at(10, 15)),
+        )
+        env.settings.setFlexBudget(50_000)
+        val flex = com.emotionalleaves.sprout.data.budget.FlexRepository(
+            env.db, env.settings, com.emotionalleaves.sprout.data.budget.BudgetRepository(env.db, env.clock, { zone }),
+            { kotlinx.coroutines.flow.flowOf(emptyList()) }, { kotlinx.coroutines.flow.flowOf(0L) }, { zone },
+        )
+        val rent = env.db.backup().transactions().first { it.description == "RENT CO" }.categoryId
+        env.settings.setFixedCategories(setOf(rent))
+        val m = flex.observe(java.time.YearMonth.of(2026, 11)).first().month
+        assertEquals(100_000L, m.fixedSpentMinor)
+        assertEquals(20_000L, m.flexSpentMinor)
+        assertEquals(30_000L, m.safeMinor)
+        val repo = InsightsRepository(env.db, env.clock) { zone }
+        val r = repo.reports(3)
+        assertEquals(300_000L, r.incomeByMonth.sum())
+        assertEquals(125_000L, r.spendingByMonth.sum())
+        val y = repo.yearReview(2026)
+        assertEquals(125_000L, y.spentMinor)
+        assertEquals(java.time.YearMonth.of(2026, 11), y.priciestMonth?.first)
+        assertTrue(repo.watch(setOf("c:$rent", "m:TARGET")).isNotEmpty())
+    }
 }

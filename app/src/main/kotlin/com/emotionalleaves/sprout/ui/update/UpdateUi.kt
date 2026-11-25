@@ -137,7 +137,7 @@ private fun UpdateBody(updates: UpdateRepository, state: UpdateState, showLater:
 
 /** Settings → Updates: version, check now, automatic checks. */
 @Composable
-fun UpdateSettings(updates: UpdateRepository) {
+fun UpdateSettings(updates: UpdateRepository, beta: Boolean = false, onBeta: (Boolean) -> Unit = {}) {
     val state by updates.state.collectAsState()
     val auto by updates.autoCheck.collectAsState(initial = true)
     val scope = rememberCoroutineScope()
@@ -146,6 +146,14 @@ fun UpdateSettings(updates: UpdateRepository) {
         Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("Check for updates automatically", Modifier.weight(1f))
             Switch(checked = auto, onCheckedChange = { scope.launch { updates.setAutoCheck(it) } })
+        }
+        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Get test builds too")
+                Text("Newer builds before they're a release. Might be rough.", style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Switch(checked = beta, onCheckedChange = onBeta)
         }
         val hasKey by updates.hasKeyFlow.collectAsState()
         LaunchedEffect(Unit) { updates.refreshHasKey() }

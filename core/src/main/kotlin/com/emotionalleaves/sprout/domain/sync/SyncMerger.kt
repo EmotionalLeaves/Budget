@@ -27,6 +27,8 @@ data class StoredTx(
     val alertedAt: Long?,
     val createdAt: Long,
     val excludedFromBudget: Boolean = false,
+    /** When you marked it seen in the review inbox; null = still to review. */
+    val reviewedAt: Long? = null,
 )
 
 data class MergeResult(
@@ -134,6 +136,7 @@ class SyncMerger(
                         alertedAt = match.alertedAt,
                         createdAt = match.createdAt,
                         excludedFromBudget = match.excludedFromBudget,
+                        reviewedAt = match.reviewedAt,
                     )
                     carried = true
                 }

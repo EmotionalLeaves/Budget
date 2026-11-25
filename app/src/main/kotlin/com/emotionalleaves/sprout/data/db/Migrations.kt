@@ -65,4 +65,22 @@ object Migrations {
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_transaction_tags_tagId` ON `transaction_tags` (`tagId`)")
         }
     }
+
+    /**
+     * v6: review inbox, planned expenses, receipts. Adds columns and a table; every existing transaction counts as
+     * already reviewed (so the inbox starts empty instead of holding your whole history).
+     */
+    val MIGRATION_5_6 = object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE `transactions` ADD COLUMN `reviewedAt` INTEGER")
+            db.execSQL("UPDATE `transactions` SET `reviewedAt` = `updatedAt`")
+            db.execSQL("ALTER TABLE `savings_goals` ADD COLUMN `kind` TEXT NOT NULL DEFAULT 'SAVINGS'")
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `receipts` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `transactionId` TEXT NOT NULL, " +
+                    "`fileName` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, " +
+                    "FOREIGN KEY(`transactionId`) REFERENCES `transactions`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_receipts_transactionId` ON `receipts` (`transactionId`)")
+        }
+    }
 }

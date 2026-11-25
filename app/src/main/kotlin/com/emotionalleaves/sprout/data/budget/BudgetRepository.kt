@@ -33,6 +33,8 @@ class BudgetRepository(
     private val zone: () -> ZoneId = { ZoneId.systemDefault() },
     /** Expected recurring charges for a month; wired to recurring detection in M7. */
     private val expectedCharges: (YearMonth) -> Flow<List<ExpectedCharge>> = { flowOf(emptyList()) },
+    /** This month's set-aside for planned expenses (sinking funds). */
+    private val plannedSetAside: () -> Flow<Long> = { flowOf(0L) },
 ) {
     fun today(): LocalDate = LocalDate.now(clock.withZone(zone()))
     fun currentMonth(): YearMonth = YearMonth.from(today())
@@ -54,7 +56,7 @@ class BudgetRepository(
             db.budgets().observeSums(window.start, window.end),
             expectedCharges(month),
         ) { cats, defaults, overrides, sums, charges -> Inputs(cats, defaults, overrides, sums, charges) }
-            .combine(combine(db.budgets().observeRollovers(), db.budgets().observeOverridesBefore(month.toString())) { r, o -> r to o }) { i, (rollovers, pastOverrides) ->
+            .combine(combine(db.budgets().observeRollovers(), db.budgets().observeOverridesBefore(month.toString()), plannedSetAside()) { r, o, p -> Triple(r, o, p) }) { i, (rollovers, pastOverrides, planned) ->
             val (cats, defaults, overrides, sums, charges) = i
             val defaultMap = defaults.associate { it.categoryId to it.amountMinor }
             BudgetMath.computeFromSums(
@@ -68,6 +70,7 @@ class BudgetRepository(
                 sumsByCategory = sums.associate { it.categoryId to it.total },
                 expectedCharges = charges,
                 carries = carries(month, rollovers, defaultMap, pastOverrides),
+                plannedSetAsideMinor = planned,
             )
         }
     }

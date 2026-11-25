@@ -118,6 +118,7 @@ class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
     fun setAccount(id: String?) { _filter.value = _filter.value.copy(accountId = id) }
     fun setCategory(id: Long?) { _filter.value = _filter.value.copy(categoryId = id, uncategorizedOnly = false) }
     fun setTag(id: Long?) { _filter.value = _filter.value.copy(tagId = id) }
+    val inboxCount = c.db.transactions().observeInboxCount()
     val tags: StateFlow<List<com.emotionalleaves.sprout.data.db.TagEntity>> = c.db.tags().observeAll()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
@@ -170,6 +171,11 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
             ),
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
         )
+        val inbox by remember { vm.inboxCount }.collectAsStateWithLifecycle(0)
+        val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
+        if (inbox > 0) {
+            Banner("$inbox new to review", actionLabel = "Review", onAction = { navigate("inbox") }, warning = false)
+        }
         if (uncategorized > 0) {
             Banner(
                 "$uncategorized uncategorized transaction${if (uncategorized == 1) "" else "s"}",

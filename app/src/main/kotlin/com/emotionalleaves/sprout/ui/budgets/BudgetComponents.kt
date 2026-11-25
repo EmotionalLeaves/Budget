@@ -84,7 +84,7 @@ fun BudgetProgress(spent: Long, budget: Long, level: ProgressLevel?, modifier: M
 }
 
 @Composable
-fun CategoryBudgetRow(line: CategoryLine, onEdit: (() -> Unit)? = null, onClick: () -> Unit) {
+fun CategoryBudgetRow(line: CategoryLine, onEdit: (() -> Unit)? = null, pace: String? = null, onClick: () -> Unit) {
     val budget = line.budgetMinor ?: 0L
     val remaining = line.remainingMinor ?: 0L
     val desc = "${line.category.name}: ${Money.format(line.spentMinor)} of ${Money.format(budget)}, ${leftOrOver(remaining)}"
@@ -124,6 +124,7 @@ fun CategoryBudgetRow(line: CategoryLine, onEdit: (() -> Unit)? = null, onClick:
                 if (budget <= 0) (if (line.spentMinor > 0) 1f else 0f) else line.spentMinor.toFloat() / budget,
                 levelColor(line.level),
             )
+            if (pace != null) Text(pace, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -183,6 +184,7 @@ fun SafeToSpendBreakdown(month: BudgetMonth, onDismiss: () -> Unit) {
                             style = MaterialTheme.typography.bodySmall)
                     }
                 }
+                if (safe.plannedMinor > 0) Text("Minus this month's set-aside for planned expenses: −${Money.format(safe.plannedMinor)}")
                 Text("= ${Money.format(safe.amountMinor)} safe to spend", style = MaterialTheme.typography.titleMedium)
                 safe.daysRemaining?.let { d ->
                     Text("$d day${if (d == 1) "" else "s"} left including today" +

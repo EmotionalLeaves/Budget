@@ -220,6 +220,8 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
     val backStack by nav.currentBackStackEntryAsState()
     val route = backStack?.destination?.route
     val showBar = Tab.entries.any { it.route == route }
+    val container = appContainer()
+    val inboxCount by remember { container.db.transactions().observeInboxCount() }.collectAsState(initial = 0)
 
     fun goTab(tab: Tab) = nav.navigate(tab.route) {
         popUpTo(nav.graph.findStartDestination().id) { saveState = true }
@@ -251,7 +253,15 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
                         NavigationBarItem(
                             selected = route == tab.route,
                             onClick = { goTab(tab) },
-                            icon = { Icon(tab.icon, contentDescription = null) },
+                            icon = {
+                                if (tab == Tab.TRANSACTIONS && inboxCount > 0) {
+                                    androidx.compose.material3.BadgedBox(badge = { androidx.compose.material3.Badge { Text(if (inboxCount > 99) "99+" else "$inboxCount") } }) {
+                                        Icon(tab.icon, contentDescription = "${tab.label}, $inboxCount to review")
+                                    }
+                                } else {
+                                    Icon(tab.icon, contentDescription = null)
+                                }
+                            },
                             label = { Text(tab.label) },
                         )
                     }
@@ -293,6 +303,9 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
                 com.emotionalleaves.sprout.ui.insights.MerchantScreen(key, snackbar, onBack = { nav.popBackStack() })
             }
             composable("debt") { com.emotionalleaves.sprout.ui.debt.DebtScreen(onBack = { nav.popBackStack() }) }
+            composable("inbox") { com.emotionalleaves.sprout.ui.transactions.InboxScreen(snackbar, onBack = { nav.popBackStack() }) }
+            composable("reports") { com.emotionalleaves.sprout.ui.insights.ReportsScreen(onBack = { nav.popBackStack() }) }
+            composable("year-review") { com.emotionalleaves.sprout.ui.insights.YearInReviewScreen(onBack = { nav.popBackStack() }) }
             composable("networth") { com.emotionalleaves.sprout.ui.insights.NetWorthScreen(onBack = { nav.popBackStack() }) }
             composable("year") { com.emotionalleaves.sprout.ui.insights.YearScreen(onBack = { nav.popBackStack() }, onCategory = { nav.navigate("category/$it") }) }
             composable("tags") { com.emotionalleaves.sprout.ui.tags.TagsScreen(onBack = { nav.popBackStack() }, onOpen = { nav.navigate("tag/$it") }) }

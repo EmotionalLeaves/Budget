@@ -1,5 +1,8 @@
 package com.emotionalleaves.sprout.ui.budgets
 
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import kotlinx.coroutines.flow.map
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -60,6 +63,15 @@ class BudgetsViewModel(private val c: AppContainer) : ViewModel() {
     val data: StateFlow<BudgetMonth?> = _month.flatMapLatest { c.budgetRepository.observeMonth(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
+    val mode: StateFlow<Int> = c.settings.settings.map { it.budgetMode }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val flex: StateFlow<com.emotionalleaves.sprout.data.budget.FlexState?> = _month.flatMapLatest { c.flexRepository.observe(it) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    fun today() = c.budgetRepository.today()
+    fun setMode(m: Int) = viewModelScope.launch { c.settings.setBudgetMode(m) }
+    fun setFlex(v: Long) = viewModelScope.launch { c.settings.setFlexBudget(v) }
+    fun setFixed(ids: Set<Long>) = viewModelScope.launch { c.settings.setFixedCategories(ids) }
+
     fun prev() = _month.update { it.minusMonths(1) }
     fun next() = _month.update { it.plusMonths(1) }
     fun isCurrent() = _month.value == c.budgetRepository.currentMonth()
@@ -83,6 +95,9 @@ fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit, onGoals:
     val data by vm.data.collectAsStateWithLifecycle()
     var editing by remember { mutableStateOf<CategoryLine?>(null) }
     var showAll by remember { mutableStateOf(false) }
+    val mode by vm.mode.collectAsStateWithLifecycle()
+    val flex by vm.flex.collectAsStateWithLifecycle()
+    val today = vm.today()
 
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -96,8 +111,41 @@ fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit, onGoals:
             IconButton(onClick = vm::next) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next month") }
         }
         val m = data ?: return@Column
+        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+            listOf("Per category", "Flex").forEachIndexed { i, label ->
+                SegmentedButton(mode == i, { vm.setMode(i) }, androidx.compose.material3.SegmentedButtonDefaults.itemShape(i, 2)) { Text(label) }
+            }
+        }
+        val isCurrent = java.time.YearMonth.from(today) == month
+        if (mode == 1) {
+            val fs = flex ?: return@Column
+            LazyColumn(Modifier.fillMaxSize()) {
+                item {
+                    val sc = com.emotionalleaves.sprout.ui.theme.LocalSproutColors.current
+                    com.emotionalleaves.sprout.ui.common.HeroCard(sc.hero) {
+                        Text("Safe to spend", style = MaterialTheme.typography.labelLarge, color = sc.onHero.copy(alpha = 0.8f))
+                        Text(Money.format(fs.month.safeMinor), style = MaterialTheme.typography.displayMedium, color = sc.onHero)
+                        fs.month.perDayMinor?.let { Text("≈ ${Money.format(it)} a day", style = MaterialTheme.typography.titleMedium, color = sc.onHero) }
+                    }
+                }
+                item { FlexSection(fs, today, isCurrent, vm::setFlex, vm::setFixed) }
+                item {
+                    Text("Flex mode: no cap per category. Switch back to \"Per category\" any time; your category budgets are kept.",
+                        Modifier.padding(20.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            return@Column
+        }
         LazyColumn(Modifier.fillMaxSize()) {
             item { com.emotionalleaves.sprout.ui.home.SafeToSpendHero(m.takeIf { it.safeToSpend != null }, 0, onQuickSetup) }
+            if (m.totalBudgetMinor > 0) item {
+                val bills = m.safeToSpend?.upcomingUnbudgeted?.sumOf { it.amountMinor } ?: 0L
+                com.emotionalleaves.sprout.ui.common.SoftCard {
+                    Text("Your month costs ${Money.formatWhole(m.totalBudgetMinor + bills)}", style = MaterialTheme.typography.titleSmall)
+                    Text("Budgets ${Money.formatWhole(m.totalBudgetMinor)}" + (if (bills > 0) " + bills outside budgets ${Money.formatWhole(bills)}" else "") +
+                        ". What it takes to be you, each month.", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
             item {
                 Row(Modifier.fillMaxWidth().padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     SectionTitle("Budgets", Modifier.weight(1f))
@@ -115,7 +163,7 @@ fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit, onGoals:
                 }
             }
             items(m.budgeted, key = { "b-" + it.category.id }) { line ->
-                CategoryBudgetRow(line, onEdit = { editing = line }) { onCategory(line.category.id) }
+                CategoryBudgetRow(line, onEdit = { editing = line }, pace = paceNote(line.spentMinor, line.budgetMinor, today, isCurrent)) { onCategory(line.category.id) }
             }
             if (m.unbudgetedWithSpending.isNotEmpty()) {
                 item { SectionTitle("Not budgeted") }

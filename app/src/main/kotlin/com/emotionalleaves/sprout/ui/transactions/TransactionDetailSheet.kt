@@ -206,6 +206,7 @@ fun TransactionDetailSheet(transactionId: String, onDismiss: () -> Unit, onMessa
                 }
             }
             com.emotionalleaves.sprout.ui.tags.TransactionTags(vm.c, d.id)
+            TransactionReceipts(vm.c, d.id)
             SwitchRow("Exclude from budget", d.excludedFromBudget) { vm.setExcluded(it) }
             Text(" ", Modifier.heightIn(min = 16.dp))
         }

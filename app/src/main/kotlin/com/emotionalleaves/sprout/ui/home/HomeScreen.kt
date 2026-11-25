@@ -96,6 +96,11 @@ fun HomeScreen(
     val insights by vm.insights.collectAsStateWithLifecycle()
     val calendar by vm.calendar.collectAsStateWithLifecycle()
     val recap by vm.recap.collectAsStateWithLifecycle()
+    val inbox by vm.inboxCount.collectAsStateWithLifecycle()
+    val flex by vm.flex.collectAsStateWithLifecycle()
+    val age by vm.ageOfMoney.collectAsStateWithLifecycle()
+    val watch by vm.watch.collectAsStateWithLifecycle()
+    val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
     val hidden by vm.privacy.collectAsStateWithLifecycle()
     androidx.compose.runtime.CompositionLocalProvider(com.emotionalleaves.sprout.ui.common.LocalHideAmounts provides hidden) {
     PullToRefreshBox(isRefreshing = syncing, onRefresh = vm::syncNow, modifier = Modifier.fillMaxSize()) {
@@ -162,9 +167,17 @@ fun HomeScreen(
             }
 
             val m = budget
-            item { SafeToSpendHero(m, state.totals.totalMinor, onSetBudgets) }
+            val fx = flex
+            if (fx != null && fx.month.flexBudgetMinor > 0) item { FlexHero(fx) } else item { SafeToSpendHero(m, state.totals.totalMinor, onSetBudgets) }
+            if (inbox > 0) item { com.emotionalleaves.sprout.ui.transactions.InboxCard(inbox) { navigate("inbox") } }
             recap?.let { r -> item { com.emotionalleaves.sprout.ui.insights.RecapCard(r, vm::dismissRecap) } }
             item { StatsRow(state.totals.totalMinor, outlook?.trend, outlook?.forecast?.endMinor, onNetWorth) }
+            age?.let { a -> item { AgeOfMoneyRow(a) } }
+            if (watch.isNotEmpty()) {
+                item { com.emotionalleaves.sprout.ui.common.SectionHeader("Watching") }
+                item { WatchStrip(watch, navigate) }
+            }
+            item { QuickLinks(navigate) }
             if (insights.isNotEmpty()) {
                 item { com.emotionalleaves.sprout.ui.common.SectionHeader("Insights") }
                 item { com.emotionalleaves.sprout.ui.insights.InsightsStrip(insights, onCategory) }

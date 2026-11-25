@@ -22,3 +22,11 @@ inline fun <reified VM : ViewModel> sproutViewModel(key: String? = null, crossin
 
 /** Navigate to a route from deep inside a screen (sheets, cards). No-op outside the main scaffold. */
 val LocalNavigate = androidx.compose.runtime.staticCompositionLocalOf<(String) -> Unit> { {} }
+
+/** Loads a value off the main thread when [keys] change; null until loaded. */
+@androidx.compose.runtime.Composable
+fun <T> rememberLoaded(vararg keys: Any?, load: suspend () -> T): T? {
+    val state = androidx.compose.runtime.remember(*keys) { androidx.compose.runtime.mutableStateOf<T?>(null) }
+    androidx.compose.runtime.LaunchedEffect(*keys) { state.value = load() }
+    return state.value
+}

@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.data.goals
 
+import kotlinx.coroutines.flow.map
 import com.emotionalleaves.sprout.data.db.AccountEntity
 import com.emotionalleaves.sprout.data.db.SavingsGoalEntity
 import com.emotionalleaves.sprout.data.db.SproutDatabase
@@ -34,17 +35,27 @@ class GoalRepository(
         }
     }
 
-    suspend fun save(id: Long?, name: String, targetMinor: Long, targetDate: LocalDate?, accountId: String?, savedMinor: Long) =
+    /** This month's total set-aside for planned (non-monthly) expenses, which safe to spend keeps back. */
+    fun observePlannedSetAside(): Flow<Long> = observe().map { list ->
+        val today = LocalDate.now(clock.withZone(zone()))
+        list.filter { it.goal.kind == KIND_PLANNED && it.goal.targetDate != null }.sumOf { v ->
+            com.emotionalleaves.sprout.domain.insights.PlannedExpense.monthlySetAside(
+                v.goal.targetMinor, v.progress.savedMinor, LocalDate.parse(v.goal.targetDate), today,
+            )
+        }
+    }
+
+    suspend fun save(id: Long?, name: String, targetMinor: Long, targetDate: LocalDate?, accountId: String?, savedMinor: Long, kind: String = KIND_SAVINGS) =
         withContext(Dispatchers.IO) {
             val clean = Sanitize.text(name, 60).ifBlank { "Goal" }
             val now = now()
             if (id == null) {
                 db.goals().insert(SavingsGoalEntity(name = clean, targetMinor = targetMinor.coerceAtLeast(1), targetDate = targetDate?.toString(),
-                    accountId = accountId, savedMinor = savedMinor.coerceAtLeast(0), archived = false, createdAt = now, updatedAt = now))
+                    accountId = accountId, savedMinor = savedMinor.coerceAtLeast(0), archived = false, createdAt = now, updatedAt = now, kind = kind))
             } else {
                 val g = db.goals().getAll().firstOrNull { it.id == id } ?: return@withContext 0L
                 db.goals().update(g.copy(name = clean, targetMinor = targetMinor.coerceAtLeast(1), targetDate = targetDate?.toString(),
-                    accountId = accountId, savedMinor = savedMinor.coerceAtLeast(0), updatedAt = now))
+                    accountId = accountId, savedMinor = savedMinor.coerceAtLeast(0), updatedAt = now, kind = kind))
                 id
             }
         }
@@ -56,4 +67,9 @@ class GoalRepository(
     }
 
     suspend fun delete(id: Long) = withContext(Dispatchers.IO) { db.goals().delete(id) }
+
+    companion object {
+        const val KIND_SAVINGS = "SAVINGS"
+        const val KIND_PLANNED = "PLANNED"
+    }
 }

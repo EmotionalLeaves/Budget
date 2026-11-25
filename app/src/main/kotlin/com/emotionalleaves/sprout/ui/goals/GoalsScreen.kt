@@ -1,5 +1,7 @@
 package com.emotionalleaves.sprout.ui.goals
 
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.clickable
@@ -73,8 +75,8 @@ class GoalsViewModel(private val c: AppContainer) : ViewModel() {
     val goals: StateFlow<List<GoalView>?> = c.goalRepository.observe().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
     val accounts: StateFlow<List<AccountEntity>> = c.db.accounts().observeVisible().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    fun save(id: Long?, name: String, target: Long, date: LocalDate?, accountId: String?, saved: Long) =
-        viewModelScope.launch { c.goalRepository.save(id, name, target, date, accountId, saved) }
+    fun save(id: Long?, name: String, target: Long, date: LocalDate?, accountId: String?, saved: Long, kind: String) =
+        viewModelScope.launch { c.goalRepository.save(id, name, target, date, accountId, saved, kind) }
     fun addMoney(id: Long, amount: Long) = viewModelScope.launch { c.goalRepository.addMoney(id, amount) }
     fun delete(id: Long) = viewModelScope.launch { c.goalRepository.delete(id) }
 }
@@ -165,9 +167,10 @@ fun GoalsScreen(onBack: () -> Unit) {
             initialDate = g?.targetDate?.let(LocalDate::parse),
             initialAccount = g?.accountId,
             initialSaved = g?.savedMinor ?: 0,
+            initialKind = g?.kind ?: com.emotionalleaves.sprout.data.goals.GoalRepository.KIND_SAVINGS,
             accounts = accounts,
             onDismiss = { adding = false; editing = null },
-            onSave = { name, target, date, account, saved -> vm.save(g?.id, name, target, date, account, saved); adding = false; editing = null },
+            onSave = { name, target, date, account, saved, kind -> vm.save(g?.id, name, target, date, account, saved, kind); adding = false; editing = null },
             onDelete = g?.let { { vm.delete(it.id); editing = null } },
         )
     }
@@ -191,9 +194,10 @@ fun GoalsScreen(onBack: () -> Unit) {
 @Composable
 private fun GoalDialog(
     initialName: String, initialTarget: Long?, initialDate: LocalDate?, initialAccount: String?, initialSaved: Long,
+    initialKind: String,
     accounts: List<AccountEntity>,
     onDismiss: () -> Unit,
-    onSave: (String, Long, LocalDate?, String?, Long) -> Unit,
+    onSave: (String, Long, LocalDate?, String?, Long, String) -> Unit,
     onDelete: (() -> Unit)?,
 ) {
     var name by remember { mutableStateOf(initialName) }
@@ -202,6 +206,8 @@ private fun GoalDialog(
     var account by remember { mutableStateOf(initialAccount) }
     var savedText by remember { mutableStateOf(if (initialSaved > 0) (initialSaved / 100).toString() else "") }
     var picking by remember { mutableStateOf(false) }
+    var kind by remember { mutableStateOf(initialKind) }
+    val planned = kind == com.emotionalleaves.sprout.data.goals.GoalRepository.KIND_PLANNED
     val target = Money.parseUserInput(targetText)?.takeIf { it > 0 }
     val saved = if (savedText.isBlank()) 0L else Money.parseUserInput(savedText)
 
@@ -210,13 +216,23 @@ private fun GoalDialog(
         title = { Text(if (onDelete == null) "New goal" else "Edit goal") },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    listOf(com.emotionalleaves.sprout.data.goals.GoalRepository.KIND_SAVINGS to "Savings goal",
+                        com.emotionalleaves.sprout.data.goals.GoalRepository.KIND_PLANNED to "Planned expense").forEachIndexed { i, (k, label) ->
+                        SegmentedButton(kind == k, { kind = k }, androidx.compose.material3.SegmentedButtonDefaults.itemShape(i, 2)) { Text(label) }
+                    }
+                }
+                if (planned) {
+                    Text("For a known future cost (car registration, holidays, insurance). Sprout sets aside a little each month " +
+                        "and keeps it out of safe to spend.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
                 OutlinedTextField(value = name, onValueChange = { name = it.take(60) }, label = { Text("Name") }, singleLine = true)
                 OutlinedTextField(value = targetText, onValueChange = { targetText = it.take(10) }, label = { Text("Target amount") },
                     prefix = { Text("$") }, singleLine = true, isError = targetText.isNotBlank() && target == null,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     OutlinedButton(onClick = { picking = true }, modifier = Modifier.heightIn(min = 48.dp)) {
-                        Text(date?.let { "By ${it.format(dateFmt)}" } ?: "Add a target date (optional)")
+                        Text(date?.let { "By ${it.format(dateFmt)}" } ?: if (planned) "When is it due?" else "Add a target date (optional)")
                     }
                     if (date != null) TextButton(onClick = { date = null }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Clear") }
                 }
@@ -241,8 +257,8 @@ private fun GoalDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { if (target != null && saved != null) onSave(name, target, date, account, saved) },
-                enabled = name.isNotBlank() && target != null && saved != null) { Text("Save") }
+            TextButton(onClick = { if (target != null && saved != null) onSave(name, target, date, account, saved, kind) },
+                enabled = name.isNotBlank() && target != null && saved != null && (!planned || date != null)) { Text("Save") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )

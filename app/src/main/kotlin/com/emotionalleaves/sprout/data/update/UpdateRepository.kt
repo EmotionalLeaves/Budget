@@ -65,6 +65,10 @@ class UpdateRepository(
     private val apiBase: String = "https://api.github.com",
     /** A key you pasted in Settings → Updates (stored encrypted); used when nothing is built in. */
     private val storedKey: suspend () -> String = { "" },
+    /** This build's version code, for comparing against test builds. 0 = unknown. */
+    private val currentCode: Int = 0,
+    /** Beta channel on: test builds (prereleases) count as updates too. */
+    private val beta: suspend () -> Boolean = { false },
     private val saveStoredKey: suspend (String) -> Unit = {},
 ) {
     private suspend fun key(): String = builtInKey.ifEmpty { runCatching { storedKey() }.getOrDefault("") }
@@ -150,14 +154,17 @@ class UpdateRepository(
         val key = key()
         _hasKey.value = key.isNotEmpty()
         val result = runCatching {
-            val req = Request.Builder().url("$apiBase/repos/$repo/releases/latest")
+            val betaOn = runCatching { beta() }.getOrDefault(false)
+            val req = Request.Builder().url(if (betaOn) "$apiBase/repos/$repo/releases?per_page=15" else "$apiBase/repos/$repo/releases/latest")
                 .header("Accept", "application/vnd.github+json")
                 .header("X-GitHub-Api-Version", "2022-11-28")
                 .apply { if (key.isNotEmpty()) header("Authorization", "Bearer $key") }
                 .build()
             http.newCall(req).execute().use { r ->
                 when {
-                    r.isSuccessful -> UpdateCheck.parseRelease(r.body?.string().orEmpty())
+                    r.isSuccessful -> r.body?.string().orEmpty().let { body ->
+                        if (betaOn) UpdateCheck.parseReleases(body).firstOrNull() else UpdateCheck.parseRelease(body)
+                    }
                     r.code == 401 || r.code == 403 || r.code == 404 -> return@runCatching UpdateState.OpenReleasesPage(releasesPage, null)
                     else -> error("HTTP ${r.code}")
                 }
@@ -167,7 +174,7 @@ class UpdateRepository(
             onSuccess = { v ->
                 when (v) {
                     is UpdateState -> if (quiet) UpdateState.Idle else v
-                    is ReleaseInfo -> if (UpdateCheck.isNewer(v.version, currentVersion)) UpdateState.Available(v) else UpdateState.UpToDate
+                    is ReleaseInfo -> if (UpdateCheck.isNewerBuild(v, currentVersion, currentCode.takeIf { it > 0 })) UpdateState.Available(v) else UpdateState.UpToDate
                     else -> UpdateState.UpToDate
                 }
             },

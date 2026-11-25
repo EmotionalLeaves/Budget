@@ -79,4 +79,22 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [ ] Paycheck planner: split each paycheck into bills, budgets and savings — *why: give every dollar a job*
 - [x] (2.3.0) 50/30/20 template
 - [x] (2.3.0) Monthly recap card
-- [ ] **Compare with leading apps** (YNAB, Monarch, Copilot, Rocket Money, Simplifi, PocketGuard, EveryDollar, Goodbudget): list what works there and bring the best of it here (user request, 2026-11-24) — *why: be the best budgeting app*
+- [x] (2.4.0) Compared with leading apps: see "Compared with leading apps" below
+
+## Compared with leading apps (2026-11-24)
+
+What the leaders do well, and what Sprout takes from it. Never copied: anything that moves money (Rocket Money's bill negotiation, cancellation service, automatic savings transfers) or needs a server (shared household sync). Sprout already has: safe to spend (PocketGuard's "In My Pocket"), rollover (Monarch), splits, tags, rules, recurring calendar, net worth, debt planner (YNAB loan planner, PocketGuard), goals, insights.
+
+- [x] (2.4.0) Flex budgeting (Monarch): Fixed, Non-monthly and one Flex bucket instead of a cap per category; switch in Budgets
+- [x] (2.4.0) Pace (PocketGuard Pace, Monarch forecasts): "on pace to spend $X by month end" per budget and overall
+- [x] (2.4.0) Review inbox (Copilot): new transactions wait in "To review" until you mark them seen; badge on the tab
+- [x] (2.4.0) Reports (Monarch, Copilot Cash Flow, YNAB reports): income vs spending per month, by category, by account, by tag, any date range
+- [x] (2.4.0) Age of Money (YNAB): how many days old the money you spend is
+- [x] (2.4.0) Sinking funds / targets (YNAB targets, Monarch non-monthly): "Car registration $240 by July" → monthly set-aside, counted in safe to spend
+- [x] (2.4.0) Subscription price-increase alerts (Copilot, Rocket Money): "Netflix went up from $15.49 to $17.99"
+- [x] (2.4.0) Year in review (Copilot): a yearly recap screen
+- [x] (2.4.0) Receipt photos (Monarch, Copilot attachments): attach a photo to a transaction via the system photo picker (no permission)
+- [x] (2.4.0) Watchlist (Rocket Money): pin categories or merchants to Home with this month's total
+- [x] (2.4.0) Beta channel for updates: opt in to newer test builds
+- [ ] Demo mode (Copilot): explore Sprout with sample data before connecting
+- [x] (2.4.0) Cost to be me (YNAB): your total monthly obligations (bills + budgets) in one number

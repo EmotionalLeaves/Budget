@@ -127,6 +127,26 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
     fun dismissRecap() = viewModelScope.launch { recap.value?.let { c.settings.setRecapDismissed(it.month.toString()) } }
 
+    val inboxCount: StateFlow<Int> = c.db.transactions().observeInboxCount()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val flex: StateFlow<com.emotionalleaves.sprout.data.budget.FlexState?> = combine(
+        c.budgetRepository.todayFlow().map { java.time.YearMonth.from(it) }.distinctUntilChanged(), c.settings.settings.map { it.budgetMode },
+    ) { m, mode -> m to mode }
+        .flatMapLatest { (m, mode) -> if (mode == 1) c.flexRepository.observe(m) else kotlinx.coroutines.flow.flowOf(null) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val ageOfMoney: StateFlow<Int?> = combine(c.budgetRepository.todayFlow(), c.db.transactions().observeCount()) { _, _ -> Unit }
+        .mapLatest { runCatching { c.insightsRepository.ageOfMoney() }.getOrNull() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val watch: StateFlow<List<Triple<String, String, Long>>> = combine(c.settings.settings.map { it.watchlist }, c.db.transactions().observeCount()) { w, _ -> w }
+        .mapLatest { runCatching { c.insightsRepository.watch(it) }.getOrDefault(emptyList()) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     val privacy: StateFlow<Boolean> = c.settings.settings.map { it.privacyMode }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
     fun togglePrivacy() = viewModelScope.launch { c.settings.setPrivacyMode(!privacy.value) }

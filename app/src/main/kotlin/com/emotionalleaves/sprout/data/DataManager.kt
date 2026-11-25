@@ -40,6 +40,8 @@ class DataManager(
         context?.let { WorkManager.getInstance(it).cancelAllWork() }
         secure.clear()
         db.clearAllTables()
+        // Receipt photos live in private files, not the database: remove them too.
+        context?.let { java.io.File(it.filesDir, "receipts").deleteRecursively() }
         settings.clearAll()
         sync.ensureSeeded()
     }

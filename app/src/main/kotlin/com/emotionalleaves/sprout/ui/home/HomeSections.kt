@@ -266,3 +266,78 @@ fun AccountsCard(accounts: List<AccountEntity>, lastSuccess: Long?) {
 /** Box for screen-wide content padding at the end of lists, so the last card clears the nav bar. */
 @Composable
 fun BottomSpace() = Box(Modifier.size(24.dp))
+
+
+/** Hero for Flex mode: what's left of the one Flex amount (after planned set-asides), per day, and the ring. */
+@Composable
+fun FlexHero(fx: com.emotionalleaves.sprout.data.budget.FlexState) {
+    val c = LocalSproutColors.current
+    val m = fx.month
+    val used = if (m.flexBudgetMinor > 0) m.flexSpentMinor.toFloat() / m.flexBudgetMinor else 0f
+    HeroCard(c.hero) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text("Safe to spend · Flex", style = MaterialTheme.typography.labelLarge, color = c.onHero.copy(alpha = 0.8f))
+                Text(money(m.safeMinor), style = MaterialTheme.typography.displayMedium, color = if (m.safeMinor < 0) Color(0xFFFFB4A9) else c.onHero, maxLines = 1)
+                m.perDayMinor?.let { Text("≈ ${money(it)} a day", style = MaterialTheme.typography.titleMedium, color = c.onHero) }
+                Text("${money(m.flexSpentMinor)} of ${money(m.flexBudgetMinor)} flex spent", style = MaterialTheme.typography.bodySmall, color = c.onHero.copy(alpha = 0.8f))
+            }
+            ProgressRing(used, color = c.onHero, track = c.onHero.copy(alpha = 0.22f), overColor = Color(0xFFFFB4A9), modifier = Modifier.size(104.dp), stroke = 11.dp) {
+                Text("${(used * 100).toInt().coerceAtMost(999)}%", style = MaterialTheme.typography.titleLarge, color = c.onHero)
+            }
+        }
+    }
+}
+
+
+/** YNAB's Age of Money, in one line. */
+@Composable
+fun AgeOfMoneyRow(days: Int) {
+    SoftCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconBadge(Icons.Rounded.Savings, MaterialTheme.colorScheme.secondary)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Age of money: $days day${if (days == 1) "" else "s"}", style = MaterialTheme.typography.titleSmall)
+                Text(
+                    when {
+                        days >= 30 -> "You're spending money from over a month ago. That's a real buffer."
+                        days >= 14 -> "Getting there: aim for 30 days so this month runs on last month's pay."
+                        else -> "Money gets spent soon after it arrives. Building a buffer helps."
+                    },
+                    style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+/** Pinned categories and merchants with this month's totals. */
+@Composable
+fun WatchStrip(items: List<Triple<String, String, Long>>, navigate: (String) -> Unit) {
+    LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        items(items, key = { it.first }) { (key, name, total) ->
+            Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceContainerLow,
+                modifier = Modifier.width(150.dp).clickable {
+                    if (key.startsWith("c:")) navigate("category/" + key.drop(2)) else navigate("merchant/" + android.net.Uri.encode(key.drop(2)))
+                }) {
+                Column(Modifier.padding(14.dp)) {
+                    Text(name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(money(total, whole = true), style = MaterialTheme.typography.titleLarge)
+                    Text("this month", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+    }
+}
+
+/** Shortcuts to the deeper screens. */
+@Composable
+fun QuickLinks(navigate: (String) -> Unit) {
+    LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        val links = listOf("Reports" to "reports", "Year in review" to "year-review", "Net worth" to "networth", "Tags" to "tags", "Debt plan" to "debt", "Goals" to "goals")
+        items(links, key = { it.second }) { (label, route) ->
+            androidx.compose.material3.AssistChip(onClick = { navigate(route) }, label = { Text(label) }, modifier = Modifier.heightIn(min = 44.dp))
+        }
+    }
+}

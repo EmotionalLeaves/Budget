@@ -31,6 +31,7 @@ import androidx.room.migration.Migration
         TransactionSplitEntity::class,
         TagEntity::class,
         TransactionTagEntity::class,
+        ReceiptEntity::class,
     ],
     version = SproutDatabase.VERSION,
     exportSchema = true,
@@ -51,13 +52,14 @@ abstract class SproutDatabase : RoomDatabase() {
     abstract fun splits(): SplitDao
     abstract fun tags(): TagDao
     abstract fun insights(): InsightDao
+    abstract fun receipts(): ReceiptDao
 
     companion object {
-        const val VERSION = 5
+        const val VERSION = 6
         const val NAME = "sprout.db"
 
         /** All migrations, oldest first. */
-        val MIGRATIONS: Array<Migration> = arrayOf(Migrations.MIGRATION_1_2, Migrations.MIGRATION_2_3, Migrations.MIGRATION_3_4, Migrations.MIGRATION_4_5)
+        val MIGRATIONS: Array<Migration> = arrayOf(Migrations.MIGRATION_1_2, Migrations.MIGRATION_2_3, Migrations.MIGRATION_3_4, Migrations.MIGRATION_4_5, Migrations.MIGRATION_5_6)
 
         fun build(context: Context): SproutDatabase =
             Room.databaseBuilder(context.applicationContext, SproutDatabase::class.java, NAME)

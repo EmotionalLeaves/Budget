@@ -145,4 +145,16 @@ class UpdateRepositoryTest {
         r.download(rel)
         assertTrue(r.state.value is UpdateState.ReadyToInstall)
     }
+
+    @Test fun betaChannelOffersNewerTestBuilds() = runBlocking {
+        val r = UpdateRepository(ApplicationProvider.getApplicationContext(), "1.15.0", "EmotionalLeaves/Budget", "k", http,
+            server.url("/").toString().trimEnd('/'), currentCode = 44, beta = { true })
+        server.enqueue(MockResponse().setBody("""[
+          {"tag_name":"v1.15.0-build.47","prerelease":true,"body":"","assets":[{"name":"sprout-v1.15.0-47.apk","url":"${server.url("/a")}","browser_download_url":"https://github.com/x","size":1}]},
+          {"tag_name":"v1.15.0","prerelease":false,"body":"","assets":[{"name":"sprout-v1.15.0-44.apk","url":"${server.url("/b")}","browser_download_url":"https://github.com/y","size":1}]}
+        ]"""))
+        r.check()
+        assertEquals("sprout-v1.15.0-47.apk", (r.state.value as UpdateState.Available).release.apkName)
+        assertTrue(server.takeRequest().path!!.startsWith("/repos/EmotionalLeaves/Budget/releases?per_page="))
+    }
 }

@@ -145,7 +145,7 @@ class BackupRepository(private val db: SproutDatabase, private val clock: Clock)
                     put("currency", t.currency); put("description", t.description); put("merchantKey", t.merchantKey); put("pending", t.pending)
                     put("categoryId", t.categoryId); put("categorySource", t.categorySource.name); put("note", t.note)
                     put("excludedFromBudget", t.excludedFromBudget); put("recurringChargeId", t.recurringChargeId); put("alertedAt", t.alertedAt)
-                    put("importedAt", t.importedAt); put("updatedAt", t.updatedAt)
+                    put("importedAt", t.importedAt); put("updatedAt", t.updatedAt); put("reviewedAt", t.reviewedAt)
                 })
             } })
             put("categoryBudgets", buildJsonArray { db.budgets().observeDefaults().first().forEach { x ->
@@ -190,7 +190,7 @@ class BackupRepository(private val db: SproutDatabase, private val clock: Clock)
                 add(buildJsonObject {
                     put("id", g.id); put("name", g.name); put("targetMinor", g.targetMinor); put("targetDate", g.targetDate)
                     put("accountId", g.accountId); put("savedMinor", g.savedMinor); put("archived", g.archived)
-                    put("createdAt", g.createdAt); put("updatedAt", g.updatedAt)
+                    put("createdAt", g.createdAt); put("updatedAt", g.updatedAt); put("kind", g.kind)
                 })
             } })
         }.toString()
@@ -238,6 +238,8 @@ class BackupRepository(private val db: SproutDatabase, private val clock: Clock)
         categoryId = o.long("categoryId"), categorySource = o.enum("categorySource", CategorySource.NONE), note = o.strOrNull("note"),
         excludedFromBudget = o.bool("excludedFromBudget"), recurringChargeId = o.longOrNull("recurringChargeId"),
         alertedAt = o.longOrNull("alertedAt"), importedAt = o.long("importedAt"), updatedAt = o.long("updatedAt"),
+        // Schema 6; older backups: treat everything as already reviewed.
+        reviewedAt = o.longOrNull("reviewedAt") ?: o.long("updatedAt"),
     )
 
     private fun rule(o: JsonObject) = MerchantRuleEntity(
@@ -248,7 +250,7 @@ class BackupRepository(private val db: SproutDatabase, private val clock: Clock)
     private fun goal(o: JsonObject) = com.emotionalleaves.sprout.data.db.SavingsGoalEntity(
         id = o.long("id"), name = o.str("name"), targetMinor = o.long("targetMinor"), targetDate = o.strOrNull("targetDate"),
         accountId = o.strOrNull("accountId"), savedMinor = o.long("savedMinor"), archived = o.bool("archived"),
-        createdAt = o.long("createdAt"), updatedAt = o.long("updatedAt"),
+        createdAt = o.long("createdAt"), updatedAt = o.long("updatedAt"), kind = o.strOrNull("kind") ?: "SAVINGS",
     )
 
     private fun recurringCharge(o: JsonObject) = RecurringChargeEntity(
