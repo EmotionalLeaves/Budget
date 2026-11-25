@@ -162,6 +162,12 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
                 }
             },
             singleLine = true,
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
+            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                unfocusedBorderColor = androidx.compose.ui.graphics.Color.Transparent,
+            ),
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
         )
         if (uncategorized > 0) {

@@ -237,3 +237,53 @@ fun SubscriptionsSummary() {
         }
     }
 }
+
+/** This month as a calendar: darker days cost more, ✓ marks no-spend days. */
+@Composable
+fun SpendCalendarCard(cal: com.emotionalleaves.sprout.domain.calendar.SpendCalendar) {
+    val heat = MaterialTheme.colorScheme.primary
+    val ok = LocalSproutColors.current.ok
+    SoftCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("This month by day", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text("${cal.noSpendDays} no-spend day${if (cal.noSpendDays == 1) "" else "s"}", style = MaterialTheme.typography.labelLarge, color = ok)
+        }
+        Row(Modifier.fillMaxWidth()) {
+            com.emotionalleaves.sprout.domain.calendar.SpendCalendar.headers.forEach {
+                Text(it.getDisplayName(java.time.format.TextStyle.NARROW, Locale.US), Modifier.weight(1f), textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        cal.weeks.forEach { week ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                week.forEach { d ->
+                    Box(Modifier.weight(1f).height(38.dp), contentAlignment = Alignment.Center) {
+                        if (d != null) {
+                            val a = if (cal.maxDayMinor > 0) (d.spentMinor.toFloat() / cal.maxDayMinor).coerceIn(0f, 1f) else 0f
+                            Box(
+                                Modifier.fillMaxSize().clip(RoundedCornerShape(10.dp)).background(
+                                    when {
+                                        d.future -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                                        d.spentMinor == 0L -> ok.copy(alpha = 0.14f)
+                                        else -> heat.copy(alpha = 0.12f + 0.75f * a)
+                                    },
+                                ),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    if (!d.future && d.spentMinor == 0L) "✓" else d.date.dayOfMonth.toString(),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = when {
+                                        !d.future && d.spentMinor == 0L -> ok
+                                        a > 0.55f -> MaterialTheme.colorScheme.onPrimary
+                                        else -> MaterialTheme.colorScheme.onSurface
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,5 +1,7 @@
 package com.emotionalleaves.sprout.ui.budgets
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.size
 import com.emotionalleaves.sprout.ui.common.showUndoable
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
@@ -138,14 +140,30 @@ fun CategoryDetailScreen(categoryId: Long, snackbar: SnackbarHostState, onBack: 
             }
         }
         item {
-            Card(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Spent", style = MaterialTheme.typography.labelLarge)
+            com.emotionalleaves.sprout.ui.common.SoftCard {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     val spent = line?.spentMinor ?: 0L
                     val budget = line?.budgetMinor
-                    Text(Money.format(spent), style = MaterialTheme.typography.headlineMedium)
+                    val tint = category?.colorArgb?.let { Color(it) } ?: MaterialTheme.colorScheme.primary
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Spent", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(Money.format(spent), style = MaterialTheme.typography.displaySmall)
+                        }
+                        if (budget != null) {
+                            com.emotionalleaves.sprout.ui.common.ProgressRing(
+                                if (budget <= 0) 1f else spent.toFloat() / budget, levelColor(line.level), MaterialTheme.colorScheme.surfaceVariant,
+                                Modifier.size(84.dp), stroke = 9.dp,
+                            ) {
+                                com.emotionalleaves.sprout.ui.common.IconBadge(
+                                    com.emotionalleaves.sprout.ui.common.CategoryIcons.forKey(category?.iconKey), tint, 40.dp,
+                                )
+                            }
+                        } else {
+                            com.emotionalleaves.sprout.ui.common.IconBadge(com.emotionalleaves.sprout.ui.common.CategoryIcons.forKey(category?.iconKey), tint, 56.dp)
+                        }
+                    }
                     if (budget != null) {
-                        BudgetProgress(spent, budget, line.level)
                         Text("of ${Money.format(budget)} · ${leftOrOver(budget - spent)}", style = MaterialTheme.typography.bodyMedium)
                         val base = line.baseBudgetMinor
                         if (line.rolloverOn && base != null) {
@@ -171,7 +189,9 @@ fun CategoryDetailScreen(categoryId: Long, snackbar: SnackbarHostState, onBack: 
         if (merchants.isNotEmpty()) {
             item { SectionTitle("By merchant") }
             items(merchants, key = { "m-" + it.merchantKey }) { m ->
-                Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
+                Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable { navigate("merchant/" + android.net.Uri.encode(m.merchantKey)) }
+                    .padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(MerchantNormalizer.displayName(m.merchantKey) + " (${m.count})", Modifier.weight(1f))
                     Text(Money.format(maxOf(0, -m.total)))
                 }

@@ -89,6 +89,7 @@ class SproutApp : Application() {
             if (connected && !s.accessRevoked) SyncScheduler.schedulePeriodic(this@SproutApp)
             runCatching { container.updates.checkIfDue(System.currentTimeMillis() / 1000) }
             runCatching { com.emotionalleaves.sprout.work.UpdateCheckWorker.schedule(this@SproutApp) }
+            runCatching { com.emotionalleaves.sprout.work.BillReminderWorker.schedule(this@SproutApp) }
         }
     }
 }

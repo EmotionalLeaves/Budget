@@ -80,6 +80,7 @@ class SettingsViewModel(private val c: AppContainer) : ViewModel() {
     fun setThemeMode(m: Int) = viewModelScope.launch { c.settings.setThemeMode(m) }
     fun setDynamicColor(on: Boolean) = viewModelScope.launch { c.settings.setDynamicColor(on) }
     fun setPrivacyMode(on: Boolean) = viewModelScope.launch { c.settings.setPrivacyMode(on) }
+    fun setNotifyBills(on: Boolean) = viewModelScope.launch { c.settings.setNotifyBills(on) }
     val state: StateFlow<SettingsState> = combine(
         c.settings.settings,
         c.db.connections().observeAll(),
@@ -207,6 +208,7 @@ fun SettingsScreen(
                 }
                 ToggleRow("Budget alerts (80% and 100%)", state.settings.notifyBudget) { vm.setNotifyBudget(it) }
                 ToggleRow("Large or unusual charges", state.settings.notifyUnusual) { vm.setNotifyUnusual(it) }
+                ToggleRow("Bill reminders (the day before)", state.settings.notifyBills) { vm.setNotifyBills(it) }
                 ToggleRow("Sync problems", state.settings.notifySyncProblems) { vm.setNotifySync(it) }
                 ThresholdRow(state.settings.largeTxThresholdMinor) { vm.setThreshold(it) }
             }

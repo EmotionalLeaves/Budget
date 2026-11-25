@@ -51,6 +51,17 @@ class InsightsRepository(private val db: SproutDatabase, private val clock: Cloc
         list to grid
     }
 
+    /** This month's everyday spending per day, as a calendar. */
+    suspend fun calendar(): com.emotionalleaves.sprout.domain.calendar.SpendCalendar = withContext(Dispatchers.IO) {
+        val z = zone()
+        val today = today()
+        val month = YearMonth.from(today)
+        val w = MonthWindow.of(month, z)
+        val expense = db.categories().getAll().filter { it.kind == CategoryKind.EXPENSE }.map { it.id }.toSet()
+        val rows = db.budgets().spendRows(w.start, w.end).filter { it.categoryId in expense }.map { it.amountMinor to it.occurredAt }
+        com.emotionalleaves.sprout.domain.calendar.SpendCalendar.of(month, today, rows, z)
+    }
+
     suspend fun insights(): List<Insight> = withContext(Dispatchers.IO) {
         val z = zone()
         val today = today()

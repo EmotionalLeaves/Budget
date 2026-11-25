@@ -74,6 +74,8 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [ ] Cash-flow calendar: projected balance per day for the next 30 days — *why: avoid overdrafts*
 - [ ] Budget templates (50/30/20, zero-based) in quick setup — *why: a starting point*
 - [x] (2.1.0) Merchant pages
-- [ ] Bill reminders: a notification the day before a bill is due (opt-in) — *why: never miss one*
+- [x] (2.2.0) Bill reminders
 - [ ] Spending challenges ("No eating out this week") with a streak — *why: motivation*
 - [ ] Paycheck planner: split each paycheck into bills, budgets and savings — *why: give every dollar a job*
+- [ ] 50/30/20 budget template from average income in Quick setup — *why: a sensible start*
+- [ ] Monthly recap notification/screen on the 1st ("October: spent $X, saved $Y") — *why: reflection*

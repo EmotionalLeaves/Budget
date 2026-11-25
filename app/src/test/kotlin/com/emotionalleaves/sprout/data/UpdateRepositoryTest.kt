@@ -93,14 +93,33 @@ class UpdateRepositoryTest {
 
     @Test fun notifiesOncePerVersionAndDetectsJustUpdated() = runBlocking {
         val r = repo()
-        server.enqueue(MockResponse().setBody(release("1.16.0")))
-        assertEquals("1.16.0", r.checkForNotification())
-        server.enqueue(MockResponse().setBody(release("1.16.0")))
+        server.enqueue(MockResponse().setBody(release("1.17.3")))
+        assertEquals("1.17.3", r.checkForNotification())
+        server.enqueue(MockResponse().setBody(release("1.17.3")))
         assertNull(r.checkForNotification())
-        // First launch records the version; a later version is "just updated from" the earlier one, once.
+        // Launching the same version twice: not "just updated" the second time.
+        r.consumeJustUpdatedFrom()
         assertNull(r.consumeJustUpdatedFrom())
-        val newer = UpdateRepository(ApplicationProvider.getApplicationContext(), "1.16.0", "EmotionalLeaves/Budget", "k", http, server.url("/").toString().trimEnd('/'))
+        val newer = UpdateRepository(ApplicationProvider.getApplicationContext(), "1.17.3", "EmotionalLeaves/Budget", "k", http, server.url("/").toString().trimEnd('/'))
         assertEquals("1.15.0", newer.consumeJustUpdatedFrom())
         assertNull(newer.consumeJustUpdatedFrom())
+    }
+
+    @Test fun downloadedUpdateSurvivesARestart() = runBlocking {
+        val r = repo()
+        r.consumeJustUpdatedFrom()
+        server.enqueue(MockResponse().setBody(release("1.16.0")))
+        r.check()
+        server.enqueue(MockResponse().setBody(Buffer().write(apk)))
+        r.download((r.state.value as UpdateState.Available).release)
+        // A new process: state starts Idle, but the ready file is offered again.
+        val again = repo()
+        again.consumeJustUpdatedFrom()
+        val ready = again.state.value as UpdateState.ReadyToInstall
+        assertEquals("1.16.0", ready.release.version)
+        // Once that version is installed, the leftover file is removed.
+        val installed = UpdateRepository(ApplicationProvider.getApplicationContext(), "1.16.0", "EmotionalLeaves/Budget", "k", http, server.url("/").toString().trimEnd('/'))
+        installed.consumeJustUpdatedFrom()
+        assertTrue(!ready.file.exists())
     }
 }

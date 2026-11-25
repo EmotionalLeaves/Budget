@@ -30,6 +30,8 @@ class AndroidNotifier(private val context: Context) : Notifier {
                     .apply { description = "Large charges and charges unusual for a merchant" },
                 NotificationChannel(CH_SYNC, "Sync problems", NotificationManager.IMPORTANCE_LOW)
                     .apply { description = "When a bank connection needs your attention" },
+                NotificationChannel(CH_BILLS, "Bill reminders", NotificationManager.IMPORTANCE_DEFAULT)
+                    .apply { description = "The day before a bill is due" },
                 NotificationChannel(CH_UPDATES, "App updates", NotificationManager.IMPORTANCE_LOW)
                     .apply { description = "When a new version of Sprout is ready" },
             ),
@@ -84,7 +86,7 @@ class AndroidNotifier(private val context: Context) : Notifier {
     }
 
     /** "Sprout X is ready": one quiet notification per version. Tapping opens Home, where the update card is. */
-    fun showUpdate(version: String): Boolean {
+    fun showUpdate(version: String, ready: Boolean = false): Boolean {
         if (!canPost()) return false
         val id = "u:$version".hashCode()
         val intent = Intent(context, MainActivity::class.java).apply {
@@ -94,7 +96,7 @@ class AndroidNotifier(private val context: Context) : Notifier {
         val n = NotificationCompat.Builder(context, CH_UPDATES)
             .setSmallIcon(R.drawable.ic_stat_sprout)
             .setContentTitle("Sprout $version is ready")
-            .setContentText("Open Sprout and tap Update. Your data stays.")
+            .setContentText(if (ready) "Downloaded. Open Sprout and tap Install. Your data stays." else "Open Sprout and tap Update. Your data stays.")
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .setContentIntent(pending)
             .setAutoCancel(true)
@@ -107,7 +109,35 @@ class AndroidNotifier(private val context: Context) : Notifier {
         }
     }
 
+    /** "Netflix is due tomorrow · $15.49". Amount hidden on the lock screen. */
+    fun showBillReminder(key: String, name: String, amountText: String): Boolean {
+        if (!canPost()) return false
+        val id = "bill:$key".hashCode()
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        val pending = PendingIntent.getActivity(context, id, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        val public = NotificationCompat.Builder(context, CH_BILLS).setSmallIcon(R.drawable.ic_stat_sprout)
+            .setContentTitle("Sprout: a bill is due tomorrow").build()
+        val n = NotificationCompat.Builder(context, CH_BILLS)
+            .setSmallIcon(R.drawable.ic_stat_sprout)
+            .setContentTitle("$name is due tomorrow")
+            .setContentText(amountText)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setPublicVersion(public)
+            .setContentIntent(pending)
+            .setAutoCancel(true)
+            .build()
+        return try {
+            NotificationManagerCompat.from(context).notify(id, n)
+            true
+        } catch (e: SecurityException) {
+            false
+        }
+    }
+
     companion object {
+        const val CH_BILLS = "bill_reminders"
         const val CH_UPDATES = "app_updates"
         const val CH_BUDGET = "budget_alerts"
         const val CH_UNUSUAL = "unusual_transactions"

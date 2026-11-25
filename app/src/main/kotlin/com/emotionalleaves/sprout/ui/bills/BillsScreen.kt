@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.bills
 
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -309,21 +310,38 @@ private fun BillCalendar(vm: BillsViewModel) {
 
 @Composable
 private fun BillRow(r: RecurringRow, subtitle: String, onClick: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    val due = Instant.ofEpochSecond(r.nextDueAt).atZone(ZoneId.systemDefault()).toLocalDate()
+    androidx.compose.material3.Surface(
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
     ) {
-        Column(Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(r.displayName, style = MaterialTheme.typography.bodyLarge)
-                if (r.status == RecurringStatus.DETECTED) {
-                    Text("Suggested", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
-                }
+        Row(
+            Modifier.clickable(onClick = onClick).heightIn(min = 64.dp).padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Date badge: month over day number.
+            Column(
+                Modifier.width(48.dp).padding(vertical = 4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(due.month.getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.US).uppercase(),
+                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                Text(due.dayOfMonth.toString(), style = MaterialTheme.typography.titleLarge)
             }
-            Text(subtitle, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            CategoryChip(r.categoryName, r.categoryColor)
+            androidx.compose.foundation.layout.Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(r.displayName, style = MaterialTheme.typography.titleSmall)
+                    if (r.status == RecurringStatus.DETECTED) {
+                        Text("Suggested", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
+                    }
+                }
+                Text(subtitle, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                CategoryChip(r.categoryName, r.categoryColor)
+            }
+            Text(Money.format(r.typicalAmountMinor), style = MaterialTheme.typography.titleSmall)
         }
-        Text(Money.format(r.typicalAmountMinor), style = MaterialTheme.typography.bodyLarge)
     }
 }
 

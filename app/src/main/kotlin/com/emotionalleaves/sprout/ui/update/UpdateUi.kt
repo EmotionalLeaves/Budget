@@ -124,6 +124,13 @@ fun UpdateSettings(updates: UpdateRepository) {
             Text("Check for updates automatically", Modifier.weight(1f))
             Switch(checked = auto, onCheckedChange = { scope.launch { updates.setAutoCheck(it) } })
         }
+        if (updates.hasKey) {
+            val autoDl by updates.autoDownload.collectAsState(initial = true)
+            Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("Download updates on Wi-Fi in the background", Modifier.weight(1f))
+                Switch(checked = autoDl, enabled = auto, onCheckedChange = { scope.launch { updates.setAutoDownload(it) } })
+            }
+        }
         when (state) {
             UpdateState.Checking -> Text("Checking…", style = MaterialTheme.typography.bodySmall)
             UpdateState.UpToDate -> Text("You're up to date.", style = MaterialTheme.typography.bodySmall)

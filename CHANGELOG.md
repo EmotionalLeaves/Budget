@@ -2,7 +2,24 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
-## [2.1.0] - 2026-11-24
+## [2.2.0] - 2026-11-24
+
+Round 3 of the overhaul.
+
+### Auto-update
+- On Wi-Fi, Sprout can download a new version in the background so it's ready to install the moment you open the app ("Download updates on Wi-Fi in the background" in Settings → Updates; needs the update key).
+- A downloaded update is still offered after Sprout restarts, and is cleaned up once installed.
+
+### New look
+- Category pages open with a progress ring around the category's icon, and each merchant links to its own page.
+- Bills are cards with a date badge (month over day).
+- A rounded search bar on the Activity tab.
+
+### New features
+- **Spending calendar** on Home: this month by day, darker days cost more, and ✓ marks your no-spend days (with a count).
+- **Bill reminders**: turn on "Bill reminders (the day before)" in Settings → Notifications for a heads-up like "Rent is due tomorrow". Amounts stay hidden on the lock screen.
+
+ - 2026-11-24
 
 Round 2 of the overhaul.
 

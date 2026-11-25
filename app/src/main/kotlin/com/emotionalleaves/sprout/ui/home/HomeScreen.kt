@@ -94,6 +94,7 @@ fun HomeScreen(
 
     val months by vm.months.collectAsStateWithLifecycle()
     val insights by vm.insights.collectAsStateWithLifecycle()
+    val calendar by vm.calendar.collectAsStateWithLifecycle()
     val hidden by vm.privacy.collectAsStateWithLifecycle()
     androidx.compose.runtime.CompositionLocalProvider(com.emotionalleaves.sprout.ui.common.LocalHideAmounts provides hidden) {
     PullToRefreshBox(isRefreshing = syncing, onRefresh = vm::syncNow, modifier = Modifier.fillMaxSize()) {
@@ -169,6 +170,7 @@ fun HomeScreen(
             outlook?.forecast?.let { f -> item { ForecastCard(f) } }
             if (m != null) item { WhereItWentCard(m, onCategory, onSeeBudgets) }
             item { MonthsCard(months) }
+            calendar?.let { cal -> item { com.emotionalleaves.sprout.ui.insights.SpendCalendarCard(cal) } }
 
             if (bills.isNotEmpty()) {
                 item { com.emotionalleaves.sprout.ui.common.SectionHeader("Coming up", "All bills", onSeeBills) }

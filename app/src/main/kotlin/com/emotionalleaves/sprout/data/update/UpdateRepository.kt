@@ -65,6 +65,10 @@ class UpdateRepository(
     val releasesPage: String get() = "https://github.com/$repo/releases/latest"
     val autoCheck = context.updateStore.data.map { it[AUTO] ?: true }
     val dismissedVersion = context.updateStore.data.map { it[DISMISSED] }
+    /** Download new versions in the background on Wi-Fi (or any unmetered network), so they're ready to install. */
+    val autoDownload = context.updateStore.data.map { it[AUTO_DOWNLOAD] ?: true }
+    suspend fun setAutoDownload(on: Boolean) { context.updateStore.edit { it[AUTO_DOWNLOAD] = on } }
+    val hasKey: Boolean get() = key.isNotEmpty()
 
     suspend fun setAutoCheck(on: Boolean) { context.updateStore.edit { it[AUTO] = on } }
 
@@ -84,8 +88,20 @@ class UpdateRepository(
      * Also deletes the downloaded APK, which isn't needed once installed.
      */
     suspend fun consumeJustUpdatedFrom(): String? {
-        File(context.cacheDir, "updates").listFiles()?.forEach { it.delete() }
         val prefs = context.updateStore.data.first()
+        // Keep a background-downloaded update that's still newer than this version; delete anything else.
+        val readyVersion = prefs[READY_VERSION]
+        val file = File(context.cacheDir, "updates/sprout-update.apk")
+        if (readyVersion != null && UpdateCheck.isNewer(readyVersion, currentVersion) && file.exists()) {
+            if (_state.value is UpdateState.Idle) {
+                _state.value = UpdateState.ReadyToInstall(
+                    ReleaseInfo(readyVersion, prefs[READY_NOTES].orEmpty(), file.name, "", "", file.length(), null, releasesPage), file,
+                )
+            }
+        } else {
+            File(context.cacheDir, "updates").listFiles()?.forEach { it.delete() }
+            context.updateStore.edit { it.remove(READY_VERSION); it.remove(READY_NOTES) }
+        }
         val last = prefs[LAST_SEEN]
         context.updateStore.edit { it[LAST_SEEN] = currentVersion }
         return last?.takeIf { it != currentVersion }
@@ -185,6 +201,7 @@ class UpdateRepository(
             }
             true
         }.getOrElse { false }
+        if (ok) context.updateStore.edit { it[READY_VERSION] = release.version; it[READY_NOTES] = release.notes }
         _state.value = if (ok) UpdateState.ReadyToInstall(release, out) else UpdateState.Failed("The download didn't finish. Try again.")
     }
 
@@ -209,6 +226,9 @@ class UpdateRepository(
         private val LAST = longPreferencesKey("last_check")
         private val DISMISSED = stringPreferencesKey("dismissed_version")
         private val NOTIFIED = stringPreferencesKey("notified_version")
+        private val AUTO_DOWNLOAD = booleanPreferencesKey("auto_download")
+        private val READY_VERSION = stringPreferencesKey("ready_version")
+        private val READY_NOTES = stringPreferencesKey("ready_notes")
         private val LAST_SEEN = stringPreferencesKey("last_seen_version")
     }
 }
