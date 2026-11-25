@@ -98,11 +98,11 @@ fun ReviewScreen(onBack: () -> Unit) {
             if (done > 0) Text("$done done", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
         }
         com.emotionalleaves.sprout.ui.common.FatProgress(if (startCount == 0) 0f else done.toFloat() / startCount, MaterialTheme.colorScheme.primary)
-        val merchant = MerchantNormalizer.displayName(row.merchantKey)
+        val merchant = com.emotionalleaves.sprout.ui.common.merchantName(row.merchantKey)
         val c = com.emotionalleaves.sprout.ui.theme.LocalSproutColors.current
         androidx.compose.animation.AnimatedContent(targetState = row, label = "review-card") { r ->
             com.emotionalleaves.sprout.ui.common.HeroCard(c.hero, Modifier.padding(horizontal = 0.dp)) {
-                Text(MerchantNormalizer.displayName(r.merchantKey), style = MaterialTheme.typography.headlineSmall, color = c.onHero)
+                Text(com.emotionalleaves.sprout.ui.common.merchantName(r.merchantKey), style = MaterialTheme.typography.headlineSmall, color = c.onHero)
                 Text(Format.amount(r.amountMinor), style = MaterialTheme.typography.displaySmall, color = c.onHero)
                 Text(r.description, style = MaterialTheme.typography.bodyMedium, color = c.onHero.copy(alpha = 0.85f))
                 Text("${Format.dateTime(r.occurredAt)} · ${r.accountName}", style = MaterialTheme.typography.bodySmall, color = c.onHero.copy(alpha = 0.8f))

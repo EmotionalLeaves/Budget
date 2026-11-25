@@ -136,6 +136,19 @@ class MigrationTest {
         room.close()
     }
 
+    @Test fun migrate6To7KeepsAllData() {
+        helper.createDatabase(name, 6).use { db ->
+            seedV1(db)
+            db.execSQL("UPDATE transactions SET reviewedAt = 7")
+            db.execSQL("INSERT INTO receipts (id, transactionId, fileName, createdAt) VALUES (1, 'sf:C:A:1', 'r.jpg', 9)")
+        }
+        helper.runMigrationsAndValidate(name, 7, true, Migrations.MIGRATION_6_7).use { db ->
+            db.query("SELECT COUNT(*) FROM merchant_names").use { c -> c.moveToFirst(); assertEquals(0, c.getInt(0)) }
+            db.query("SELECT reviewedAt FROM transactions").use { c -> c.moveToFirst(); assertEquals(7L, c.getLong(0)) }
+            db.query("SELECT fileName FROM receipts").use { c -> c.moveToFirst(); assertEquals("r.jpg", c.getString(0)) }
+        }
+    }
+
     @Test fun migrate1ToLatestInOneGo() {
         helper.createDatabase(name, 1).use { seedV1(it) }
         helper.runMigrationsAndValidate(name, SproutDatabase.VERSION, true, *SproutDatabase.MIGRATIONS).close()

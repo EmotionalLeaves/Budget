@@ -30,6 +30,12 @@ data class YearRow(val categoryId: Long, val name: String, val colorArgb: Int, v
 class InsightsRepository(private val db: SproutDatabase, private val clock: Clock, private val zone: () -> ZoneId = { ZoneId.systemDefault() }) {
     private fun today(): LocalDate = LocalDate.now(clock.withZone(zone()))
 
+    /** Your merchant names, falling back to the cleaned-up bank text. */
+    private suspend fun namer(): (String) -> String {
+        val names = db.merchantNames().getAll().associate { it.merchantKey to it.displayName }
+        return { k -> names[k] ?: MerchantNormalizer.displayName(k) }
+    }
+
     suspend fun subscriptions(): Subscriptions = withContext(Dispatchers.IO) {
         val active = db.recurring().getAll().filter { it.status != RecurringStatus.DISMISSED }
         val monthly = active.sumOf { InsightEngine.monthlyEquivalent(kotlin.math.abs(it.typicalAmountMinor), it.cadence) }
@@ -53,6 +59,7 @@ class InsightsRepository(private val db: SproutDatabase, private val clock: Cloc
 
     /** Last month in review (or [month]). */
     suspend fun recap(month: YearMonth = YearMonth.from(today()).minusMonths(1)): com.emotionalleaves.sprout.domain.insights.Recap = withContext(Dispatchers.IO) {
+        val nm = namer()
         val z = zone()
         val w = MonthWindow.of(month, z)
         val pw = MonthWindow.of(month.minusMonths(1), z)
@@ -71,7 +78,7 @@ class InsightsRepository(private val db: SproutDatabase, private val clock: Cloc
             incomeMinor = db.insights().income(w.start, w.end),
             previousSpentMinor = prev.takeIf { prevRows.isNotEmpty() },
             topCategories = byCat.entries.sortedByDescending { it.value }.take(3).map { (cats[it.key]?.name ?: "Other") to it.value },
-            biggest = biggest?.let { MerchantNormalizer.displayName(it.merchantKey) to -it.amountMinor },
+            biggest = biggest?.let { nm(it.merchantKey) to -it.amountMinor },
             noSpendDays = month.lengthOfMonth() - days.size,
             transactions = merchants.sumOf { it.count },
         )
@@ -127,6 +134,7 @@ class InsightsRepository(private val db: SproutDatabase, private val clock: Cloc
 
     /** This month's totals for pinned categories ("c:<id>") and merchants ("m:<key>"). */
     suspend fun watch(items: Set<String>): List<Triple<String, String, Long>> = withContext(Dispatchers.IO) {
+        val nm = namer()
         if (items.isEmpty()) return@withContext emptyList()
         val z = zone()
         val w = MonthWindow.of(YearMonth.from(today()), z)
@@ -136,7 +144,7 @@ class InsightsRepository(private val db: SproutDatabase, private val clock: Cloc
         items.mapNotNull { item ->
             when {
                 item.startsWith("c:") -> item.drop(2).toLongOrNull()?.let { id -> cats[id]?.let { Triple(item, it.name, sums[id] ?: 0L) } }
-                item.startsWith("m:") -> item.drop(2).let { k -> Triple(item, MerchantNormalizer.displayName(k), maxOf(0L, merchants[k] ?: 0L)) }
+                item.startsWith("m:") -> item.drop(2).let { k -> Triple(item, nm(k), maxOf(0L, merchants[k] ?: 0L)) }
                 else -> null
             }
         }
@@ -188,6 +196,7 @@ class InsightsRepository(private val db: SproutDatabase, private val clock: Cloc
 
     /** A whole year in review (this year so far by default). */
     suspend fun yearReview(year: Int = today().year): YearReview = withContext(Dispatchers.IO) {
+        val nm = namer()
         val z = zone()
         val first = YearMonth.of(year, 1)
         val last = minOf(YearMonth.of(year, 12), YearMonth.from(today()))
@@ -210,8 +219,8 @@ class InsightsRepository(private val db: SproutDatabase, private val clock: Cloc
             spentMinor = byCat.values.sum(),
             incomeMinor = db.insights().income(start, end),
             topCategories = byCat.entries.sortedByDescending { it.value }.take(5).map { expense.getValue(it.key).name to it.value },
-            topMerchants = db.insights().merchantTotals(start, end).take(5).map { MerchantNormalizer.displayName(it.merchantKey) to it.total },
-            biggest = db.insights().biggestCharge(start, end)?.let { MerchantNormalizer.displayName(it.merchantKey) to -it.amountMinor },
+            topMerchants = db.insights().merchantTotals(start, end).take(5).map { nm(it.merchantKey) to it.total },
+            biggest = db.insights().biggestCharge(start, end)?.let { nm(it.merchantKey) to -it.amountMinor },
             priciestMonth = withSpend.maxByOrNull { it.second },
             cheapestMonth = withSpend.minByOrNull { it.second },
             noSpendDays = (daysCovered - spentDays.size).coerceAtLeast(0),
@@ -221,13 +230,14 @@ class InsightsRepository(private val db: SproutDatabase, private val clock: Cloc
     }
 
     suspend fun insights(): List<Insight> = withContext(Dispatchers.IO) {
+        val nm = namer()
         val z = zone()
         val today = today()
         val month = YearMonth.from(today)
         val (months, grid) = yearGrid(4)
         val categoryMonths = grid.flatMap { r -> months.mapIndexed { i, m -> CategoryMonth(r.categoryId, r.name, m, r.byMonth[i]) } }
         val w = MonthWindow.of(month, z)
-        val merchants = db.insights().merchantTotals(w.start, w.end).map { MerchantSpend(MerchantNormalizer.displayName(it.merchantKey), it.total, it.count) }
+        val merchants = db.insights().merchantTotals(w.start, w.end).map { MerchantSpend(nm(it.merchantKey), it.total, it.count) }
         val subs = subscriptions()
         val spent = grid.sumOf { it.byMonth.last() }
         val base = InsightEngine.build(today, categoryMonths, merchants, subs.monthlyMinor, subs.count, db.insights().income(w.start, w.end), spent)

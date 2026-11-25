@@ -176,6 +176,10 @@ interface TransactionDao {
 
     @Query("SELECT COUNT(*) FROM transactions") fun observeCount(): Flow<Int>
 
+    /** Money out and in per transaction since [since], for day totals in the list (hidden accounts skipped). */
+    @Query("SELECT t.amountMinor AS amountMinor, t.occurredAt AS occurredAt FROM transactions t JOIN accounts a ON a.id = t.accountId WHERE t.occurredAt >= :since AND a.hidden = 0")
+    fun observeAmountsSince(since: Long): Flow<List<AmountAt>>
+
     /** The review inbox: new transactions you haven't marked seen, newest first. */
     @Query(
         """
@@ -697,3 +701,15 @@ interface ReceiptDao {
     @Query("DELETE FROM receipts WHERE id = :id") suspend fun delete(id: Long)
     @Query("SELECT COUNT(*) FROM receipts WHERE transactionId = :transactionId") suspend fun countFor(transactionId: String): Int
 }
+
+@Dao
+interface MerchantNameDao {
+    @Query("SELECT * FROM merchant_names") fun observeAll(): Flow<List<MerchantNameEntity>>
+    @Query("SELECT * FROM merchant_names") suspend fun getAll(): List<MerchantNameEntity>
+    @Upsert suspend fun upsert(item: MerchantNameEntity)
+    @Query("DELETE FROM merchant_names WHERE merchantKey = :merchantKey") suspend fun delete(merchantKey: String)
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putAll(items: List<MerchantNameEntity>)
+    @Query("DELETE FROM merchant_names") suspend fun wipe()
+}
+
+data class AmountAt(val amountMinor: Long, val occurredAt: Long)

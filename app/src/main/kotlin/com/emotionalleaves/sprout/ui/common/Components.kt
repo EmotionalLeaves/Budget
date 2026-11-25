@@ -110,7 +110,7 @@ fun CategoryChip(name: String, color: Int, iconKey: String? = null) {
 
 @Composable
 fun TransactionItem(row: TransactionRow, onClick: (() -> Unit)? = null) {
-    val merchant = MerchantNormalizer.displayName(row.merchantKey)
+    val merchant = com.emotionalleaves.sprout.ui.common.merchantName(row.merchantKey)
     val amountText = Format.amount(row.amountMinor)
     val spoken = buildString {
         append(merchant).append(", ").append(Format.amountSpoken(row.amountMinor))

@@ -42,6 +42,7 @@ class BackupRepositoryTest {
             cats.setNote("sf:CON-111:ACT-CHK-1:TX-1001", "weekly shop")
             BudgetRepository(env.db, env.clock).setBudget(env.db.categories().getByKey(DefaultCategories.GROCERIES)!!.id, 40_000, false, YearMonth.of(2026, 11))
             cats.setSplits("sf:CON-111:ACT-CHK-1:TX-1001", listOf(com.emotionalleaves.sprout.domain.split.SplitPart(env.db.categories().getByKey(DefaultCategories.SHOPPING)!!.id, 500)))
+            env.db.merchantNames().upsert(com.emotionalleaves.sprout.data.db.MerchantNameEntity("HY-VEE", "Hy-Vee Lincoln", 5))
             val tags = com.emotionalleaves.sprout.data.tags.TagRepository(env.db, env.clock)
             tags.attach("sf:CON-111:ACT-CHK-1:TX-1001", tags.getOrCreate("Groceries run")!!)
             BudgetRepository(env.db, env.clock).setRollover(env.db.categories().getByKey(DefaultCategories.GROCERIES)!!.id, true, YearMonth.of(2026, 10))
@@ -60,6 +61,7 @@ class BackupRepositoryTest {
             env.db.backup().budgetRollovers().toString(),
             env.db.backup().transactionSplits().toString(),
             env.db.backup().tags().toString(),
+            env.db.merchantNames().getAll().toString(),
             env.db.backup().transactionTags().toString(),
             env.db.connections().getAll().toString(),
         )
@@ -107,5 +109,17 @@ class BackupRepositoryTest {
         try { repo.restore(broken); fail() } catch (e: Exception) { /* expected */ }
         assertEquals(before, snapshot())
         assertEquals(JsonPrimitive(com.emotionalleaves.sprout.data.db.SproutDatabase.VERSION), obj["schema"])
+    }
+
+    @Test fun snapshotRestoresEverything() = runBlocking {
+        val before = snapshot()
+        val snaps = com.emotionalleaves.sprout.data.backup.SnapshotRepository(env.context, repo)
+        val sn = snaps.take("2.6.0")!!
+        DataManager(null, env.db, env.settings, env.secure, env.repo()).deleteAll()
+        assertEquals(0, env.db.backup().transactions().size)
+        snaps.restore(sn)
+        assertEquals(before, snapshot())
+        repeat(4) { snaps.take("2.6.$it") }
+        assertEquals(com.emotionalleaves.sprout.data.backup.SnapshotRepository.KEEP, snaps.list().size)
     }
 }

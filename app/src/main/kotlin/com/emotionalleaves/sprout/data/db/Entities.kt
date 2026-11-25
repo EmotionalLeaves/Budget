@@ -293,6 +293,14 @@ data class SavingsGoalEntity(
     @androidx.room.ColumnInfo(defaultValue = "SAVINGS") val kind: String = "SAVINGS",
 )
 
+/** Schema 7: your own name for a merchant ("SQ *JOES CFE" → "Joe's Coffee"). Display only; rules still match the bank's text. */
+@Entity(tableName = "merchant_names")
+data class MerchantNameEntity(
+    @PrimaryKey val merchantKey: String,
+    val displayName: String,
+    val updatedAt: Long,
+)
+
 /** Schema 6: a photo of a receipt, kept in Sprout's private storage. */
 @Entity(
     tableName = "receipts",

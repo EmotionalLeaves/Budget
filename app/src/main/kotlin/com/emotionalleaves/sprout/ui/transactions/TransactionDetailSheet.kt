@@ -110,7 +110,7 @@ fun TransactionDetailSheet(transactionId: String, onDismiss: () -> Unit, onMessa
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheet) {
         val d = detail ?: return@ModalBottomSheet
-        val merchant = MerchantNormalizer.displayName(d.merchantKey)
+        val merchant = com.emotionalleaves.sprout.ui.common.merchantName(d.merchantKey)
         var always by rememberSaveable(transactionId) { mutableStateOf(true) }
         var note by remember(d.id) { mutableStateOf(d.note.orEmpty()) }
 

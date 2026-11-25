@@ -89,6 +89,40 @@ fun BackupScreen(snackbar: SnackbarHostState, onBack: () -> Unit) {
     val openLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> restoreUri = uri }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Automatic snapshots (made before each update), restorable in place.
+        var snaps by remember { mutableStateOf(c.snapshots.list()) }
+        var confirmSnap by remember { mutableStateOf<com.emotionalleaves.sprout.data.backup.SnapshotRepository.Snapshot?>(null) }
+        com.emotionalleaves.sprout.ui.common.SoftCard {
+            Text("Automatic snapshots", style = MaterialTheme.typography.titleSmall)
+            Text("Sprout saves a copy of your data on this phone right before each update. If anything ever looks wrong after updating, put it back here.",
+                style = MaterialTheme.typography.bodySmall)
+            if (snaps.isEmpty()) Text("None yet.", style = MaterialTheme.typography.labelMedium)
+            snaps.forEach { sn ->
+                androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Text("Before updating from ${sn.version} · ${com.emotionalleaves.sprout.ui.common.Format.dateTime(sn.createdAt)}",
+                        Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                    TextButton(onClick = { confirmSnap = sn }) { Text("Restore") }
+                }
+            }
+            TextButton(onClick = { scope.launch { c.snapshots.take(com.emotionalleaves.sprout.BuildConfig.VERSION_NAME); snaps = c.snapshots.list() } }) { Text("Make one now") }
+        }
+        confirmSnap?.let { sn ->
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { confirmSnap = null },
+                title = { Text("Restore this snapshot?") },
+                text = { Text("Everything in Sprout goes back to how it was then. Changes since will be replaced. Your bank connection stays.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        confirmSnap = null
+                        scope.launch {
+                            val r = runCatching { c.snapshots.restore(sn) }
+                            snackbar.showSnackbar(r.fold({ "Restored ${it.transactions} transactions" }, { it.message ?: "Couldn't restore that snapshot." }))
+                        }
+                    }) { Text("Restore") }
+                },
+                dismissButton = { TextButton(onClick = { confirmSnap = null }) { Text("Cancel") } },
+            )
+        }
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
             Text("Backup and restore", style = MaterialTheme.typography.titleLarge)

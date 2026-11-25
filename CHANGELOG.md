@@ -2,7 +2,24 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
-## [2.6.0] - 2026-11-24
+## [2.7.0] - 2026-11-24
+
+Round 8.
+
+### Auto-update
+- **Safety snapshot before every update**: once an update is downloaded, Sprout saves a copy of all your data on the phone before it installs. If anything ever looks wrong after an update, Settings → Backup → "Automatic snapshots" puts everything back in one tap. The last 3 are kept; you can also make one any time.
+
+### New look
+- Activity's day headers show each day's totals (money out, and money in when there is some).
+- A second home-screen widget, **Budgets**: your top budgets with progress bars (follows "Hide amounts").
+
+### New features
+- **Rename merchants** (like Monarch and Copilot): on any merchant page tap Rename to turn "SQ *JOES CFE 1234" into "Joe's Coffee". The new name shows everywhere in Sprout: lists, insights, recaps and year in review. Rules still match the bank's text. Clear the name to go back.
+
+### Data safety
+- Database version 7 adds one table for your merchant names. Updating keeps all your data (tested from every earlier version). Backups include merchant names.
+
+ - 2026-11-24
 
 Round 7.
 

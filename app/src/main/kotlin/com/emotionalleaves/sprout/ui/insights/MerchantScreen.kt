@@ -58,9 +58,14 @@ fun MerchantScreen(merchantKey: String, snackbar: androidx.compose.material3.Sna
     val stats = remember(rows) { MerchantStats.of(rows.map { MerchantTx(it.amountMinor, it.occurredAt) }, YearMonth.now(zone), zone) }
     Column(Modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text(MerchantNormalizer.displayName(merchantKey)) },
+            title = { Text(com.emotionalleaves.sprout.ui.common.merchantName(merchantKey)) },
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
-            actions = { PinButton("m:$merchantKey") },
+            actions = {
+                var renaming by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+                androidx.compose.material3.TextButton(onClick = { renaming = true }) { Text("Rename") }
+                PinButton("m:$merchantKey")
+                if (renaming) RenameMerchantDialog(merchantKey) { renaming = false }
+            },
         )
         LazyColumn {
             item {
@@ -96,4 +101,35 @@ fun PinButton(item: String) {
     androidx.compose.material3.TextButton(onClick = { scope.launch { c.settings.toggleWatch(item) } }) {
         Text(if (on) "Pinned to Home" else "Pin to Home")
     }
+}
+
+
+/** Give a merchant your own name. Empty puts back Sprout's name. Rules and search keep using the bank's text. */
+@Composable
+fun RenameMerchantDialog(merchantKey: String, onDismiss: () -> Unit) {
+    val c = appContainer()
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val current = com.emotionalleaves.sprout.ui.common.merchantName(merchantKey)
+    var text by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(current) }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Rename merchant") },
+        text = {
+            Column {
+                Text("Shown everywhere in Sprout instead of \"$merchantKey\".", style = MaterialTheme.typography.bodySmall)
+                androidx.compose.material3.OutlinedTextField(text, { text = it.take(60) }, singleLine = true, label = { Text("Name") })
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = {
+                val clean = com.emotionalleaves.sprout.domain.text.Sanitize.text(text, 60).trim()
+                scope.launch {
+                    if (clean.isEmpty() || clean == com.emotionalleaves.sprout.domain.categorize.MerchantNormalizer.displayName(merchantKey)) c.db.merchantNames().delete(merchantKey)
+                    else c.db.merchantNames().upsert(com.emotionalleaves.sprout.data.db.MerchantNameEntity(merchantKey, clean, System.currentTimeMillis() / 1000))
+                }
+                onDismiss()
+            }) { Text("Save") }
+        },
+        dismissButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }

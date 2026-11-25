@@ -32,6 +32,7 @@ import androidx.room.migration.Migration
         TagEntity::class,
         TransactionTagEntity::class,
         ReceiptEntity::class,
+        MerchantNameEntity::class,
     ],
     version = SproutDatabase.VERSION,
     exportSchema = true,
@@ -53,13 +54,14 @@ abstract class SproutDatabase : RoomDatabase() {
     abstract fun tags(): TagDao
     abstract fun insights(): InsightDao
     abstract fun receipts(): ReceiptDao
+    abstract fun merchantNames(): MerchantNameDao
 
     companion object {
-        const val VERSION = 6
+        const val VERSION = 7
         const val NAME = "sprout.db"
 
         /** All migrations, oldest first. */
-        val MIGRATIONS: Array<Migration> = arrayOf(Migrations.MIGRATION_1_2, Migrations.MIGRATION_2_3, Migrations.MIGRATION_3_4, Migrations.MIGRATION_4_5, Migrations.MIGRATION_5_6)
+        val MIGRATIONS: Array<Migration> = arrayOf(Migrations.MIGRATION_1_2, Migrations.MIGRATION_2_3, Migrations.MIGRATION_3_4, Migrations.MIGRATION_4_5, Migrations.MIGRATION_5_6, Migrations.MIGRATION_6_7)
 
         fun build(context: Context): SproutDatabase =
             Room.databaseBuilder(context.applicationContext, SproutDatabase::class.java, NAME)

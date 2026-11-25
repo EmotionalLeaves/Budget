@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.transactions
 
+import kotlinx.coroutines.flow.map
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.zIndex
 import androidx.compose.material.icons.rounded.Add
@@ -122,6 +123,15 @@ class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
     fun setCategory(id: Long?) { _filter.value = _filter.value.copy(categoryId = id, uncategorizedOnly = false) }
     fun setTag(id: Long?) { _filter.value = _filter.value.copy(tagId = id) }
     val inboxCount = c.db.transactions().observeInboxCount()
+    /** Per-day totals (out, in) for the last 400 days, for the day headers. */
+    val dayTotals: StateFlow<Map<LocalDate, Pair<Long, Long>>> = c.db.transactions()
+        .observeAmountsSince(System.currentTimeMillis() / 1000 - 400 * 86_400L)
+        .map { rows ->
+            rows.groupBy { Format.localDate(it.occurredAt) }.mapValues { (_, l) ->
+                (-l.filter { it.amountMinor < 0 }.sumOf { it.amountMinor }) to l.filter { it.amountMinor > 0 }.sumOf { it.amountMinor }
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
     val tags: StateFlow<List<com.emotionalleaves.sprout.data.db.TagEntity>> = c.db.tags().observeAll()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
@@ -143,6 +153,7 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
     val accounts by vm.accounts.collectAsStateWithLifecycle()
     val categories by vm.categories.collectAsStateWithLifecycle()
     val tags by vm.tags.collectAsStateWithLifecycle()
+    val dayTotals by vm.dayTotals.collectAsStateWithLifecycle()
     LaunchedEffect(initialTagId) { if (initialTagId != null) vm.setTag(initialTagId) }
     val items = vm.pages.collectAsLazyPagingItems()
     val today by vm.today.collectAsStateWithLifecycle()
@@ -249,14 +260,14 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
                     val row = items[index] ?: return@items
                     val date = Format.localDate(row.occurredAt)
                     val prev = if (index > 0) items.peek(index - 1)?.let { Format.localDate(it.occurredAt) } else null
-                    if (prev != date) DayHeader(Format.dayHeader(date, today))
+                    if (prev != date) DayHeader(Format.dayHeader(date, today), dayTotals[date])
                     TransactionItem(row) { openId = row.id }
 
                 }
             }
             val d = floatingDate
             if (d != null && (listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0)) {
-                DayHeader(Format.dayHeader(d, today))
+                DayHeader(Format.dayHeader(d, today), dayTotals[d])
             }
         }
     }
@@ -277,14 +288,18 @@ private fun <T> PickerChip(label: String, selected: Boolean, options: List<Pair<
 }
 
 @Composable
-private fun DayHeader(text: String) {
-    Text(
-        text,
-        style = MaterialTheme.typography.labelLarge,
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceContainer)
-            .padding(horizontal = 16.dp, vertical = 6.dp)
-            .semantics { heading() },
-    )
+private fun DayHeader(text: String, totals: Pair<Long, Long>? = null) {
+    Row(
+        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer).padding(horizontal = 16.dp, vertical = 6.dp)
+            .semantics(mergeDescendants = true) { heading() },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(text, style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
+        totals?.let { (out, inn) ->
+            if (inn > 0) Text("+" + com.emotionalleaves.sprout.domain.money.Money.formatWhole(inn) + "  ", style = MaterialTheme.typography.labelMedium,
+                color = com.emotionalleaves.sprout.ui.theme.LocalSproutColors.current.income)
+            if (out > 0) Text("−" + com.emotionalleaves.sprout.domain.money.Money.formatWhole(out), style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
 }

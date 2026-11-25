@@ -56,6 +56,7 @@ class AppContainer(context: Context) {
             runCatching { recurringRepository.detect() }
             alertRepository.afterSync(newOutflowIds, problems)
             com.emotionalleaves.sprout.widget.SafeToSpendWidget.refresh(appContext)
+            com.emotionalleaves.sprout.widget.BudgetsWidget.refresh(appContext)
         }
     }
     val syncRepository = SyncRepository(db, secureStore, settings, client, clock, postSync)
@@ -68,6 +69,7 @@ class AppContainer(context: Context) {
     val insightsRepository = com.emotionalleaves.sprout.data.insights.InsightsRepository(db, clock)
     val exportRepository = ExportRepository(db)
     val backupRepository = BackupRepository(db, clock)
+    val snapshots = com.emotionalleaves.sprout.data.backup.SnapshotRepository(appContext, backupRepository)
     val dataManager = DataManager(appContext, db, settings, secureStore, syncRepository)
     val importRepository = ImportRepository(db, clock, afterImport = {
         recurringRepository.detect()
@@ -80,6 +82,7 @@ class AppContainer(context: Context) {
         storedKey = { secureStore.readUpdateKey() },
         currentCode = BuildConfig.VERSION_CODE,
         beta = { settings.current().betaUpdates },
+        beforeInstall = { snapshots.take(BuildConfig.VERSION_NAME) },
         saveStoredKey = { k -> if (k.isEmpty()) secureStore.clearUpdateKey() else secureStore.saveUpdateKey(k) },
     )
 }

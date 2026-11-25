@@ -30,3 +30,12 @@ fun <T> rememberLoaded(vararg keys: Any?, load: suspend () -> T): T? {
     androidx.compose.runtime.LaunchedEffect(*keys) { state.value = load() }
     return state.value
 }
+
+
+/** Your own merchant names (merchantKey → name), provided at the app root. */
+val LocalMerchantNames = androidx.compose.runtime.staticCompositionLocalOf<Map<String, String>> { emptyMap() }
+
+/** The name to show for a merchant: yours if you renamed it, else Sprout's cleaned-up version of the bank's text. */
+@androidx.compose.runtime.Composable
+fun merchantName(merchantKey: String): String =
+    LocalMerchantNames.current[merchantKey] ?: com.emotionalleaves.sprout.domain.categorize.MerchantNormalizer.displayName(merchantKey)

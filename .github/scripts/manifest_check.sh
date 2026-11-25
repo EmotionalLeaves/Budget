@@ -23,7 +23,7 @@ PY
 )
 for e in $exported; do
   case "$e" in
-    com.emotionalleaves.sprout.MainActivity|androidx.work.impl.background.systemjob.SystemJobService|com.emotionalleaves.sprout.widget.SafeToSpendWidgetReceiver|androidx.glance.appwidget.GlanceRemoteViewsService) ;;
+    com.emotionalleaves.sprout.MainActivity|androidx.work.impl.background.systemjob.SystemJobService|com.emotionalleaves.sprout.widget.SafeToSpendWidgetReceiver|com.emotionalleaves.sprout.widget.BudgetsWidgetReceiver|androidx.glance.appwidget.GlanceRemoteViewsService) ;;
     *) echo "::error::Unexpected exported component $e"; fail=1 ;;
   esac
 done

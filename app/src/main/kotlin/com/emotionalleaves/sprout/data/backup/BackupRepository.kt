@@ -82,6 +82,8 @@ class BackupRepository(private val db: SproutDatabase, private val clock: Clock)
         val recurring = arr(backup, "recurringCharges").map(::recurringCharge)
         // Added in schema 2; older backups simply have none.
         val goals = arr(backup, "savingsGoals").map(::goal)
+        // Added in schema 7.
+        val merchantNames = arr(backup, "merchantNames").map { o -> com.emotionalleaves.sprout.data.db.MerchantNameEntity(o.str("merchantKey"), o.str("displayName"), o.long("updatedAt")) }
         // Added in schema 5.
         val tags = arr(backup, "tags").map { o -> TagEntity(o.long("id"), o.str("name"), o.int("colorArgb"), o.long("createdAt")) }
         val txTags = arr(backup, "transactionTags").map { o -> TransactionTagEntity(o.str("transactionId"), o.long("tagId")) }
@@ -94,7 +96,7 @@ class BackupRepository(private val db: SproutDatabase, private val clock: Clock)
         if (cats.isEmpty()) throw BackupException("This backup file is damaged.")
         val b = db.backup()
         db.withTransaction {
-            b.wipeTransactionTags(); b.wipeTags(); b.wipeTransactionSplits(); b.wipeTransactions(); b.wipeBudgetAlerts(); b.wipeBudgetRollovers(); b.wipeBudgetOverrides(); b.wipeCategoryBudgets()
+            db.merchantNames().wipe(); b.wipeTransactionTags(); b.wipeTags(); b.wipeTransactionSplits(); b.wipeTransactions(); b.wipeBudgetAlerts(); b.wipeBudgetRollovers(); b.wipeBudgetOverrides(); b.wipeCategoryBudgets()
             b.wipeMerchantRules(); b.wipeRecurring(); db.goals().wipe(); b.wipeAccounts(); b.wipeConnections(); b.wipeCategories()
             b.putCategories(cats); b.putConnections(conns); b.putAccounts(accounts)
             txs.chunked(500).forEach { b.putTransactions(it) }
@@ -103,6 +105,7 @@ class BackupRepository(private val db: SproutDatabase, private val clock: Clock)
             b.putBudgetRollovers(rollovers)
             splits.chunked(500).forEach { b.putTransactionSplits(it) }
             b.putTags(tags)
+            db.merchantNames().putAll(merchantNames)
             txTags.chunked(500).forEach { b.putTransactionTags(it) }
         }
         RestoreSummary(txs.size, accounts.size, budgets.size, rules.size, recurring.size)
@@ -153,6 +156,9 @@ class BackupRepository(private val db: SproutDatabase, private val clock: Clock)
             } })
             put("budgetOverrides", buildJsonArray { b.budgetOverrides().forEach { x ->
                 add(buildJsonObject { put("categoryId", x.categoryId); put("yearMonth", x.yearMonth); put("amountMinor", x.amountMinor) })
+            } })
+            put("merchantNames", buildJsonArray { db.merchantNames().getAll().forEach { x ->
+                add(buildJsonObject { put("merchantKey", x.merchantKey); put("displayName", x.displayName); put("updatedAt", x.updatedAt) })
             } })
             put("tags", buildJsonArray { b.tags().forEach { x ->
                 add(buildJsonObject { put("id", x.id); put("name", x.name); put("colorArgb", x.colorArgb); put("createdAt", x.createdAt) })

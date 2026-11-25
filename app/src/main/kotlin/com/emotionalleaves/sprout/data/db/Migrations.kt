@@ -83,4 +83,14 @@ object Migrations {
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_receipts_transactionId` ON `receipts` (`transactionId`)")
         }
     }
+
+    /** v7: your own merchant names. A new table only. */
+    val MIGRATION_6_7 = object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `merchant_names` (`merchantKey` TEXT NOT NULL, `displayName` TEXT NOT NULL, " +
+                    "`updatedAt` INTEGER NOT NULL, PRIMARY KEY(`merchantKey`))",
+            )
+        }
+    }
 }

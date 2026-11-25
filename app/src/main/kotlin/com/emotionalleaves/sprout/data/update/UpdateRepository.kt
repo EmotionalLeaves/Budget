@@ -69,6 +69,8 @@ class UpdateRepository(
     private val currentCode: Int = 0,
     /** Beta channel on: test builds (prereleases) count as updates too. */
     private val beta: suspend () -> Boolean = { false },
+    /** Runs once a download is ready, before anything installs: a safety snapshot of your data. */
+    private val beforeInstall: suspend () -> Unit = {},
     private val saveStoredKey: suspend (String) -> Unit = {},
 ) {
     private suspend fun key(): String = builtInKey.ifEmpty { runCatching { storedKey() }.getOrDefault("") }
@@ -251,7 +253,10 @@ class UpdateRepository(
             }
             true
         }.getOrElse { false }
-        if (ok) context.updateStore.edit { it[READY_VERSION] = release.version; it[READY_NOTES] = release.notes }
+        if (ok) {
+            runCatching { beforeInstall() }
+            context.updateStore.edit { it[READY_VERSION] = release.version; it[READY_NOTES] = release.notes }
+        }
         _state.value = if (ok) UpdateState.ReadyToInstall(release, out) else UpdateState.DownloadFailed(release)
     }
 

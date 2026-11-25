@@ -193,7 +193,7 @@ fun CategoryDetailScreen(categoryId: Long, snackbar: SnackbarHostState, onBack: 
                 val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
                 Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable { navigate("merchant/" + android.net.Uri.encode(m.merchantKey)) }
                     .padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(MerchantNormalizer.displayName(m.merchantKey) + " (${m.count})", Modifier.weight(1f))
+                    Text(com.emotionalleaves.sprout.ui.common.merchantName(m.merchantKey) + " (${m.count})", Modifier.weight(1f))
                     Text(Money.format(maxOf(0, -m.total)))
                 }
             }
@@ -202,7 +202,7 @@ fun CategoryDetailScreen(categoryId: Long, snackbar: SnackbarHostState, onBack: 
             item { SectionTitle("Rules for this category") }
             items(rules, key = { "r-" + it.id }) { r ->
                 Text(
-                    if (r.matchType == RuleType.EXACT) MerchantNormalizer.displayName(r.pattern) else "Contains \"${r.pattern}\"",
+                    if (r.matchType == RuleType.EXACT) com.emotionalleaves.sprout.ui.common.merchantName(r.pattern) else "Contains \"${r.pattern}\"",
                     Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                 )
             }

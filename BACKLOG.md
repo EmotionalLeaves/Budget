@@ -84,6 +84,10 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [x] (2.5.0) Manual cash transactions; money health score
 - [x] (2.6.0) Edit manual transactions
 - [x] (2.6.0) Paydays on the bill calendar
+- [x] (2.7.0) Merchant renaming; pre-update snapshots; budgets widget; day totals
+- [ ] Auto-tag rules (a rule can add a tag, e.g. everything at Delta → #Travel) — *why: less manual tagging*
+- [ ] Rule by amount (e.g. Venmo over $500 → Rent) — *why: smarter categorizing*
+- [ ] Demo mode with sample data (Copilot) — *why: explore before connecting*
 
 ## Compared with leading apps (2026-11-24)
 

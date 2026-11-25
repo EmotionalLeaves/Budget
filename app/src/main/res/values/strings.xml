@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Sprout</string>
+    <string name="widget_budgets_description">Your top budgets with progress bars</string>
     <string name="widget_description">Safe to spend today, at a glance</string>
 </resources>

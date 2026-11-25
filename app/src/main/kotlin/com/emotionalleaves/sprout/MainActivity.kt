@@ -269,7 +269,12 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
             }
         },
     ) { padding ->
-        androidx.compose.runtime.CompositionLocalProvider(com.emotionalleaves.sprout.ui.common.LocalNavigate provides { r: String -> nav.navigate(r) }) {
+        val names by androidx.compose.runtime.remember { container.db.merchantNames().observeAll() }.collectAsState(initial = emptyList())
+        val nameMap = androidx.compose.runtime.remember(names) { names.associate { it.merchantKey to it.displayName } }
+        androidx.compose.runtime.CompositionLocalProvider(
+            com.emotionalleaves.sprout.ui.common.LocalNavigate provides { r: String -> nav.navigate(r) },
+            com.emotionalleaves.sprout.ui.common.LocalMerchantNames provides nameMap,
+        ) {
         NavHost(
             nav, startDestination = Tab.HOME.route, modifier = Modifier.padding(padding),
             enterTransition = { androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(220)) +

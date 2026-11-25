@@ -193,7 +193,7 @@ fun RulesScreen(onBack: () -> Unit) {
                 ) {
                     Column(Modifier.weight(1f)) {
                         Text(
-                            if (r.matchType == RuleType.EXACT) MerchantNormalizer.displayName(r.pattern) else "Contains \"${r.pattern}\"",
+                            if (r.matchType == RuleType.EXACT) com.emotionalleaves.sprout.ui.common.merchantName(r.pattern) else "Contains \"${r.pattern}\"",
                             style = MaterialTheme.typography.bodyLarge,
                         )
                         Text("→ ${r.categoryName}", style = MaterialTheme.typography.labelMedium)
