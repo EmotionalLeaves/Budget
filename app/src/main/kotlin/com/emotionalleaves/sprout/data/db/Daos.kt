@@ -615,4 +615,17 @@ interface InsightDao {
 
     @Query("SELECT accountId, amountMinor, occurredAt FROM transactions WHERE occurredAt >= :since AND accountId IN (:accountIds)")
     suspend fun moves(since: Long, accountIds: List<String>): List<AccountMove>
+
+    @Query(
+        """
+        SELECT t.id, t.accountId, t.description, t.merchantKey, t.amountMinor, t.occurredAt, t.pending, t.note,
+               t.categoryId, c.name AS categoryName, c.colorArgb AS categoryColor, t.categorySource,
+               COALESCE(a.displayName, a.name) AS accountName,
+               (SELECT COUNT(*) FROM transaction_splits s WHERE s.transactionId = t.id) AS splitCount, c.iconKey AS categoryIcon
+        FROM transactions t JOIN categories c ON c.id = t.categoryId JOIN accounts a ON a.id = t.accountId
+        WHERE t.merchantKey = :merchantKey AND a.hidden = 0
+        ORDER BY t.occurredAt DESC LIMIT 500
+        """,
+    )
+    fun observeMerchant(merchantKey: String): Flow<List<TransactionRow>>
 }

@@ -1,5 +1,7 @@
 package com.emotionalleaves.sprout.ui.budgets
 
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Spacer
 import com.emotionalleaves.sprout.ui.common.FatProgress
@@ -82,7 +84,7 @@ fun BudgetProgress(spent: Long, budget: Long, level: ProgressLevel?, modifier: M
 }
 
 @Composable
-fun CategoryBudgetRow(line: CategoryLine, onClick: () -> Unit) {
+fun CategoryBudgetRow(line: CategoryLine, onEdit: (() -> Unit)? = null, onClick: () -> Unit) {
     val budget = line.budgetMinor ?: 0L
     val remaining = line.remainingMinor ?: 0L
     val desc = "${line.category.name}: ${Money.format(line.spentMinor)} of ${Money.format(budget)}, ${leftOrOver(remaining)}"
@@ -111,6 +113,12 @@ fun CategoryBudgetRow(line: CategoryLine, onClick: () -> Unit) {
                     )
                 }
                 Text(leftOrOver(remaining), style = MaterialTheme.typography.titleSmall, color = levelColor(line.level))
+                if (onEdit != null) {
+                    androidx.compose.material3.IconButton(onClick = onEdit) {
+                        Icon(androidx.compose.material.icons.Icons.Rounded.Edit, contentDescription = "Edit ${line.category.name} budget",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
             }
             FatProgress(
                 if (budget <= 0) (if (line.spentMinor > 0) 1f else 0f) else line.spentMinor.toFloat() / budget,

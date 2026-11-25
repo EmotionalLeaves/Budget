@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.budgets
 
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -96,7 +97,7 @@ fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit, onGoals:
         }
         val m = data ?: return@Column
         LazyColumn(Modifier.fillMaxSize()) {
-            item { SafeToSpendCard(m, onSetBudget = onQuickSetup) }
+            item { com.emotionalleaves.sprout.ui.home.SafeToSpendHero(m.takeIf { it.safeToSpend != null }, 0, onQuickSetup) }
             item {
                 Row(Modifier.fillMaxWidth().padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     SectionTitle("Budgets", Modifier.weight(1f))
@@ -114,11 +115,7 @@ fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit, onGoals:
                 }
             }
             items(m.budgeted, key = { "b-" + it.category.id }) { line ->
-                CategoryBudgetRow(line) { onCategory(line.category.id) }
-                Row(Modifier.padding(start = 8.dp)) {
-                    TextButton(onClick = { editing = line }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Edit budget") }
-                }
-                HorizontalDivider(Modifier.padding(start = 16.dp))
+                CategoryBudgetRow(line, onEdit = { editing = line }) { onCategory(line.category.id) }
             }
             if (m.unbudgetedWithSpending.isNotEmpty()) {
                 item { SectionTitle("Not budgeted") }

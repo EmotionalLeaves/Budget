@@ -83,4 +83,12 @@ class TagAndInsightTest {
         assertTrue(insights.any { it.key == "merchant" && it.title.contains("Target") })
         assertEquals(0, repo.subscriptions().count)
     }
+
+    @Test fun merchantHistory() = runBlocking {
+        sync(Triple("1", "TARGET 1234|-40.00", at(11, 3)), Triple("2", "TARGET 1234|-60.00", at(10, 3)), Triple("3", "KROGER|-5.00", at(11, 4)))
+        val key = env.db.backup().transactions().first { it.description.startsWith("TARGET") }.merchantKey
+        val rows = env.db.insights().observeMerchant(key).first()
+        assertEquals(2, rows.size)
+        assertEquals(-4_000L, rows.first().amountMinor) // newest first
+    }
 }

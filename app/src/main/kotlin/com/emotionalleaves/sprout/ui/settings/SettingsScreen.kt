@@ -147,6 +147,7 @@ fun SettingsScreen(
         item { NavRow("Net worth over time", "How your total has changed month by month", { onRoute("networth") }) }
         item { NavRow("Year view", "Every category, every month, at a glance", { onRoute("year") }) }
         item { NavRow("Tags", "Spending you've tagged, like a trip or a project", { onRoute("tags") }) }
+        item { NavRow("Debt payoff plan", "When you'll be debt-free, and the fastest or cheapest way there", { onRoute("debt") }) }
         item { NavRow("Savings goals", "Track what you're saving for", { onRoute("goals") }) }
         item { SectionTitle("Bank connections") }
         if (!state.connected) {
@@ -437,9 +438,18 @@ private fun ThresholdRow(currentMinor: Long, onSave: (Long) -> Unit) {
 
 @Composable
 private fun NavRow(title: String, subtitle: String, onClick: () -> Unit) {
-    Column(Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 8.dp)) {
-        Text(title, style = MaterialTheme.typography.bodyLarge)
-        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    androidx.compose.material3.Surface(
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 3.dp),
+    ) {
+        Row(Modifier.clickable(onClick = onClick).heightIn(min = 60.dp).padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.titleSmall)
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Text("›", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
 

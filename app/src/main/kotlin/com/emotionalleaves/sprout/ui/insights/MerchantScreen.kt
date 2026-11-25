@@ -1,0 +1,84 @@
+package com.emotionalleaves.sprout.ui.insights
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.emotionalleaves.sprout.domain.categorize.MerchantNormalizer
+import com.emotionalleaves.sprout.domain.merchant.MerchantStats
+import com.emotionalleaves.sprout.domain.merchant.MerchantTx
+import com.emotionalleaves.sprout.ui.common.BarChart
+import com.emotionalleaves.sprout.ui.common.Format
+import com.emotionalleaves.sprout.ui.common.SoftCard
+import com.emotionalleaves.sprout.ui.common.StatTile
+import com.emotionalleaves.sprout.ui.common.TransactionItem
+import com.emotionalleaves.sprout.ui.common.appContainer
+import com.emotionalleaves.sprout.ui.common.money
+import com.emotionalleaves.sprout.ui.common.showUndoable
+import androidx.compose.runtime.setValue
+import java.time.YearMonth
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+
+private val shortMonth = DateTimeFormatter.ofPattern("MMM", Locale.US)
+
+/** Everything you've spent at one merchant: totals, average, 6-month chart and every transaction. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MerchantScreen(merchantKey: String, snackbar: androidx.compose.material3.SnackbarHostState, onBack: () -> Unit) {
+    val c = appContainer()
+    var openId by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf<String?>(null) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    openId?.let { id ->
+        com.emotionalleaves.sprout.ui.transactions.TransactionDetailSheet(id, onDismiss = { openId = null },
+            onMessage = { msg, undo -> scope.showUndoable(snackbar, msg, undo) })
+    }
+    val rows by remember(merchantKey) { c.db.insights().observeMerchant(merchantKey) }.collectAsStateWithLifecycle(emptyList())
+    val zone = ZoneId.systemDefault()
+    val stats = remember(rows) { MerchantStats.of(rows.map { MerchantTx(it.amountMinor, it.occurredAt) }, YearMonth.now(zone), zone) }
+    Column(Modifier.fillMaxSize()) {
+        TopAppBar(
+            title = { Text(MerchantNormalizer.displayName(merchantKey)) },
+            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
+        )
+        LazyColumn {
+            item {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    StatTile("This year", money(stats.thisYearMinor, whole = true), Modifier.weight(1f))
+                    StatTile("Per visit", money(stats.averageMinor), Modifier.weight(1f))
+                    StatTile("Visits", stats.visits.toString(), Modifier.weight(1f))
+                }
+            }
+            item {
+                SoftCard {
+                    Text("Last 6 months", style = MaterialTheme.typography.titleMedium)
+                    BarChart(stats.byMonth.map { it.second }, stats.byMonth.map { it.first.format(shortMonth) }, MaterialTheme.colorScheme.primary)
+                    stats.firstAt?.let {
+                        Text("Since ${Format.dateTime(it).substringBefore(',')} · ${money(stats.totalSpentMinor)} in all",
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+            items(rows, key = { it.id }) { r -> TransactionItem(r) { openId = r.id } }
+        }
+    }
+}

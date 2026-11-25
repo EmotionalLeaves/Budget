@@ -117,13 +117,25 @@ fun TransactionDetailSheet(transactionId: String, onDismiss: () -> Unit, onMessa
             Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(merchant, style = MaterialTheme.typography.headlineSmall)
-            Text(
-                Format.amount(d.amountMinor),
-                style = MaterialTheme.typography.headlineMedium,
-                color = if (d.amountMinor > 0) LocalSproutColors.current.income else MaterialTheme.colorScheme.onSurface,
-            )
+            val cat = categories.firstOrNull { it.id == d.categoryId }
+            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                com.emotionalleaves.sprout.ui.common.IconBadge(
+                    com.emotionalleaves.sprout.ui.common.CategoryIcons.forKey(cat?.iconKey),
+                    cat?.let { androidx.compose.ui.graphics.Color(it.colorArgb) } ?: MaterialTheme.colorScheme.primary, 64.dp,
+                )
+                Text(merchant, style = MaterialTheme.typography.titleLarge)
+                Text(
+                    Format.amount(d.amountMinor),
+                    style = MaterialTheme.typography.displaySmall,
+                    color = if (d.amountMinor > 0) LocalSproutColors.current.income else MaterialTheme.colorScheme.onSurface,
+                )
+            }
             Text(d.description, style = MaterialTheme.typography.bodyMedium)
+            val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
+            OutlinedButton(
+                onClick = { onDismiss(); navigate("merchant/" + android.net.Uri.encode(d.merchantKey)) },
+                modifier = Modifier.heightIn(min = 48.dp),
+            ) { Text("Everything at $merchant") }
             Text(
                 buildString {
                     append(if (d.pending) "Pending · " else "")

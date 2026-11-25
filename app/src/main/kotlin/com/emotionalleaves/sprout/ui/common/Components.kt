@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.common
 
+import androidx.compose.material.icons.rounded.Spa
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -53,10 +54,11 @@ fun openUrl(context: Context, url: String) {
 @Composable
 fun SectionTitle(text: String, modifier: Modifier = Modifier) {
     Text(
-        text,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.SemiBold,
-        modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp).semantics { heading() },
+        text.uppercase(),
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = modifier.padding(start = 20.dp, end = 16.dp, top = 20.dp, bottom = 6.dp).semantics { heading() },
     )
 }
 
@@ -159,8 +161,14 @@ fun EmptyState(title: String, body: String, action: (@Composable () -> Unit)? = 
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text(title, style = MaterialTheme.typography.titleLarge)
-        Text(body, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Box(
+            Modifier.size(88.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(androidx.compose.material.icons.Icons.Rounded.Spa, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(44.dp))
+        }
+        Text(title, style = MaterialTheme.typography.titleLarge, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        Text(body, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         action?.invoke()
     }
 }

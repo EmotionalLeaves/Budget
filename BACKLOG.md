@@ -47,8 +47,9 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [x] (1.12.0) Split label in the transaction list
 - [x] (1.12.0) Rollover breakdown on the category screen
 - [x] (2.0.0) Search by amount
-- [ ] Onboarding redesign to match the new look, with a short tour — *why: first impression*
+- [x] (2.1.0) Welcome screen redesign
 - [ ] Redesign Bills, Goals, Settings and the detail sheet in the new style — *why: consistency*
+- [ ] Swipe actions on transactions (swipe to recategorize or tag) — *why: faster corrections*
 
 ## 6. Performance and battery
 - [ ] Baseline profile for faster cold start — *why: opens instantly*
@@ -63,13 +64,16 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [x] (1.10.0) Budget rollover (opt-in per category, schema 3 + MIGRATION_2_3)
 - [x] (1.11.0) Split a transaction across categories (schema 4 + MIGRATION_3_4)
 - [x] (2.0.0) Tags on transactions (schema 5)
-- [ ] Home-screen widget (Glance) with safe to spend — *why: check without opening the app*
+- [x] (2.1.0) Home-screen widget (Glance)
 - [ ] Custom-currency lookup (GET the currency URL) — *why: show points/crypto accounts properly*
 - [x] (1.15.0) CSV import: comma decimals and the bank's Category column
 - [ ] CSV export: one row per split part (or a "Split" column) — *why: spreadsheets match budgets*
 - [x] (2.0.0) Year view heat grid
 - [ ] Annual/irregular expenses sinking fund (e.g. car registration) as a goal type — *why: no surprise bills*
-- [ ] Debt payoff planner (snowball/avalanche) for credit and loan accounts — *why: a plan to get to zero*
+- [x] (2.1.0) Debt payoff planner
 - [ ] Cash-flow calendar: projected balance per day for the next 30 days — *why: avoid overdrafts*
 - [ ] Budget templates (50/30/20, zero-based) in quick setup — *why: a starting point*
-- [ ] Merchant detail screen (history, average, chart) from any transaction — *why: "how much do I spend at Target?"*
+- [x] (2.1.0) Merchant pages
+- [ ] Bill reminders: a notification the day before a bill is due (opt-in) — *why: never miss one*
+- [ ] Spending challenges ("No eating out this week") with a streak — *why: motivation*
+- [ ] Paycheck planner: split each paycheck into bills, budgets and savings — *why: give every dollar a job*

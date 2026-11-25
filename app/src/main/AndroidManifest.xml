@@ -33,6 +33,19 @@
             </intent-filter>
         </activity>
 
+        <!-- Home-screen widget (safe to spend). Exported because the launcher must deliver widget updates. -->
+        <receiver
+            android:name=".widget.SafeToSpendWidgetReceiver"
+            android:exported="true"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/safe_to_spend_widget" />
+        </receiver>
+
         <!-- Shares only the downloaded update APK (cache/updates) with the system installer. Not exported. -->
         <provider
             android:name="androidx.core.content.FileProvider"

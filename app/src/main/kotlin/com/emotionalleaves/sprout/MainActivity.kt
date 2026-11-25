@@ -259,6 +259,7 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
             }
         },
     ) { padding ->
+        androidx.compose.runtime.CompositionLocalProvider(com.emotionalleaves.sprout.ui.common.LocalNavigate provides { r: String -> nav.navigate(r) }) {
         NavHost(nav, startDestination = Tab.HOME.route, modifier = Modifier.padding(padding)) {
             composable(Tab.HOME.route) {
                 HomeScreen(
@@ -287,6 +288,11 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
             }
             composable("import") { ImportScreen(onBack = { nav.popBackStack() }, onDone = { nav.popBackStack() }) }
             composable("goals") { GoalsScreen(onBack = { nav.popBackStack() }) }
+            composable("merchant/{key}") { entry ->
+                val key = entry.arguments?.getString("key")?.let { android.net.Uri.decode(it) }.orEmpty()
+                com.emotionalleaves.sprout.ui.insights.MerchantScreen(key, snackbar, onBack = { nav.popBackStack() })
+            }
+            composable("debt") { com.emotionalleaves.sprout.ui.debt.DebtScreen(onBack = { nav.popBackStack() }) }
             composable("networth") { com.emotionalleaves.sprout.ui.insights.NetWorthScreen(onBack = { nav.popBackStack() }) }
             composable("year") { com.emotionalleaves.sprout.ui.insights.YearScreen(onBack = { nav.popBackStack() }, onCategory = { nav.navigate("category/$it") }) }
             composable("tags") { com.emotionalleaves.sprout.ui.tags.TagsScreen(onBack = { nav.popBackStack() }, onOpen = { nav.navigate("tag/$it") }) }
@@ -332,6 +338,7 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
                     onBack = { nav.popBackStack() },
                 )
             }
+        }
         }
     }
 }

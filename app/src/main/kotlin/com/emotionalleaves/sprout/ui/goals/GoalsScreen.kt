@@ -1,5 +1,7 @@
 package com.emotionalleaves.sprout.ui.goals
 
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -83,16 +85,28 @@ private val dateFmt = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.US)
 fun GoalProgressRow(v: GoalView, onClick: (() -> Unit)? = null) {
     val p = v.progress
     val desc = "${v.goal.name}: ${Money.format(p.savedMinor)} of ${Money.format(p.targetMinor)}, ${p.percent} percent"
+    androidx.compose.material3.Surface(
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 5.dp),
+    ) {
     Column(
         Modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 16.dp, vertical = 10.dp).semantics(mergeDescendants = true) { contentDescription = desc },
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+            .padding(16.dp).semantics(mergeDescendants = true) { contentDescription = desc },
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(v.goal.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-            Text(if (p.reached) "Reached!" else "${p.percent}%", style = MaterialTheme.typography.labelLarge)
+            com.emotionalleaves.sprout.ui.common.ProgressRing(
+                p.percent / 100f, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.surfaceVariant,
+                Modifier.size(52.dp), stroke = 6.dp,
+            ) { Text(if (p.reached) "✓" else "${p.percent}%", style = MaterialTheme.typography.labelMedium) }
+            androidx.compose.foundation.layout.Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(v.goal.name, style = MaterialTheme.typography.titleSmall)
+                Text(if (p.reached) "Reached!" else "${Money.format(p.remainingMinor)} to go", style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
-        BudgetProgress(p.savedMinor, p.targetMinor, ProgressLevel.GREEN)
         Text("${Money.format(p.savedMinor)} of ${Money.format(p.targetMinor)}" + (v.account?.let { " · from ${it.label}" } ?: ""),
             style = MaterialTheme.typography.labelSmall)
         when {
@@ -101,6 +115,7 @@ fun GoalProgressRow(v: GoalView, onClick: (() -> Unit)? = null) {
             p.perMonthMinor != null -> Text("Save ${Money.format(p.perMonthMinor ?: 0)}/month to reach it by " +
                 (v.goal.targetDate?.let { LocalDate.parse(it).format(dateFmt) } ?: ""), style = MaterialTheme.typography.labelSmall)
         }
+    }
     }
 }
 

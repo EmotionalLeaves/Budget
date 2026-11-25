@@ -51,6 +51,7 @@ class AppContainer(context: Context) {
         override suspend fun afterSync(newOutflowIds: List<String>, problems: List<SyncProblem>) {
             runCatching { recurringRepository.detect() }
             alertRepository.afterSync(newOutflowIds, problems)
+            com.emotionalleaves.sprout.widget.SafeToSpendWidget.refresh(appContext)
         }
     }
     val syncRepository = SyncRepository(db, secureStore, settings, client, clock, postSync)
@@ -87,6 +88,7 @@ class SproutApp : Application() {
             val connected = container.secureStore.hasAccessUrlNow()
             if (connected && !s.accessRevoked) SyncScheduler.schedulePeriodic(this@SproutApp)
             runCatching { container.updates.checkIfDue(System.currentTimeMillis() / 1000) }
+            runCatching { com.emotionalleaves.sprout.work.UpdateCheckWorker.schedule(this@SproutApp) }
         }
     }
 }

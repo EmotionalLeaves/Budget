@@ -90,4 +90,17 @@ class UpdateRepositoryTest {
         r.check(quiet = true)
         assertEquals(UpdateState.Idle, r.state.value)
     }
+
+    @Test fun notifiesOncePerVersionAndDetectsJustUpdated() = runBlocking {
+        val r = repo()
+        server.enqueue(MockResponse().setBody(release("1.16.0")))
+        assertEquals("1.16.0", r.checkForNotification())
+        server.enqueue(MockResponse().setBody(release("1.16.0")))
+        assertNull(r.checkForNotification())
+        // First launch records the version; a later version is "just updated from" the earlier one, once.
+        assertNull(r.consumeJustUpdatedFrom())
+        val newer = UpdateRepository(ApplicationProvider.getApplicationContext(), "1.16.0", "EmotionalLeaves/Budget", "k", http, server.url("/").toString().trimEnd('/'))
+        assertEquals("1.15.0", newer.consumeJustUpdatedFrom())
+        assertNull(newer.consumeJustUpdatedFrom())
+    }
 }

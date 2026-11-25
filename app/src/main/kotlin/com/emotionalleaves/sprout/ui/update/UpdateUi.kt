@@ -1,5 +1,9 @@
 package com.emotionalleaves.sprout.ui.update
 
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.verticalScroll
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
@@ -127,6 +131,17 @@ fun UpdateSettings(updates: UpdateRepository) {
             is UpdateState.Available, is UpdateState.Downloading, is UpdateState.ReadyToInstall, is UpdateState.OpenReleasesPage ->
                 Card { UpdateBody(updates, state, showLater = false) }
             UpdateState.Idle -> Unit
+        }
+        val context = LocalContext.current
+        var notes by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<List<com.emotionalleaves.sprout.update.Changelog.Group>?>(null) }
+        TextButton(onClick = { scope.launch { notes = bundledNotes(context) } }, modifier = Modifier.heightIn(min = 48.dp)) { Text("What's new in this version") }
+        notes?.let { n ->
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { notes = null },
+                title = { Text("What's new in ${BuildConfig.VERSION_NAME}") },
+                text = { Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) { if (n.isEmpty()) Text("No notes for this build.") else WhatsNewList(n) } },
+                confirmButton = { TextButton(onClick = { notes = null }) { Text("OK") } },
+            )
         }
         OutlinedButton(
             onClick = { scope.launch { updates.check() } },

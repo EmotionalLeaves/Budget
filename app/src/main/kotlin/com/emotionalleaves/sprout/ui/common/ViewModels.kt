@@ -18,3 +18,7 @@ inline fun <reified VM : ViewModel> sproutViewModel(key: String? = null, crossin
     val container = appContainer()
     return viewModel(key = key, factory = viewModelFactory { initializer { create(container) } })
 }
+
+
+/** Navigate to a route from deep inside a screen (sheets, cards). No-op outside the main scaffold. */
+val LocalNavigate = androidx.compose.runtime.staticCompositionLocalOf<(String) -> Unit> { {} }

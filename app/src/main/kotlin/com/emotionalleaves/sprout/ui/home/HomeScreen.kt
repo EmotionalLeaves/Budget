@@ -87,6 +87,7 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(vm) { vm.messages.collect { snackbar.showSnackbar(it) } }
+    com.emotionalleaves.sprout.ui.update.WhatsNewAfterUpdate(vm.updates)
     openId?.let { id ->
         TransactionDetailSheet(id, onDismiss = { openId = null }, onMessage = { msg, undo -> scope.showUndoable(snackbar, msg, undo) })
     }

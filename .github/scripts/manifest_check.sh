@@ -9,7 +9,9 @@ perms=$(grep -oE '<uses-permission[^>]*android:name="[^"]+"' "$M" | sed -E 's/.*
 for p in $perms; do
   if ! echo "$p" | grep -qE "^($ALLOWED_PERMS)$"; then echo "::error::Unexpected permission $p"; fail=1; fi
 done
-# Exported components: the launcher activity, plus WorkManager's job service (system-bound, BIND_JOB_SERVICE).
+# Exported components: the launcher activity, WorkManager's job service (system-bound, BIND_JOB_SERVICE)
+# the home-screen widget receiver (the launcher delivers APPWIDGET_UPDATE to it) and Glance's
+# RemoteViews service (system-bound, protected by BIND_REMOTEVIEWS).
 exported=$(python3 - "$M" <<'PY'
 import sys, xml.etree.ElementTree as ET
 A='{http://schemas.android.com/apk/res/android}'
@@ -21,9 +23,12 @@ PY
 )
 for e in $exported; do
   case "$e" in
-    com.emotionalleaves.sprout.MainActivity|androidx.work.impl.background.systemjob.SystemJobService) ;;
+    com.emotionalleaves.sprout.MainActivity|androidx.work.impl.background.systemjob.SystemJobService|com.emotionalleaves.sprout.widget.SafeToSpendWidgetReceiver|androidx.glance.appwidget.GlanceRemoteViewsService) ;;
     *) echo "::error::Unexpected exported component $e"; fail=1 ;;
   esac
 done
+if grep -q 'GlanceRemoteViewsService' "$M" && ! grep -A3 'GlanceRemoteViewsService' "$M" | grep -q 'BIND_REMOTEVIEWS'; then
+  echo "::error::GlanceRemoteViewsService must require BIND_REMOTEVIEWS"; fail=1
+fi
 [ "$fail" -eq 0 ] && echo "Manifest check passed: $(echo $perms | wc -w) permissions, exported: $(echo $exported)"
 exit $fail

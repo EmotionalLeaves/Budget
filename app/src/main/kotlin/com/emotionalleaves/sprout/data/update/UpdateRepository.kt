@@ -67,6 +67,29 @@ class UpdateRepository(
     val dismissedVersion = context.updateStore.data.map { it[DISMISSED] }
 
     suspend fun setAutoCheck(on: Boolean) { context.updateStore.edit { it[AUTO] = on } }
+
+    /** Background check (daily worker): returns the newer version once, so it's announced only one time. */
+    suspend fun checkForNotification(): String? {
+        val prefs = context.updateStore.data.first()
+        if (prefs[AUTO] == false) return null
+        check(quiet = true)
+        val v = (state.value as? UpdateState.Available)?.release?.version ?: return null
+        if (prefs[NOTIFIED] == v || prefs[DISMISSED] == v) return null
+        context.updateStore.edit { it[NOTIFIED] = v }
+        return v
+    }
+
+    /**
+     * On launch: the version you were on before, if Sprout was just updated (null on first run or no change).
+     * Also deletes the downloaded APK, which isn't needed once installed.
+     */
+    suspend fun consumeJustUpdatedFrom(): String? {
+        File(context.cacheDir, "updates").listFiles()?.forEach { it.delete() }
+        val prefs = context.updateStore.data.first()
+        val last = prefs[LAST_SEEN]
+        context.updateStore.edit { it[LAST_SEEN] = currentVersion }
+        return last?.takeIf { it != currentVersion }
+    }
     suspend fun dismiss(version: String) { context.updateStore.edit { it[DISMISSED] = version } }
 
     /** On app start: at most every 6 hours, and only if automatic checks are on. Quiet on any failure. */
@@ -185,5 +208,7 @@ class UpdateRepository(
         private val AUTO = booleanPreferencesKey("auto_check")
         private val LAST = longPreferencesKey("last_check")
         private val DISMISSED = stringPreferencesKey("dismissed_version")
+        private val NOTIFIED = stringPreferencesKey("notified_version")
+        private val LAST_SEEN = stringPreferencesKey("last_seen_version")
     }
 }

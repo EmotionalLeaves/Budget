@@ -2,7 +2,25 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
-## [2.0.0] - 2026-11-24
+## [2.1.0] - 2026-11-24
+
+Round 2 of the overhaul.
+
+### Auto-update
+- A quiet daily check: when a new version is out you get one "Sprout X is ready" notification (turn it off with the automatic-check switch in Settings → Updates).
+- After updating, a "What's new" sheet shows this version's notes once. Settings → Updates → "What's new in this version" shows them any time.
+- The downloaded update file is cleaned up after installing.
+
+### New look
+- Redesigned welcome screen, transaction sheet (big icon and amount), budget cards with an edit button, savings goals with progress rings, illustrated empty screens, and Settings rows as cards with clear section labels.
+- The Budgets tab opens with the same "Safe to spend" dial as Home.
+
+### New features
+- **Home-screen widget**: long-press your home screen → Widgets → Sprout to see safe to spend and your daily amount at a glance. It follows "Hide amounts".
+- **Merchant pages**: open any transaction and tap "Everything at …" for this year's total, average per visit, a 6-month chart and every purchase there.
+- **Debt payoff plan** (Settings → Explore): enter what you can pay each month and see your debt-free date, total interest, the payoff order and how much you save vs minimums. Choose "Least interest" or "Quick wins". A plan only: Sprout never makes payments.
+
+ - 2026-11-24
 
 A big round: Sprout updates itself, looks completely new, and does a lot more.
 

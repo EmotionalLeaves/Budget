@@ -97,6 +97,8 @@ android {
         getByName("debug").assets.srcDir("$projectDir/schemas")
         // Shared fake SimpleFIN fixtures live with the core tests.
         getByName("test").resources.srcDir("$rootDir/core/src/test/resources")
+        // The changelog, for the in-app "What's new" screen.
+        getByName("main").assets.srcDir(layout.buildDirectory.dir("generated/changelog"))
     }
 
     packaging {
@@ -164,6 +166,8 @@ dependencies {
     ksp(libs.room.compiler)
 
     implementation(libs.work.runtime)
+    implementation(libs.glance.appwidget)
+    implementation(libs.glance.material3)
     implementation(libs.coroutines.android)
 
     testImplementation(libs.junit)
@@ -178,3 +182,10 @@ dependencies {
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.okhttp.tls)
 }
+
+// Copies CHANGELOG.md into the app's assets so "What's new" can show the notes for the installed version.
+val copyChangelog by tasks.registering(Copy::class) {
+    from(rootProject.file("CHANGELOG.md"))
+    into(layout.buildDirectory.dir("generated/changelog"))
+}
+tasks.named("preBuild") { dependsOn(copyChangelog) }

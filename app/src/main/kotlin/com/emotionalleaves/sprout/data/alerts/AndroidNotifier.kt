@@ -30,6 +30,8 @@ class AndroidNotifier(private val context: Context) : Notifier {
                     .apply { description = "Large charges and charges unusual for a merchant" },
                 NotificationChannel(CH_SYNC, "Sync problems", NotificationManager.IMPORTANCE_LOW)
                     .apply { description = "When a bank connection needs your attention" },
+                NotificationChannel(CH_UPDATES, "App updates", NotificationManager.IMPORTANCE_LOW)
+                    .apply { description = "When a new version of Sprout is ready" },
             ),
         )
     }
@@ -81,7 +83,32 @@ class AndroidNotifier(private val context: Context) : Notifier {
         }
     }
 
+    /** "Sprout X is ready": one quiet notification per version. Tapping opens Home, where the update card is. */
+    fun showUpdate(version: String): Boolean {
+        if (!canPost()) return false
+        val id = "u:$version".hashCode()
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        val pending = PendingIntent.getActivity(context, id, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        val n = NotificationCompat.Builder(context, CH_UPDATES)
+            .setSmallIcon(R.drawable.ic_stat_sprout)
+            .setContentTitle("Sprout $version is ready")
+            .setContentText("Open Sprout and tap Update. Your data stays.")
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setContentIntent(pending)
+            .setAutoCancel(true)
+            .build()
+        return try {
+            NotificationManagerCompat.from(context).notify(id, n)
+            true
+        } catch (e: SecurityException) {
+            false
+        }
+    }
+
     companion object {
+        const val CH_UPDATES = "app_updates"
         const val CH_BUDGET = "budget_alerts"
         const val CH_UNUSUAL = "unusual_transactions"
         const val CH_SYNC = "sync_problems"

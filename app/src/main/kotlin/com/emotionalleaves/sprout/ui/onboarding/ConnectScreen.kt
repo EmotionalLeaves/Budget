@@ -1,5 +1,7 @@
 package com.emotionalleaves.sprout.ui.onboarding
 
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -161,22 +163,31 @@ fun ConnectScreen(startAtToken: Boolean, onDone: () -> Unit, onSkip: () -> Unit,
 
 @Composable
 private fun Welcome(onOpenBridge: () -> Unit, onHaveToken: () -> Unit, onSkip: () -> Unit) {
-    Icon(Icons.Filled.Eco, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(56.dp))
-    Text("Welcome to Sprout", style = MaterialTheme.typography.headlineMedium)
-    Text(
-        "Sprout reads your bank data. It can never move money. Your data stays on this phone.",
-        style = MaterialTheme.typography.bodyLarge,
-    )
-    Card {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("How it works", style = MaterialTheme.typography.titleMedium)
-            Text("1. In SimpleFIN Bridge, connect your bank (a small paid service).")
-            Text("2. Create a setup token there and copy it.")
-            Text("3. Paste it here. Sprout syncs your accounts every few hours, read-only.")
+    val c = com.emotionalleaves.sprout.ui.theme.LocalSproutColors.current
+    com.emotionalleaves.sprout.ui.common.HeroCard(c.hero, Modifier.padding(top = 8.dp)) {
+        Icon(Icons.Filled.Eco, contentDescription = null, tint = c.onHero, modifier = Modifier.size(52.dp))
+        Text("Welcome to Sprout", style = MaterialTheme.typography.displaySmall, color = c.onHero)
+        Text("See what's safe to spend, every day. Read-only: Sprout can never move money, and your data stays on this phone.",
+            style = MaterialTheme.typography.bodyLarge, color = c.onHero.copy(alpha = 0.9f))
+    }
+    listOf(
+        "Connect" to "In SimpleFIN Bridge, link your bank (a small paid service) and copy a setup token.",
+        "Paste" to "Paste it here once. Sprout syncs every few hours, read-only.",
+        "Budget" to "Sprout suggests budgets from your spending and shows what's safe to spend.",
+    ).forEachIndexed { i, (title, body) ->
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            androidx.compose.foundation.layout.Box(
+                Modifier.size(36.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center,
+            ) { Text("${i + 1}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer) }
+            Column(Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.titleSmall)
+                Text(body, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
     }
-    OutlinedButton(onClick = onOpenBridge, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Open SimpleFIN Bridge") }
-    Button(onClick = onHaveToken, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("I have a setup token") }
+    Button(onClick = onHaveToken, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("I have a setup token") }
+    OutlinedButton(onClick = onOpenBridge, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("Open SimpleFIN Bridge") }
     TextButton(onClick = onSkip, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Skip — I'll import a CSV") }
 }
 
