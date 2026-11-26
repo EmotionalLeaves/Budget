@@ -68,6 +68,9 @@ object BuiltInRules {
     /** How many places and words Sprout recognizes out of the box (shown in Settings). */
     val size: Int get() = rules.size
 
+    /** Toast = restaurants; Shopify = online shops; FastSpring/Paddle = software. */
+    private val PREFIXES = listOf("TST" to C.EATING_OUT, "SP" to C.SHOPPING, "FS" to C.SUBSCRIPTIONS, "PADDLE" to C.SUBSCRIPTIONS)
+
     private val TOKEN_SPLIT = Regex("[^A-Z0-9&+]+")
     private val PLAIN_SPLIT = Regex("[^A-Z0-9]+")
 
@@ -108,9 +111,13 @@ object BuiltInRules {
                 if (rule.beats(best) && rule.matches(hay)) best = rule
             }
         }
-        // "TST*" (Toast) is a restaurant point-of-sale prefix: stronger than any generic word ("TST* MOD MARKET").
-        if ((best == null || best.tier == BuiltInRule.TIER_GENERIC) && allowGeneric && description.uppercase().trimStart().let { it.startsWith("TST*") || it.startsWith("TST *") }) {
-            return BuiltInRule(listOf("TST*"), C.EATING_OUT, BuiltInRule.TIER_GENERIC)
+        // Point-of-sale prefixes that say what kind of seller it is. Stronger than a generic word
+        // ("TST* MOD MARKET" is a restaurant), weaker than a brand.
+        if ((best == null || best.tier == BuiltInRule.TIER_GENERIC) && allowGeneric) {
+            val d = description.uppercase().trimStart()
+            PREFIXES.firstOrNull { (p, _) -> d.startsWith("$p*") || d.startsWith("$p *") }?.let { (p, key) ->
+                return BuiltInRule(listOf("$p*"), key, BuiltInRule.TIER_GENERIC)
+            }
         }
         return best
     }

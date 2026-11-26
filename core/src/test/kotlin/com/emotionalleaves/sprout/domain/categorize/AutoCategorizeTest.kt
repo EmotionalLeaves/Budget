@@ -76,6 +76,8 @@ class AutoCategorizeTest {
         "CAPITAL ONE AUTOPAY PYMT" to C.TRANSFERS,
         "DISCOVER E-PAYMENT 2345" to C.TRANSFERS,
         "1-800-FLOWERS.COM" to C.GIFTS,
+        "SP * SOMEINDIEBRAND" to C.SHOPPING,
+        "FS *SOFTWARETOOL" to C.SUBSCRIPTIONS,
     )
 
     @Test fun recognizesARealisticFeed() {
