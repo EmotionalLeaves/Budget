@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.22.0] - 2026-11-26
+
+Round 22: transfers sort themselves.
+
+### New
+- **Transfers between your own accounts are spotted automatically**: money that leaves one account and lands in another (same amount to the cent, within 4 days) becomes a Transfer on both sides, so moving money to savings no longer looks like spending plus income.
+
 ## [2.21.0] - 2026-11-26
 
 Round 21: Sprout sorts your purchases for you.

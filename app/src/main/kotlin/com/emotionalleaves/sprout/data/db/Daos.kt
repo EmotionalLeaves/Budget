@@ -91,6 +91,9 @@ data class RuleInput(
     val categorySource: CategorySource,
 )
 
+/** A posted row Sprout couldn't place, that might be one side of a transfer between your accounts. */
+data class PairCandidate(val id: String, val accountId: String, val amountMinor: Long, val at: Long)
+
 /** A purchase you categorized yourself: what the on-device learner trains on. */
 data class LearnExample(val description: String, val merchantKey: String, val categoryId: Long)
 
@@ -141,8 +144,14 @@ interface TransactionDao {
     @Query("SELECT id, description, merchantKey, amountMinor, categoryId, categorySource FROM transactions WHERE merchantKey = :merchantKey")
     suspend fun ruleInputsForMerchant(merchantKey: String): List<RuleInput>
 
-    @Query("SELECT id, description, merchantKey, amountMinor, categoryId, categorySource FROM transactions WHERE categorySource NOT IN ('USER', 'IMPORT')")
+    @Query("SELECT id, description, merchantKey, amountMinor, categoryId, categorySource FROM transactions WHERE categorySource NOT IN ('USER', 'IMPORT', 'PAIRED')")
     suspend fun ruleInputs(): List<RuleInput>
+
+    @Query(
+        "SELECT id, accountId, amountMinor, occurredAt AS at FROM transactions WHERE pending = 0 AND occurredAt >= :since " +
+            "AND (categorySource = 'NONE' OR (categorySource = 'BUILT_IN' AND categoryId = :transfersId))",
+    )
+    suspend fun pairCandidates(since: Long, transfersId: Long): List<PairCandidate>
 
     /** Your own picks (and bank categories from imports), minus "Uncategorized", newest first, capped. */
     @Query(

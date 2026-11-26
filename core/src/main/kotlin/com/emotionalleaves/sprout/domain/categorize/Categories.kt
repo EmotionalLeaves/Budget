@@ -5,10 +5,11 @@ enum class CategoryKind { INCOME, EXPENSE, TRANSFER }
 /**
  * Where a transaction's category came from. USER and MERCHANT_RULE are never overwritten by sync.
  * NONE = fallback (Income/Uncategorized), BUILT_IN = a built-in rule, IMPORT = set by a CSV import,
- * LEARNED = guessed on the phone from how you've categorized similar purchases (re-guessed as you teach it more).
+ * LEARNED = guessed on the phone from how you've categorized similar purchases (re-guessed as you teach it more),
+ * PAIRED = one side of money moving between two of your accounts (see TransferPairing); re-sorting leaves it alone.
  * Stored by name in a TEXT column, so adding a value needs no schema change.
  */
-enum class CategorySource { NONE, BUILT_IN, MERCHANT_RULE, USER, IMPORT, LEARNED }
+enum class CategorySource { NONE, BUILT_IN, MERCHANT_RULE, USER, IMPORT, LEARNED, PAIRED }
 
 data class DefaultCategory(val key: String, val name: String, val kind: CategoryKind, val colorArgb: Long)
 

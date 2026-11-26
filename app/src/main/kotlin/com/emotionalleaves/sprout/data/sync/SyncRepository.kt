@@ -23,6 +23,7 @@ import com.emotionalleaves.sprout.data.simplefin.SimpleFinClient
 import com.emotionalleaves.sprout.domain.accounts.AccountTypes
 import com.emotionalleaves.sprout.domain.categorize.CategoryKind
 import com.emotionalleaves.sprout.domain.categorize.CategoryResolver
+import com.emotionalleaves.sprout.domain.categorize.CategorySource
 import com.emotionalleaves.sprout.domain.categorize.DefaultCategories
 import com.emotionalleaves.sprout.domain.categorize.UserRule
 import com.emotionalleaves.sprout.domain.sync.Ids
@@ -83,6 +84,23 @@ class SyncRepository(
             )
         }
         db.categories().insertIgnore(rows)
+    }
+
+    /**
+     * Money that left one of your accounts and arrived in another (same amount, within a few days) is a
+     * transfer on both sides. Looks back 120 days so a first sync catches its history too.
+     */
+    private suspend fun pairTransfersLocked(transfersId: Long, now: Long): Int {
+        val since = now - 120L * 24 * 3600
+        val rows = db.transactions().pairCandidates(since, transfersId).map {
+            com.emotionalleaves.sprout.domain.transfer.TransferPairing.Row(it.id, it.accountId, it.amountMinor, it.at)
+        }
+        val pairs = com.emotionalleaves.sprout.domain.transfer.TransferPairing.pairs(rows)
+        pairs.forEach { (a, b) ->
+            db.transactions().setCategory(a, transfersId, CategorySource.PAIRED, now)
+            db.transactions().setCategory(b, transfersId, CategorySource.PAIRED, now)
+        }
+        return pairs.size
     }
 
     suspend fun sync(trigger: SyncTrigger): SyncRunResult = withContext(Dispatchers.IO) {
@@ -323,6 +341,7 @@ class SyncRepository(
                     pendingOutflows += result.newIds.filter { (amounts[it] ?: 0L) < 0L }
                 }
             }
+            idByKey[DefaultCategories.TRANSFERS]?.let { pairTransfersLocked(it, now) }
         }
 
         if (SyncErrors.isRateLimitWarning(set.errors)) {
