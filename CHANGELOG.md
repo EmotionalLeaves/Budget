@@ -2,6 +2,17 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.25.0] - 2026-11-26
+
+Round 25: Stats.
+
+### New
+- **Stats** (More → Stats): your spending from new angles, for this month, last month, 3 months, 12 months or all time.
+  - **Overview**: what you spent (and how that compares with the same point last period), your pace for the month, earned, net, daily average, number of purchases, typical and average purchase, no-spend days, savings rate, your biggest purchase, and a running-total chart against the period before.
+  - **Patterns**: which day of the week and which part of the month you spend most, and purchase sizes (count and total for under $10, $10–50, $50–200, over $200).
+  - **Places**: your top places by money spent or by visits, with the average per visit. Tap one to open it.
+  - **Trends**: a 12-month line for every category, with what's usual and how this month compares.
+
 ## [2.24.0] - 2026-11-26
 
 Round 24: all your history, sync when you want, and re-sort on demand.

@@ -278,6 +278,11 @@ class ScreenTour {
             if (only == "extras") {
                 fun t(n: String, block: () -> Unit) = runCatching(block).onFailure { System.err.println("TOUR $n: " + it.toString().take(200)) }
                 t("goals") { tap("More"); tap("Savings goals"); s("60-goals"); back() }
+                t("stats") {
+                    tap("More"); tap("Stats"); s("64-stats")
+                    tap("Patterns"); s("65-stats-patterns"); tap("Places"); s("66-stats-places"); tap("Trends"); s("67-stats-trends")
+                    tap("12 months"); tap("Overview"); s("68-stats-year"); back()
+                }
                 t("challenges") { tap("More"); tap("Challenges"); s("61-challenges"); back() }
                 t("tags") { tap("More"); tap("Tags"); s("62-tags"); tap("#Gifts"); s("63-tag"); back(); back() }
                 t("debt") { tap("More"); tap("Debt payoff plan"); s("64-debt"); back() }

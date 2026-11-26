@@ -8,6 +8,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
 import androidx.room.Upsert
+import com.emotionalleaves.sprout.domain.categorize.CategoryKind
 import com.emotionalleaves.sprout.domain.categorize.CategorySource
 import com.emotionalleaves.sprout.domain.categorize.RuleType
 import kotlinx.coroutines.flow.Flow
@@ -378,6 +379,7 @@ interface SyncLogDao {
 data class CategorySum(val categoryId: Long, val total: Long)
 data class MerchantSum(val merchantKey: String, val total: Long, val count: Int)
 data class SpendRow(val categoryId: Long, val amountMinor: Long, val occurredAt: Long)
+data class StatsRow(val amountMinor: Long, val occurredAt: Long, val categoryId: Long, val kind: CategoryKind, val merchantKey: String)
 
 /**
  * Budgets and the spending they're compared with. Spending queries skip hidden accounts and transactions the
@@ -432,6 +434,17 @@ interface BudgetDao {
         """,
     )
     suspend fun spendRows(start: Long, end: Long, categoryId: Long? = null): List<SpendRow>
+
+    /** Rows for the Stats screen: every counted transaction with its category's kind and merchant. */
+    @Query(
+        """
+        SELECT t.amountMinor AS amountMinor, t.occurredAt AS occurredAt, t.categoryId AS categoryId, c.kind AS kind,
+               t.merchantKey AS merchantKey
+        FROM transactions t JOIN accounts a ON a.id = t.accountId JOIN categories c ON c.id = t.categoryId
+        WHERE t.occurredAt >= :start AND t.occurredAt < :end AND t.excludedFromBudget = 0 AND a.hidden = 0
+        """,
+    )
+    suspend fun statsRows(start: Long, end: Long): List<StatsRow>
 
     @Query(
         """

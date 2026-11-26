@@ -167,6 +167,7 @@ fun SettingsScreen(
         item { SectionTitle("Explore") }
         item { NavRow(icon = Icons.Rounded.EmojiEvents, title = "Challenges", subtitle = "Small spending challenges, like no eating out for a week", onClick = { onRoute("challenges") }) }
         item { NavRow(icon = Icons.Rounded.BarChart, title = "Reports", subtitle = "Cash flow, spending by category and by account, any range", onClick = { onRoute("reports") }) }
+        item { NavRow(icon = Icons.Rounded.ShowChart, title = "Stats", subtitle = "Patterns, top places, purchase sizes and 12-month trends", onClick = { onRoute("stats") }) }
         item { NavRow(icon = Icons.Rounded.AutoAwesome, title = "Year in review", subtitle = "Your year's totals, top categories and places", onClick = { onRoute("year-review") }) }
         item { NavRow(icon = Icons.Rounded.ShowChart, title = "Net worth over time", subtitle = "How your total has changed month by month", onClick = { onRoute("networth") }) }
         item { NavRow(icon = Icons.Rounded.GridView, title = "Year view", subtitle = "Every category, every month, at a glance", onClick = { onRoute("year") }) }

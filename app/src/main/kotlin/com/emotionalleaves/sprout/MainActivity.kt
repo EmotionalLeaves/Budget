@@ -315,6 +315,9 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
                 val key = entry.arguments?.getString("key")?.let { android.net.Uri.decode(it) }.orEmpty()
                 com.emotionalleaves.sprout.ui.insights.MerchantScreen(key, snackbar, onBack = { nav.popBackStack() })
             }
+            composable("stats") {
+                com.emotionalleaves.sprout.ui.stats.StatsScreen(onBack = { nav.popBackStack() }, onMerchant = { nav.navigate("merchant/" + android.net.Uri.encode(it)) })
+            }
             composable("debt") { com.emotionalleaves.sprout.ui.debt.DebtScreen(onBack = { nav.popBackStack() }) }
             composable("inbox") { com.emotionalleaves.sprout.ui.transactions.InboxScreen(snackbar, onBack = { nav.popBackStack() }) }
             composable("reports") { com.emotionalleaves.sprout.ui.insights.ReportsScreen(onBack = { nav.popBackStack() }) }
