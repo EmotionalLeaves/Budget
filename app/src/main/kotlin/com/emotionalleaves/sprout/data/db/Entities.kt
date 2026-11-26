@@ -15,7 +15,8 @@ enum class ConnectionStatus { OK, NEEDS_ATTENTION, REVOKED }
 enum class AccountSource { SIMPLEFIN, MANUAL }
 enum class RuleOrigin { USER_CORRECTION, USER_CREATED }
 enum class RecurringStatus { DETECTED, CONFIRMED, DISMISSED, MANUAL }
-enum class SyncTrigger { PERIODIC, MANUAL, ONBOARDING }
+/** FORCED = "Sync anyway": skips the 15-minute wait and Sprout's own daily cap (never the Bridge's). Stored as text. */
+enum class SyncTrigger { PERIODIC, MANUAL, ONBOARDING, FORCED }
 enum class SyncResult { SUCCESS, PARTIAL, FAILED }
 
 @Entity(tableName = "connections")

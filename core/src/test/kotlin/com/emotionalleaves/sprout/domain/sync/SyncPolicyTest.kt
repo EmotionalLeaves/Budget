@@ -38,4 +38,10 @@ class SyncPolicyTest {
         assertEquals("sf:CON-1:ACT-9", Ids.accountKey("CON-1", "ACT-9"))
         assertEquals("sf:CON-1:ACT-9:TX-5", Ids.transactionId("sf:CON-1:ACT-9", "TX-5"))
     }
+
+    @Test fun historyStepsAre90DaysAndStopAtTheSetting() {
+        assertEquals(SyncWindow(now - 180 * day, now - 90 * day), SyncPolicy.nextHistoryChunk(clock, now - 90 * day, 365))
+        assertEquals(SyncWindow(now - 365 * day, now - 300 * day), SyncPolicy.nextHistoryChunk(clock, now - 300 * day, 365))
+        assertEquals(null, SyncPolicy.nextHistoryChunk(clock, now - 365 * day, 365))
+    }
 }

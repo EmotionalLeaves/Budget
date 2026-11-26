@@ -69,6 +69,10 @@ data class Settings(
     val savedSearches: Set<String> = emptySet(),
     /** Which version of the built-in merchant list last re-sorted your history (CategoryRepository.CATALOG_VERSION). */
     val catalogVersion: Int = 0,
+    /** Start of the oldest history step fetched (epoch seconds); null = not tracked yet. */
+    val historyOldest: Long? = null,
+    /** The bank has no older history (two empty steps in a row) for the current setting. */
+    val historyDone: Boolean = false,
 )
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -111,13 +115,23 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
             paydaySource = p[PAYDAY_SOURCE],
             savedSearches = p[SAVED_SEARCHES] ?: emptySet(),
             catalogVersion = p[CATALOG_VERSION] ?: 0,
+            historyOldest = p[HISTORY_OLDEST],
+            historyDone = p[HISTORY_DONE] ?: false,
         )
     }
 
     suspend fun current(): Settings = settings.first()
 
     suspend fun setOnboardingComplete(done: Boolean) = dataStore.edit { it[ONBOARDING] = done }
-    suspend fun setFirstSyncDays(days: Int) = dataStore.edit { it[FIRST_SYNC_DAYS] = days }
+    /** How much history to keep fetching; asking for more than before starts fetching older steps again. */
+    suspend fun setFirstSyncDays(days: Int) = dataStore.edit {
+        if (days > (it[FIRST_SYNC_DAYS] ?: 90)) it[HISTORY_DONE] = false
+        it[FIRST_SYNC_DAYS] = days
+    }
+    suspend fun setHistoryProgress(oldest: Long, done: Boolean) = dataStore.edit {
+        it[HISTORY_OLDEST] = oldest
+        it[HISTORY_DONE] = done
+    }
     suspend fun setLastSyncAttempt(at: Long) = dataStore.edit { it[LAST_ATTEMPT] = at }
     suspend fun setLastSuccessfulSync(at: Long) = dataStore.edit { it[LAST_SUCCESS] = at }
     suspend fun setAccessRevoked(revoked: Boolean) = dataStore.edit { it[REVOKED] = revoked }
@@ -200,5 +214,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         val BETA = booleanPreferencesKey("beta_updates")
         val HOME_HIDDEN = androidx.datastore.preferences.core.stringSetPreferencesKey("home_hidden")
         val CATALOG_VERSION = intPreferencesKey("catalog_version")
+        val HISTORY_OLDEST = longPreferencesKey("history_oldest")
+        val HISTORY_DONE = booleanPreferencesKey("history_done")
     }
 }

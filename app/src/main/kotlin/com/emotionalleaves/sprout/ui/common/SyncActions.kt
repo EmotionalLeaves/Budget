@@ -7,11 +7,15 @@ import com.emotionalleaves.sprout.work.SyncScheduler
 import kotlinx.coroutines.launch
 
 object SyncActions {
+    /** When the last "Synced 3 min ago" answer was given; asking again soon after forces a sync. */
+    @Volatile private var debouncedAt = 0L
+
     /**
-     * "Sync now". Debounced: within 15 minutes of a success it only says how fresh the data is.
+     * "Sync now". Debounced: within 15 minutes of a success it only says how fresh the data is, unless
+     * [force] is set or you ask again within a minute ("pull again to sync anyway").
      * Returns a short message for a snackbar, or null when a sync was started.
      */
-    suspend fun requestSync(c: AppContainer): String? {
+    suspend fun requestSync(c: AppContainer, force: Boolean = false): String? {
         if (!c.secureStore.hasAccessUrlNow()) return "No bank connected. Connect one in Settings."
         val s = c.settings.current()
         if (s.accessRevoked) return "SimpleFIN access was turned off. Paste a new setup token in Settings."
@@ -20,10 +24,14 @@ object SyncActions {
             return "Paused after SimpleFIN asked Sprout to slow down. Syncing resumes in a few hours."
         }
         val last = s.lastSuccessfulSyncAt
-        if (SyncPolicy.isDebounced(c.clock, last) && last != null) {
-            return "Synced ${Format.ago(last, c.clock.instant().epochSecond)}"
+        val now = c.clock.instant().epochSecond
+        val again = now - debouncedAt in 0..60
+        if (!force && !again && SyncPolicy.isDebounced(c.clock, last) && last != null) {
+            debouncedAt = now
+            return "Synced ${Format.ago(last, now)} · pull again to sync anyway"
         }
-        SyncScheduler.syncNow(c.appContext, SyncTrigger.MANUAL)
+        debouncedAt = 0
+        SyncScheduler.syncNow(c.appContext, if (force || again) SyncTrigger.FORCED else SyncTrigger.MANUAL)
         return null
     }
 }

@@ -219,4 +219,33 @@ class SyncRepositoryTest {
         env.db.transactions().redatePosted(false)
         assertEquals(1_763_500_000L, env.db.transactions().getById(id)!!.occurredAt)
     }
+
+    @Test fun longerHistoryIsFetchedIn90DayStepsUntilTheBankRunsOut() = runBlocking {
+        env.settings.setFirstSyncDays(SyncPolicy.ALL_HISTORY_DAYS)
+        // Main window, then older steps: one with data, then two empty ones (the bank has nothing older).
+        ok("v2_basic.json"); ok("v2_basic.json"); ok("empty_accounts.json"); ok("empty_accounts.json")
+        val r = env.repo().sync(SyncTrigger.MANUAL) as SyncRunResult.Done
+        assertEquals(SyncResult.SUCCESS, r.result)
+        assertEquals(4, env.server.requestCount)
+        val now = env.clock.instant().epochSecond
+        env.server.takeRequest()
+        val step1 = env.server.takeRequest().requestUrl!!
+        assertEquals((now - 90 * 86_400).toString(), step1.queryParameter("end-date"))
+        assertEquals((now - 180 * 86_400).toString(), step1.queryParameter("start-date"))
+        val s = env.settings.current()
+        assertTrue(s.historyDone)
+        // Done: the next sync is a normal one.
+        ok("v2_basic.json")
+        env.repo().sync(SyncTrigger.PERIODIC)
+        assertEquals(5, env.server.requestCount)
+    }
+
+    @Test fun forcedSyncSkipsTheSoftDailyCapButNotTheHardOne() = runBlocking {
+        repeat(SyncPolicy.FORCED_REQUEST_BUDGET) { ok("empty_accounts.json") }
+        repeat(SyncPolicy.DAILY_REQUEST_BUDGET) { env.repo().sync(SyncTrigger.MANUAL) }
+        assertEquals(SyncRunResult.Skipped(SkipReason.DAILY_LIMIT), env.repo().sync(SyncTrigger.MANUAL))
+        assertTrue(env.repo().sync(SyncTrigger.FORCED) is SyncRunResult.Done)
+        repeat(10) { env.repo().sync(SyncTrigger.FORCED) }
+        assertTrue(env.db.syncLog().requestsSince(0) <= SyncPolicy.FORCED_REQUEST_BUDGET)
+    }
 }

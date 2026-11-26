@@ -61,6 +61,13 @@ class TransactionDetailViewModel(val c: AppContainer, private val id: String) : 
     private val _messages = MutableSharedFlow<Pair<String, (suspend () -> Unit)?>>(extraBufferCapacity = 1)
     val messages: SharedFlow<Pair<String, (suspend () -> Unit)?>> = _messages
 
+    /** "Let Sprout decide": drop your pick on this one and auto-sort it. */
+    fun letSproutDecide() = viewModelScope.launch {
+        val change = c.categoryRepository.resetToAuto(listOf(id))
+        c.alertRepository.evaluateBudgets()
+        _messages.tryEmit((if (change.others > 0) "Auto-sorted" else "Auto-sort agrees with this one") to change.undo)
+    }
+
     fun pick(category: CategoryEntity, always: Boolean, merchant: String) = viewModelScope.launch {
         val change = c.categoryRepository.recategorizeWithUndo(id, category.id, always)
         c.alertRepository.evaluateBudgets()
@@ -175,6 +182,18 @@ fun TransactionDetailSheet(transactionId: String, onDismiss: () -> Unit, onMessa
                     Column(Modifier.weight(1f).padding(start = 12.dp)) {
                         Text("Category", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(d.categoryName, style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            when (d.categorySource) {
+                                com.emotionalleaves.sprout.domain.categorize.CategorySource.USER -> "You picked this"
+                                com.emotionalleaves.sprout.domain.categorize.CategorySource.MERCHANT_RULE -> "From your rule"
+                                com.emotionalleaves.sprout.domain.categorize.CategorySource.BUILT_IN -> "✨ Auto-sorted"
+                                com.emotionalleaves.sprout.domain.categorize.CategorySource.LEARNED -> "✨ Learned from your picks"
+                                com.emotionalleaves.sprout.domain.categorize.CategorySource.PAIRED -> "✨ Money between your accounts"
+                                com.emotionalleaves.sprout.domain.categorize.CategorySource.IMPORT -> "From your bank's file"
+                                com.emotionalleaves.sprout.domain.categorize.CategorySource.NONE -> "Sprout couldn't tell"
+                            },
+                            style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                     TextButton(onClick = { changing = !changing }) { Text(if (changing) "Done" else "Change") }
                 }
@@ -183,6 +202,10 @@ fun TransactionDetailSheet(transactionId: String, onDismiss: () -> Unit, onMessa
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     SwitchRow("Always use this for $merchant", always) { always = it }
                     CategoryGrid(categories, d.categoryId) { vm.pick(it, always, merchant); changing = false }
+                    if (d.categorySource == com.emotionalleaves.sprout.domain.categorize.CategorySource.USER ||
+                        d.categorySource == com.emotionalleaves.sprout.domain.categorize.CategorySource.IMPORT) {
+                        TextButton(onClick = { vm.letSproutDecide(); changing = false }) { Text("Let Sprout decide") }
+                    }
                 }
             }
 

@@ -116,6 +116,7 @@ class SettingsViewModel(private val c: AppContainer) : ViewModel() {
     fun syncNow() = viewModelScope.launch {
         _messages.tryEmit(SyncActions.requestSync(c) ?: "Syncing…")
     }
+    fun forceSync() = viewModelScope.launch { _messages.tryEmit(SyncActions.requestSync(c, force = true) ?: "Syncing now…") }
     fun setFirstSyncDays(days: Int) = viewModelScope.launch { c.settings.setFirstSyncDays(days) }
     fun setIncluded(a: AccountEntity, include: Boolean) = viewModelScope.launch { c.db.accounts().setIncludeInTotals(a.id, include) }
     fun setHidden(a: AccountEntity, hidden: Boolean) = viewModelScope.launch { c.db.accounts().setHidden(a.id, hidden) }
@@ -256,9 +257,20 @@ fun SettingsScreen(
                     "Sprout syncs about every 6 hours and asks SimpleFIN at most ${SyncPolicy.DAILY_REQUEST_BUDGET} times a day.",
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Button(onClick = { vm.syncNow() }, modifier = Modifier.padding(vertical = 8.dp).heightIn(min = 48.dp)) { Text("Sync now") }
+                Row(Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { vm.syncNow() }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Sync now") }
+                    OutlinedButton(onClick = { vm.forceSync() }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Force sync") }
+                }
+                Text(
+                    "Force sync skips the 15-minute wait. It still stops before SimpleFIN's own limit of 24 a day, because going over can turn your access off.",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 ToggleRow("Date by purchase day", state.settings.usePurchaseDate, "When the bank sends it, instead of the day it posted") { vm.setUsePurchaseDate(it) }
-                Text("History to fetch on first sync", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 8.dp))
+                Text("History to fetch", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 8.dp))
+                Text(
+                    historyStatus(state.settings, now),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 SyncPolicy.ALLOWED_FIRST_SYNC_DAYS.forEach { days ->
                     Row(
                         Modifier.fillMaxWidth().heightIn(min = 48.dp)
@@ -266,7 +278,7 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         RadioButton(selected = state.settings.firstSyncDays == days, onClick = null)
-                        Text("$days days", Modifier.padding(start = 8.dp))
+                        Text(historyLabel(days), Modifier.padding(start = 8.dp))
                     }
                 }
             }
@@ -525,4 +537,28 @@ private fun statusText(conn: ConnectionEntity): String = when (conn.status) {
     ConnectionStatus.OK -> "Working normally"
     ConnectionStatus.NEEDS_ATTENTION -> "Needs attention: " + (conn.lastErrorMessage ?: "open SimpleFIN Bridge to fix it.")
     ConnectionStatus.REVOKED -> "Access turned off. Paste a new setup token to reconnect."
+}
+
+/** "1 year", "Everything the bank has". */
+private fun historyLabel(days: Int): String = when (days) {
+    SyncPolicy.ALL_HISTORY_DAYS -> "Everything the bank has"
+    in 0..179 -> "$days days"
+    180 -> "6 months"
+    365 -> "1 year"
+    else -> "${days / 365} years"
+}
+
+/** Where history loading stands, in words. */
+private fun historyStatus(s: com.emotionalleaves.sprout.data.settings.Settings, now: Long): String {
+    val oldest = s.historyOldest
+    val since = oldest?.let {
+        java.time.Instant.ofEpochSecond(it).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+            .format(java.time.format.DateTimeFormatter.ofPattern("MMM yyyy"))
+    }
+    return when {
+        s.firstSyncDays <= SyncPolicy.MAX_FIRST_SYNC_DAYS -> "SimpleFIN sends 90 days at a time; pick more and Sprout fetches older history in steps."
+        s.historyDone && since != null -> "All the history your bank has is loaded (back to $since)."
+        since != null -> "Loaded back to $since so far. Older history keeps loading, a few months each sync (Force sync speeds it up)."
+        else -> "Older history loads in 90-day steps over the next few syncs."
+    }
 }

@@ -2,6 +2,17 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.24.0] - 2026-11-26
+
+Round 24: all your history, sync when you want, and re-sort on demand.
+
+### New
+- **No more 90-day limit.** Settings → Sync → History to fetch now goes up to 6 months, 1 year, 2 years or "Everything the bank has". SimpleFIN only sends 90 days per request, so Sprout fetches older history in 90-day steps, a few each sync, and stops when your bank has nothing older. Settings shows how far back it's loaded.
+- **Force sync.** Settings → Sync → Force sync skips the 15-minute wait, and on Home, pulling down again right after "Synced 3 min ago" syncs anyway. It still stops short of SimpleFIN's 24-a-day limit, because going over can switch your access off.
+- **Re-sort button** (✨) next to search in Activity: runs auto-sort over everything you haven't set by hand.
+- **Auto-sort these**: select purchases and let Sprout decide for them, even ones you set by hand (with Undo). A single purchase has **Let Sprout decide** too.
+- A transaction's category now says where it came from: you, your rule, auto-sorted, learned from your picks, or money between your accounts.
+
 ## [2.23.0] - 2026-11-26
 
 Round 23: much smarter auto-sort.

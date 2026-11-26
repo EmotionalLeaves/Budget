@@ -187,6 +187,29 @@ class CategoryRepository(private val db: SproutDatabase, private val clock: Cloc
         }
     }
 
+    /**
+     * "Let Sprout decide" for [ids]: forgets the categories picked by hand (or by an import) on these and
+     * auto-sorts them like any other purchase. Returns how many changed and an undo that puts every one back.
+     */
+    suspend fun resetToAuto(ids: Collection<String>): Change = withContext(Dispatchers.IO) {
+        db.withTransaction {
+            val before = ids.mapNotNull { db.transactions().getById(it) }.map { Triple(it.id, it.categoryId, it.categorySource) }
+            val now = now()
+            before.forEach { (id, cat, _) -> db.transactions().setCategory(id, cat, CategorySource.NONE, now) }
+            reapplyRulesLocked()
+            val changed = before.count { (id, cat, _) -> db.transactions().getById(id)?.categoryId != cat }
+            val undo: suspend () -> Unit = {
+                withContext(Dispatchers.IO) {
+                    db.withTransaction {
+                        before.forEach { (id, cat, src) -> db.transactions().setCategory(id, cat, src, now()) }
+                        reapplyRulesLocked()
+                    }
+                }
+            }
+            Change(changed, undo)
+        }
+    }
+
     /** Re-runs categorization for every transaction whose category wasn't set by the user or an import. */
     suspend fun reapplyRules(): Int = withContext(Dispatchers.IO) { db.withTransaction { reapplyRulesLocked() } }
 

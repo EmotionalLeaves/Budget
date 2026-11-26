@@ -263,6 +263,13 @@ class ScreenTour {
                 }
                 t("cats") { tap("More"); tap("Categories"); s("51-categories"); back() }
                 t("rules") { tap("More"); tap("Category rules"); s("52-rules"); back() }
+                t("review") {
+                    tap("Activity")
+                    val n = rule.onAllNodes(androidx.compose.ui.test.hasText("Review") and androidx.compose.ui.test.hasClickAction()).fetchSemanticsNodes().size
+                    rule.onAllNodes(androidx.compose.ui.test.hasText("Review") and androidx.compose.ui.test.hasClickAction())[n - 1]
+                        .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); settle()
+                    s("58-review"); back()
+                }
                 t("health") { tap("Home"); tap("Money health"); s("53-health"); back() }
                 t("networth") { tap("More"); tap("Net worth over time"); s("54-networth"); back() }
                 t("challenge") { tap("More"); tap("Challenges"); tap("No eating out"); s("55-challenge"); back() }

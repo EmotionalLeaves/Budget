@@ -85,6 +85,8 @@ Sprout can't recover a forgotten backup password.
 Decisions made while building, one per line:
 
 - The repo already existed as private, so it stays private: downloads need a GitHub sign-in, and GitHub Actions minutes are limited (2,000/month free) instead of unlimited.
+- History beyond 90 days: fetched in 90-day steps (oldest last), at most 4 steps per sync and never past 12 requests in 24 hours (forced: 22), stopping at the chosen setting or after two empty steps. Older rows skip the review inbox and unusual-charge alerts.
+- Force sync skips the 15-minute debounce and the 16/day soft cap but stops at 22 in 24 hours (the Bridge allows 24); a Bridge rate-limit warning still pauses syncing.
 - SimpleFIN Bridge developer notes (checked 2026-11-24): ≤24 requests/day, ≤90 days of history per request, overlap windows ~5 days, sync at a random minute. Sprout caps itself at 16 requests per rolling 24 hours, overlaps 10 days, and starts its 6-hour schedule at a random minute.
 - Code is split into a pure Kotlin `:core` module (domain logic + SimpleFIN client, no Android imports possible) and the `:app` module; packages follow data/… and domain/… as specced.
 - Dependency injection is manual (one `AppContainer`), to keep the app small and simple.

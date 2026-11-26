@@ -29,6 +29,8 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHostState
@@ -128,6 +130,13 @@ class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
             c.categoryRepository.reapplyRules()
         }
     }
+
+    /** Re-runs auto-sort over everything you haven't set by hand. */
+    suspend fun resortAll(): Int = c.categoryRepository.reapplyRules()
+
+    /** "Auto-sort these": forget hand-picked categories on the selection and let Sprout decide. */
+    suspend fun bulkAuto(ids: Set<String>): com.emotionalleaves.sprout.data.categories.CategoryRepository.Change =
+        c.categoryRepository.resetToAuto(ids)
 
     suspend fun bulkExclude(ids: Set<String>): suspend () -> Unit {
         val before = ids.mapNotNull { c.db.transactions().getById(it) }.associate { it.id to it.excludedFromBudget }
@@ -336,6 +345,14 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
                     }
                     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         androidx.compose.material3.AssistChip(onClick = { bulkCategory = true }, label = { Text("Category") }, modifier = Modifier.heightIn(min = 48.dp))
+                        androidx.compose.material3.AssistChip(onClick = {
+                            val ids = selected; scope.launch {
+                                val ch = vm.bulkAuto(ids)
+                                finish(if (ch.others == 0) "Auto-sort agrees with these" else "Auto-sorted ${ch.others} of ${ids.size}", ch.undo)
+                            }
+                        }, label = { Text("Auto-sort these") },
+                            leadingIcon = { Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                            modifier = Modifier.heightIn(min = 48.dp))
                         androidx.compose.material3.AssistChip(onClick = { bulkTag = true }, label = { Text("Tag") }, modifier = Modifier.heightIn(min = 48.dp))
                         androidx.compose.material3.AssistChip(onClick = {
                             val ids = selected; scope.launch { val u = vm.bulkExclude(ids); finish("Left ${ids.size} out of budgets", u) }
@@ -355,6 +372,19 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
                 trailingIcon = {
                     if (filter.query.isNotEmpty()) {
                         IconButton(onClick = { vm.setQuery("") }) { Icon(Icons.Filled.Clear, contentDescription = "Clear search") }
+                    } else {
+                        var sorting by remember { mutableStateOf(false) }
+                        IconButton(enabled = !sorting, onClick = {
+                            sorting = true
+                            scope.launch {
+                                val n = vm.resortAll()
+                                sorting = false
+                                snackbar.showSnackbar(if (n == 0) "Everything's already sorted" else "Re-sorted $n ${if (n == 1) "purchase" else "purchases"}")
+                            }
+                        }) {
+                            if (sorting) androidx.compose.material3.CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                            else Icon(Icons.Filled.AutoAwesome, contentDescription = "Re-sort all purchases")
+                        }
                     }
                 },
                 singleLine = true,

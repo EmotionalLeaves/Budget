@@ -138,9 +138,11 @@ class SyncRepository(
         if ((s.rateLimitedUntil ?: 0L) > now) return SyncRunResult.Skipped(SkipReason.RATE_LIMITED)
 
         val used = db.syncLog().requestsSince(now - 86_400)
-        if (used + 2 > SyncPolicy.DAILY_REQUEST_BUDGET) {
+        val budget = if (trigger == SyncTrigger.FORCED) SyncPolicy.FORCED_REQUEST_BUDGET else SyncPolicy.DAILY_REQUEST_BUDGET
+        if (used + 2 > budget) {
             log(now, trigger, SyncResult.FAILED, codes = "local.daily_limit",
-                message = "Paused to stay under SimpleFIN's daily limit. Sprout will sync again later.")
+                message = if (trigger == SyncTrigger.FORCED) "SimpleFIN's daily limit is nearly used up. Try again in a few hours (going over can turn your access off)."
+                else "Paused to stay under SimpleFIN's daily limit. Sprout will sync again later.")
             return SyncRunResult.Skipped(SkipReason.DAILY_LIMIT)
         }
 
@@ -151,9 +153,17 @@ class SyncRepository(
         return when (fetch) {
             is FetchResult.Success -> {
                 val backfill = backfillNewAccounts(access, fetch.accountSet, s.lastSuccessfulSyncAt, s.firstSyncDays, used + fetch.requestCount)
-                val merged = backfill?.let { mergeBackfill(fetch.accountSet, it.set) } ?: fetch.accountSet
+                var merged = backfill?.let { mergeBackfill(fetch.accountSet, it.set) } ?: fetch.accountSet
                 val windows = backfill?.let { b -> b.set.accounts.associate { Ids.accountKey(it.connId, it.id) to b.window } }.orEmpty()
-                store(merged, { key -> windows[key] ?: window }, now, trigger, fetch.requestCount + (backfill?.requests ?: 0), windows.keys)
+                val soFar = used + fetch.requestCount + (backfill?.requests ?: 0)
+                val history = fetchHistory(access, window, s, soFar, trigger)
+                history.sets.forEach { merged = mergeBackfill(merged, it) }
+                val result = store(merged, { key -> windows[key] ?: window }, now, trigger,
+                    fetch.requestCount + (backfill?.requests ?: 0) + history.requests, windows.keys, historyBefore = window.startDate)
+                if (result is SyncRunResult.Done && result.result != SyncResult.FAILED && history.oldest != null) {
+                    settings.setHistoryProgress(history.oldest, history.done)
+                }
+                result
             }
             is FetchResult.AuthFailed -> {
                 pendingProblems += SyncProblem("revoked", "SimpleFIN access turned off",
@@ -200,6 +210,46 @@ class SyncRepository(
 
     private class Backfill(val set: AccountSet, val window: SyncWindow, val requests: Int)
 
+    private class History(val sets: List<AccountSet>, val oldest: Long?, val done: Boolean, val requests: Int)
+
+    /**
+     * SimpleFIN gives at most 90 days per request, so older history comes in 90-day steps, oldest last, until
+     * the "History" setting is reached or the bank has nothing older (two empty steps). A few steps per sync,
+     * within a request budget that always leaves room for regular syncs; the rest continue next time.
+     */
+    private suspend fun fetchHistory(access: AccessUrl, main: SyncWindow, s: com.emotionalleaves.sprout.data.settings.Settings, usedRequests: Int, trigger: SyncTrigger): History {
+        if (s.historyDone || s.firstSyncDays <= SyncPolicy.MAX_FIRST_SYNC_DAYS) return History(emptyList(), null, s.historyDone, 0)
+        var oldest = s.historyOldest
+            ?: if (s.lastSuccessfulSyncAt == null) main.startDate else (db.transactions().oldestSynced() ?: main.startDate)
+        val budget = if (trigger == SyncTrigger.FORCED) SyncPolicy.FORCED_REQUEST_BUDGET else SyncPolicy.HISTORY_REQUEST_BUDGET
+        val sets = ArrayList<AccountSet>()
+        var requests = 0
+        var empties = 0
+        var done = false
+        repeat(SyncPolicy.MAX_HISTORY_CHUNKS_PER_SYNC) {
+            if (done || usedRequests + requests + 1 > budget) return@repeat
+            val chunk = SyncPolicy.nextHistoryChunk(clock, oldest, s.firstSyncDays)
+            if (chunk == null) { done = true; return@repeat }
+            val r = client.fetchAccounts(access, AccountsQuery(chunk.startDate, chunk.endDate, pending = false))
+            requests += when (r) {
+                is FetchResult.Success -> r.requestCount
+                is FetchResult.AuthFailed -> r.requestCount
+                is FetchResult.PaymentRequired -> r.requestCount
+                is FetchResult.ServerBusy -> r.requestCount
+                is FetchResult.HttpError -> r.requestCount
+                is FetchResult.NetworkError -> r.requestCount
+                is FetchResult.ParseError -> r.requestCount
+            }
+            if (r !is FetchResult.Success) return History(sets, oldest, false, requests)
+            sets += r.accountSet
+            oldest = chunk.startDate
+            empties = if (r.accountSet.accounts.all { it.transactions.isEmpty() }) empties + 1 else 0
+            if (empties >= SyncPolicy.EMPTY_CHUNKS_TO_STOP) done = true
+        }
+        if (SyncPolicy.nextHistoryChunk(clock, oldest, s.firstSyncDays) == null) done = true
+        return History(sets, oldest, done, requests)
+    }
+
     /**
      * Accounts we've never stored (for example a bank added later in SimpleFIN Bridge) only got the short
      * incremental window. Fetch their full first-sync history with one extra, account-filtered request (v2 only),
@@ -237,6 +287,8 @@ class SyncRepository(
     private suspend fun store(
         set: AccountSet, windowFor: (String) -> SyncWindow, now: Long, trigger: SyncTrigger, requests: Int,
         backfilled: Set<String> = emptySet(),
+        /** Rows older than this are history (older steps): no review inbox, no unusual-charge alerts. */
+        historyBefore: Long? = null,
     ): SyncRunResult {
         val plan = SyncErrors.plan(set)
         var newCount = 0
@@ -330,15 +382,19 @@ class SyncRepository(
                     val historical = existingAccounts[key]?.firstSyncCompleted != true || key in backfilled
                     db.transactions().upsert(result.upserts.map { st ->
                         val e = st.toEntity(a.currency, fallbackCategory, byId[st.id], now)
-                        if (historical && e.reviewedAt == null) e.copy(reviewedAt = now) else e
+                        val old = historyBefore != null && !st.pending && st.effectiveAt < historyBefore
+                        if ((historical || old) && e.reviewedAt == null) e.copy(reviewedAt = now) else e
                     })
                 }
                 newCount += result.newCount
                 updatedCount += result.updatedCount
                 // Unusual-charge alerts only for accounts past their first (backfill) sync.
                 if (existingAccounts[key]?.firstSyncCompleted == true && key !in backfilled) {
-                    val amounts = result.upserts.associate { it.id to it.amountMinor }
-                    pendingOutflows += result.newIds.filter { (amounts[it] ?: 0L) < 0L }
+                    val byUpsert = result.upserts.associateBy { it.id }
+                    pendingOutflows += result.newIds.filter { id ->
+                        val u = byUpsert[id] ?: return@filter false
+                        u.amountMinor < 0L && (historyBefore == null || u.pending || u.effectiveAt >= historyBefore)
+                    }
                 }
             }
             idByKey[DefaultCategories.TRANSFERS]?.let { pairTransfersLocked(it, now) }

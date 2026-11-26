@@ -160,6 +160,10 @@ interface TransactionDao {
     )
     suspend fun learningExamples(limit: Int = 20_000): List<LearnExample>
 
+    /** Oldest bank (SimpleFIN) transaction stored, for continuing history from where it stops. */
+    @Query("SELECT MIN(occurredAt) FROM transactions WHERE id LIKE 'sf:%' AND pending = 0")
+    suspend fun oldestSynced(): Long?
+
     @Query("SELECT COUNT(*) FROM transactions WHERE categorySource = :source")
     suspend fun countBySource(source: CategorySource): Int
 

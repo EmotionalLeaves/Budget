@@ -188,4 +188,16 @@ class CategoryRepositoryTest {
         assertEquals(cat(DefaultCategories.TRAVEL), get("2").categoryId)
         assertEquals(0, repo.upgradeCatalog(CategoryRepository.CATALOG_VERSION))
     }
+
+    @Test fun letSproutDecideForgetsYourPickAndUndoRestoresIt() = runBlocking {
+        sync(tx("1", "NETFLIX.COM", "-15.49"))
+        repo.recategorize("sf:C:A:1", cat(DefaultCategories.GIFTS), alwaysForMerchant = false)
+        val change = repo.resetToAuto(listOf("sf:C:A:1"))
+        assertEquals(1, change.others)
+        assertEquals(cat(DefaultCategories.SUBSCRIPTIONS), get("1").categoryId)
+        assertEquals(CategorySource.BUILT_IN, get("1").categorySource)
+        change.undo()
+        assertEquals(cat(DefaultCategories.GIFTS), get("1").categoryId)
+        assertEquals(CategorySource.USER, get("1").categorySource)
+    }
 }
