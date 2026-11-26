@@ -100,6 +100,13 @@ class SproutApp : Application() {
         container.notifier.createChannels()
         container.appScope.launch {
             container.syncRepository.ensureSeeded()
+            runCatching {
+                val v = container.settings.current().catalogVersion
+                if (v < com.emotionalleaves.sprout.data.categories.CategoryRepository.CATALOG_VERSION) {
+                    container.categoryRepository.upgradeCatalog(v)
+                    container.settings.setCatalogVersion(com.emotionalleaves.sprout.data.categories.CategoryRepository.CATALOG_VERSION)
+                }
+            }
             val s = container.settings.current()
             val connected = container.secureStore.hasAccessUrlNow()
             if (connected && !s.accessRevoked) SyncScheduler.schedulePeriodic(this@SproutApp)

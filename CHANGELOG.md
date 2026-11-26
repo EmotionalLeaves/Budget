@@ -2,6 +2,19 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.21.0] - 2026-11-26
+
+Round 21: Sprout sorts your purchases for you.
+
+### New
+- **Auto-sort that actually knows where you shop.** Sprout now recognizes about 2,000 stores, chains and brands out of the box (Lincoln and Nebraska places like Runza, Hy-Vee, Super Saver, Scooter's, Casey's, LES, Black Hills Energy and StarTran, plus national chains), and words that give a place away ("taqueria", "pharmacy", "hotel"). Most card purchases land in the right category with no work from you.
+- **It learns from you.** Put a merchant in a category twice and the rest of that merchant's purchases follow. Sort a couple of similar places ("art class", "coffee") and new ones with the same words get sorted too. It all runs on your phone, and it never changes anything you set yourself.
+- **Your history is re-sorted once** after this update, so the old Uncategorized pile shrinks right away.
+- New **Travel** and **Pets** categories (added to existing installs too).
+- **Category rules** now opens with an Auto-sort card: how many purchases were sorted for you, how many of your picks it learns from, what's left, and a "Re-sort now" button.
+- Picking a category tells you when similar purchases were re-sorted too, and Undo puts them back.
+- CSV imports map bank categories like "Travel", "Hotels" and "Pets" to the new categories.
+
 ## [2.20.0] - 2026-11-25
 
 ### New

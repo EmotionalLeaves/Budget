@@ -91,7 +91,10 @@ Decisions made while building, one per line:
 - Networking is plain OkHttp; JSON is parsed as a kotlinx.serialization tree so one odd field can't lose a whole sync.
 - Network timeouts: connect 15 s, read 60 s. Redirects are never followed, so credentials only go to the access URL's own host.
 - A pasted, already-decoded claim URL is accepted as well as a Base64 token.
-- Category source NONE marks fallback categories (Income/Uncategorized); BUILT_IN marks built-in rule matches.
+- Category source NONE marks fallback categories (Income/Uncategorized); BUILT_IN marks built-in rule matches; LEARNED marks guesses from your own picks.
+- Auto-sort order: your exact merchant rules → your keyword rules → a merchant you've put in one category at least twice (80%+ of the time) → ~2,000 built-in stores and brands (Lincoln/Nebraska plus national) → a naive-Bayes guess from words you've categorized before (75%+ confident) → generic words like "PIZZA" or "PHARMACY" (money out only) → Uncategorized. Money apps (Venmo, Zelle, Cash App) beat the name after them. Everything runs on the phone; nothing is looked up online.
+- Auto-sort only ever changes purchases whose category came from Sprout (NONE, BUILT_IN, LEARNED); anything you set by hand, or that came from a rule or a CSV's own category, stays. Each pick re-sorts the rest; bulk edits re-sort once at the end.
+- Travel and Pets were added as categories in 2.21.0; existing installs get them once on update, and history that wasn't set by hand is re-sorted once.
 - Extra columns beyond the spec: `transactions.occurredAt` (the date used for display and months), `accounts.lastErrorCode/lastErrorMessage` (per-account warnings), `sync_log.requestCount` (daily-limit tracking).
 - A pending transaction without transacted_at keeps the time it was first seen, so it doesn't move each sync.
 - Pending rows are never deleted for an account the server reported an error for (its data may be incomplete).

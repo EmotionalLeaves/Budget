@@ -68,7 +68,8 @@ class TransactionDetailViewModel(val c: AppContainer, private val id: String) : 
             change.undo()
             c.alertRepository.evaluateBudgets()
         }
-        val msg = if (always && change.others > 0) "Moved ${change.others + 1} from $merchant to ${category.name}" else "Moved to ${category.name}"
+        val base = if (always && change.others > 0) "Moved ${change.others + 1} from $merchant to ${category.name}" else "Moved to ${category.name}"
+        val msg = if (change.learned > 0) "$base · re-sorted ${change.learned} similar" else base
         _messages.tryEmit(msg to undo)
     }
 

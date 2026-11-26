@@ -85,9 +85,9 @@ class CategoryRepositoryTest {
     }
 
     @Test fun keywordRuleAppliesToExistingAndDeletingRestoresBuiltIn() = runBlocking {
-        sync(tx("1", "SQ *HAYMARKET FARMERS MARKET", "-22.00"))
+        sync(tx("1", "SQ *HAYMARKET ZQX VENDORS", "-22.00"))
         assertEquals(cat(DefaultCategories.UNCATEGORIZED), get("1").categoryId)
-        val ruleId = repo.addContainsRule("farmers market", cat(DefaultCategories.GROCERIES))!!
+        val ruleId = repo.addContainsRule("zqx vendors", cat(DefaultCategories.GROCERIES))!!
         assertEquals(cat(DefaultCategories.GROCERIES), get("1").categoryId)
         repo.deleteRule(ruleId)
         assertEquals(cat(DefaultCategories.UNCATEGORIZED), get("1").categoryId)
@@ -138,5 +138,54 @@ class CategoryRepositoryTest {
         change.undo()
         assertEquals(cat(DefaultCategories.GIFTS), env.db.merchantRules().getAll().single().categoryId)
         assertEquals(cat(DefaultCategories.GIFTS), get("1").categoryId)
+    }
+
+    @Test fun onePickTeachesSimilarPurchases() = runBlocking {
+        sync(
+            tx("1", "SQ *PRAIRIE ART CLASS", "-30.00"), tx("2", "WESTSIDE ART CLASS", "-25.00", posted = 1763710000),
+            tx("3", "NORTHSTAR ART CLASS", "-20.00", posted = 1763720000), tx("4", "ZQX 4471 HOLDINGS", "-9.00", posted = 1763730000),
+            tx("5", "ACME WIDGET SUPPLY CO", "-11.00", posted = 1763740000),
+        )
+        assertEquals(cat(DefaultCategories.UNCATEGORIZED), get("3").categoryId)
+        val hobbies = cat(DefaultCategories.HOBBIES)
+        repo.recategorize("sf:C:A:1", hobbies, alwaysForMerchant = false)
+        repo.recategorize("sf:C:A:5", cat(DefaultCategories.SHOPPING), alwaysForMerchant = false)
+        val change = repo.recategorizeWithUndo("sf:C:A:2", hobbies, alwaysForMerchant = false)
+        // Two art classes taught it: the third is sorted without being touched.
+        assertEquals(hobbies, get("3").categoryId)
+        assertEquals(CategorySource.LEARNED, get("3").categorySource)
+        assertTrue(change.learned >= 1)
+        // Nothing similar: left for you.
+        assertEquals(cat(DefaultCategories.UNCATEGORIZED), get("4").categoryId)
+        // Undo puts the guess back too.
+        change.undo()
+        assertEquals(CategorySource.NONE, get("3").categorySource)
+    }
+
+    @Test fun learnedGuessesNeverOverrideYourPicks() = runBlocking {
+        sync(tx("1", "WALMART 1234", "-30.00"), tx("2", "WALMART 5678", "-25.00", posted = 1763710000), tx("3", "WALMART 9999", "-5.00", posted = 1763720000))
+        env.db.transactions().setCategory("sf:C:A:3", cat(DefaultCategories.GIFTS), CategorySource.USER, 1)
+        repo.recategorize("sf:C:A:1", cat(DefaultCategories.GROCERIES), alwaysForMerchant = false)
+        repo.recategorize("sf:C:A:2", cat(DefaultCategories.GROCERIES), alwaysForMerchant = false)
+        assertEquals(cat(DefaultCategories.GIFTS), get("3").categoryId)
+        assertEquals(CategorySource.USER, get("3").categorySource)
+    }
+
+    @Test fun upgradeAddsNewCategoriesAndResortsHistoryOnce() = runBlocking {
+        sync(tx("1", "PETSMART #0412", "-30.00"), tx("2", "HAMPTON INN OMAHA", "-120.00", posted = 1763710000))
+        // Simulate an install from before Travel/Pets existed.
+        listOf(DefaultCategories.TRAVEL, DefaultCategories.PETS).forEach { k ->
+            val id = cat(k)
+            env.db.openHelper.writableDatabase.execSQL("UPDATE transactions SET categoryId = (SELECT id FROM categories WHERE `key` = 'uncategorized'), categorySource = 'NONE' WHERE categoryId = $id")
+            env.db.openHelper.writableDatabase.execSQL("DELETE FROM categories WHERE id = $id")
+        }
+        assertNull(env.db.categories().getByKey(DefaultCategories.PETS))
+
+        val moved = repo.upgradeCatalog(0)
+
+        assertEquals(2, moved)
+        assertEquals(cat(DefaultCategories.PETS), get("1").categoryId)
+        assertEquals(cat(DefaultCategories.TRAVEL), get("2").categoryId)
+        assertEquals(0, repo.upgradeCatalog(CategoryRepository.CATALOG_VERSION))
     }
 }

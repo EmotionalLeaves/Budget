@@ -67,6 +67,8 @@ data class Settings(
     val paydaySource: String? = null,
     /** Activity searches you saved (encoded by TxFilter.encode). */
     val savedSearches: Set<String> = emptySet(),
+    /** Which version of the built-in merchant list last re-sorted your history (CategoryRepository.CATALOG_VERSION). */
+    val catalogVersion: Int = 0,
 )
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -108,6 +110,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
             backupNudgeUntil = p[BACKUP_NUDGE] ?: 0,
             paydaySource = p[PAYDAY_SOURCE],
             savedSearches = p[SAVED_SEARCHES] ?: emptySet(),
+            catalogVersion = p[CATALOG_VERSION] ?: 0,
         )
     }
 
@@ -142,6 +145,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
     suspend fun setBetaUpdates(on: Boolean) = dataStore.edit { it[BETA] = on }
     suspend fun setRecapDismissed(month: String) = dataStore.edit { it[RECAP_DISMISSED] = month }
     suspend fun setLastBackupAt(epoch: Long) = dataStore.edit { it[LAST_BACKUP] = epoch }
+    suspend fun setCatalogVersion(v: Int) = dataStore.edit { it[CATALOG_VERSION] = v }
     suspend fun snoozeBackupNudge(until: Long) = dataStore.edit { it[BACKUP_NUDGE] = until }
     suspend fun saveSearch(encoded: String, on: Boolean) = dataStore.edit {
         val cur = it[SAVED_SEARCHES] ?: emptySet()
@@ -195,5 +199,6 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         val WATCHLIST = androidx.datastore.preferences.core.stringSetPreferencesKey("watchlist")
         val BETA = booleanPreferencesKey("beta_updates")
         val HOME_HIDDEN = androidx.datastore.preferences.core.stringSetPreferencesKey("home_hidden")
+        val CATALOG_VERSION = intPreferencesKey("catalog_version")
     }
 }

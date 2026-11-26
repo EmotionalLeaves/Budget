@@ -4,24 +4,39 @@ import com.emotionalleaves.sprout.domain.categorize.DefaultCategories as C
 
 /**
  * A built-in rule matches when ALL its patterns appear as whole words in the description.
- * Specificity (total pattern length) breaks ties: the longest match wins, so
+ * Ties are broken by [tier] first (a brand beats a generic word like "GRILL"; money-app rules beat both,
+ * because "ZELLE TO ROSS" is a person, not a store), then by specificity (total pattern length):
  * "TARGET"+"GROCERY" beats "TARGET", and "UBER EATS" beats "UBER".
  */
-data class BuiltInRule(val patterns: List<String>, val categoryKey: String) {
+data class BuiltInRule(
+    val patterns: List<String>,
+    val categoryKey: String,
+    val tier: Int = TIER_BRAND,
+    /** Position in the list: the earlier rule wins an exact tie, so results never depend on hash order. */
+    val order: Int = 0,
+) {
     val specificity: Int = patterns.sumOf { it.length }
     private val regexes = patterns.map { p ->
         Regex("(?<![A-Z0-9])" + Regex.escape(p) + "(?![A-Z0-9])")
     }
 
     fun matches(haystack: String): Boolean = regexes.all { it.containsMatchIn(haystack) }
+
+    /** True when this rule should win over [other]. */
+    fun beats(other: BuiltInRule?): Boolean =
+        other == null || tier > other.tier || (tier == other.tier &&
+            (specificity > other.specificity || (specificity == other.specificity && order < other.order)))
+
+    companion object {
+        /** A generic word ("PIZZA", "PHARMACY"); only used for money going out. */
+        const val TIER_GENERIC = 0
+        const val TIER_BRAND = 1
+        /** Card payments and money apps: always win, because what follows them is usually a person's name. */
+        const val TIER_PRIORITY = 2
+    }
 }
 
 object BuiltInRules {
-
-    private fun r(category: String, vararg single: String): List<BuiltInRule> =
-        single.map { BuiltInRule(listOf(it), category) }
-
-    private fun all(category: String, vararg patterns: String) = BuiltInRule(patterns.toList(), category)
 
     private val CARD_ISSUERS = listOf(
         "CAPITAL ONE", "CHASE", "DISCOVER", "AMEX", "AMERICAN EXPRESS", "CITI", "CITICARD", "SYNCHRONY",
@@ -30,77 +45,38 @@ object BuiltInRules {
     )
 
     val rules: List<BuiltInRule> = buildList {
-        // Groceries
-        addAll(r(C.GROCERIES, "HY VEE", "HYVEE", "WALMART GROCERY", "WM SUPERCENTER GROCERY", "KROGER", "ALDI",
-            "COSTCO", "SAMS CLUB", "SAMSCLUB", "WHOLE FOODS", "WHOLEFDS", "TRADER JOES", "TRADER JOE", "SUPER SAVER",
-            "FAREWAY", "SAFEWAY", "PUBLIX", "MEIJER", "HEB", "WINCO", "SPROUTS FARMERS", "FOOD LION", "GROCERY",
-            "INSTACART", "RUSS MARKET", "BAKERS"))
-        add(all(C.GROCERIES, "TARGET", "GROCERY"))
-        // Shopping
-        addAll(r(C.SHOPPING, "TARGET", "WALMART", "WAL MART", "WM SUPERCENTER", "AMAZON", "AMZN", "BEST BUY",
-            "EBAY", "ETSY", "IKEA", "KOHLS", "TJ MAXX", "TJMAXX", "MARSHALLS", "HOME DEPOT", "LOWES", "MENARDS",
-            "DOLLAR GENERAL", "DOLLAR TREE", "FAMILY DOLLAR", "OLD NAVY", "SHEIN", "TEMU", "GOODWILL"))
-        // Gas & Fuel
-        addAll(r(C.GAS, "SHELL", "EXXON", "EXXONMOBIL", "MOBIL", "BP", "CASEYS", "CASEY S", "QUIKTRIP", "QT",
-            "KWIK SHOP", "KWIK STAR", "KWIK TRIP", "SINCLAIR", "PHILLIPS 66", "CONOCO", "CHEVRON", "SPEEDWAY",
-            "CENEX", "MARATHON PETRO", "VALERO", "CITGO", "SUNOCO", "ARCO", "MURPHY USA", "PILOT", "FLYING J",
-            "LOVES TRAVEL", "BUCKEES", "BUC EES"))
-        // Eating Out
-        addAll(r(C.EATING_OUT, "MCDONALDS", "MCDONALD S", "STARBUCKS", "CHIPOTLE", "TACO BELL", "WENDYS", "WENDY S",
-            "BURGER KING", "SUBWAY", "DOMINOS", "DOMINO S", "PIZZA HUT", "RUNZA", "DOORDASH", "DD DOORDASH",
-            "UBER EATS", "UBEREATS", "GRUBHUB", "RESTAURANT", "CAFE", "GRILL", "PIZZA", "COFFEE", "CHICK FIL A",
-            "CHICKFILA", "PANERA", "DUNKIN", "SONIC DRIVE", "ARBYS", "KFC", "POPEYES", "JIMMY JOHNS", "PANDA EXPRESS",
-            "QDOBA", "CULVERS", "RAISING CANES", "DAIRY QUEEN", "APPLEBEES", "IHOP", "DENNYS", "OLIVE GARDEN",
-            "BAR & GRILL", "TAQUERIA", "SUSHI", "BAKERY", "DINER", "BISTRO", "KITCHEN", "BREWING", "TAVERN"))
-        // Subscriptions
-        addAll(r(C.SUBSCRIPTIONS, "NETFLIX", "SPOTIFY", "HULU", "DISNEY PLUS", "DISNEYPLUS", "DISNEY+", "HBO MAX",
-            "MAX COM", "PARAMOUNT", "PEACOCK", "YOUTUBE PREMIUM", "YOUTUBEPREMIUM", "GOOGLE YOUTUBE", "AMAZON PRIME",
-            "AMZN PRIME", "PRIME VIDEO", "APPLE", "ICLOUD", "PATREON", "ADOBE", "MICROSOFT", "MSFT", "XBOX",
-            "PLAYSTATION", "SONY PLAYSTATION", "NINTENDO", "CRUNCHYROLL", "OPENAI", "CHATGPT", "ANTHROPIC",
-            "CLAUDE AI", "AUDIBLE", "SIRIUSXM", "DUOLINGO", "GOOGLE STORAGE", "GOOGLE ONE", "DROPBOX", "CANVA",
-            "PROCREATE", "CLIP STUDIO"))
-        // Rent & Housing
-        addAll(r(C.RENT, "RENT", "APARTMENT", "APARTMENTS", "APTS", "PROPERTY MGMT", "PROPERTY MANAGEMENT",
-            "LEASING", "MORTGAGE", "HOA"))
-        // Utilities
-        addAll(r(C.UTILITIES, "ELECTRIC", "ENERGY", "WATER", "GAS CO", "BLACK HILLS", "LINCOLN ELECTRIC",
-            "OPPD", "METROPOLITAN UTILITIES", "XCEL", "EVERGY", "UTILITIES", "UTILITY", "SEWER", "WASTE MANAGEMENT"))
-        // Phone & Internet
-        addAll(r(C.PHONE, "VERIZON", "VZWRLSS", "T MOBILE", "TMOBILE", "AT&T", "ATT", "SPECTRUM", "CHARTER",
-            "XFINITY", "COMCAST", "ALLO", "MINT MOBILE", "CRICKET", "VISIBLE", "GOOGLE FI", "BOOST MOBILE",
-            "METRO BY T MOBILE"))
-        // Transportation
-        addAll(r(C.TRANSPORT, "UBER", "LYFT", "PARKING", "TRANSIT", "STARTRAN", "AMTRAK", "GREYHOUND", "PARKMOBILE",
-            "TOLL", "DMV"))
-        // Hobbies & Art Supplies
-        addAll(r(C.HOBBIES, "MICHAELS", "HOBBY LOBBY", "BLICK", "DICK BLICK", "JERRYS ARTARAMA", "JERRY S ARTARAMA",
-            "JOANN", "JO ANN", "GAMES WORKSHOP", "ART SUPPLY", "ART SUPPLIES"))
-        // Health
-        addAll(r(C.HEALTH, "PHARMACY", "CVS", "WALGREENS", "HOSPITAL", "CLINIC", "DENTAL", "DENTIST", "MEDICAL",
-            "OPTOMETRY", "URGENT CARE", "PLANET FITNESS", "GYM"))
-        // Personal Care
-        addAll(r(C.PERSONAL_CARE, "SALON", "BARBER", "SUPERCUTS", "GREAT CLIPS", "ULTA", "SEPHORA", "SPA"))
-        // Entertainment
-        addAll(r(C.ENTERTAINMENT, "AMC", "CINEMA", "THEATRE", "THEATER", "STEAM", "STEAMPOWERED", "TICKETMASTER",
-            "EVENTBRITE", "BOWLING", "MARCUS THEATRES"))
-        // Insurance
-        addAll(r(C.INSURANCE, "INSURANCE", "GEICO", "PROGRESSIVE", "STATE FARM", "ALLSTATE", "LIBERTY MUTUAL",
-            "FARMERS INS", "LEMONADE"))
-        // Fees & Interest
-        addAll(r(C.FEES, "INTEREST CHARGE", "LATE FEE", "OVERDRAFT", "SERVICE FEE", "MONTHLY FEE", "ATM FEE",
-            "FOREIGN TRANSACTION FEE", "NSF FEE", "FINANCE CHARGE"))
-        // Gifts & Donations
-        addAll(r(C.GIFTS, "DONATION", "CHARITY", "GOFUNDME", "RED CROSS", "UNITED WAY"))
-        // Income
-        addAll(r(C.INCOME, "PAYROLL", "DIRECT DEP", "DIR DEP", "DIRECTDEP", "SALARY", "DIRECT DEPOSIT", "INTEREST PAID",
-            "INTEREST PAYMENT", "IRS TREAS", "TAX REF"))
-        // Transfers
-        addAll(r(C.TRANSFERS, "TRANSFER", "XFER", "ONLINE PAYMENT", "PAYMENT THANK YOU", "PAYMENT THANKYOU",
-            "MOBILE PAYMENT", "INTERNET PAYMENT", "ONLINE TRANSFER", "SAVINGS TRANSFER"))
-        for (issuer in CARD_ISSUERS) add(all(C.TRANSFERS, issuer, "AUTOPAY"))
-        for (issuer in CARD_ISSUERS) add(all(C.TRANSFERS, issuer, "AUTO PAY"))
-        // Person-to-Person
-        addAll(r(C.P2P, "VENMO", "ZELLE", "CASH APP", "CASHAPP", "SQUARE CASH", "SQC", "PAYPAL INST XFER"))
+        val seen = HashSet<String>()
+        fun add(category: String, pattern: String, tier: Int) {
+            val p = haystack(pattern)
+            if (p.isNotBlank() && seen.add(p)) add(BuiltInRule(listOf(p), category, tier))
+        }
+        for ((category, list) in MerchantCatalog.merchants) {
+            val tier = if (category == C.P2P) BuiltInRule.TIER_PRIORITY else BuiltInRule.TIER_BRAND
+            list.forEach { add(category, it, tier) }
+        }
+        for ((category, list) in MerchantCatalog.keywords) list.forEach { add(category, it, BuiltInRule.TIER_GENERIC) }
+        add(BuiltInRule(listOf("TARGET", "GROCERY"), C.GROCERIES))
+        add(BuiltInRule(listOf("WALMART", "GROCERY"), C.GROCERIES))
+        for (issuer in CARD_ISSUERS) {
+            add(BuiltInRule(listOf(issuer, "AUTOPAY"), C.TRANSFERS, BuiltInRule.TIER_PRIORITY))
+            add(BuiltInRule(listOf(issuer, "AUTO PAY"), C.TRANSFERS, BuiltInRule.TIER_PRIORITY))
+            add(BuiltInRule(listOf(issuer, "PAYMENT"), C.TRANSFERS, BuiltInRule.TIER_PRIORITY))
+            add(BuiltInRule(listOf(issuer, "EPAY"), C.TRANSFERS, BuiltInRule.TIER_PRIORITY))
+        }
+    }.mapIndexed { i, r -> r.copy(order = i) }
+
+    /** How many places and words Sprout recognizes out of the box (shown in Settings). */
+    val size: Int get() = rules.size
+
+    private val TOKEN_SPLIT = Regex("[^A-Z0-9&+]+")
+    private val PLAIN_SPLIT = Regex("[^A-Z0-9]+")
+
+    /**
+     * Rules indexed by the first word of their first pattern, so matching a transaction only checks the handful
+     * of rules that could possibly match instead of all ~2,000. Keeps re-categorizing years of history fast.
+     */
+    private val index: Map<String, List<BuiltInRule>> by lazy {
+        rules.groupBy { r -> r.patterns.first().split(TOKEN_SPLIT).first { it.isNotEmpty() } }
     }
 
     /**
@@ -114,16 +90,27 @@ object BuiltInRules {
             .replace(Regex("""\s+"""), " ")
             .trim()
 
-    /** Longest matching rule wins; null if nothing matches. */
-    fun match(description: String, merchantKey: String): BuiltInRule? {
+    /**
+     * Best matching rule, or null. [amountMinor] < 0 is money out; generic words are only trusted then
+     * (null = unknown direction, treated as money out).
+     */
+    fun match(description: String, merchantKey: String, amountMinor: Long? = null): BuiltInRule? {
         val hay = haystack(description) + " | " + haystack(merchantKey)
+        val allowGeneric = amountMinor == null || amountMinor <= 0
+        val tokens = HashSet<String>()
+        hay.split(TOKEN_SPLIT).filterTo(tokens) { it.isNotEmpty() }
+        hay.split(PLAIN_SPLIT).filterTo(tokens) { it.isNotEmpty() }
         var best: BuiltInRule? = null
-        for (rule in rules) {
-            if ((best == null || rule.specificity > best.specificity) && rule.matches(hay)) best = rule
+        for (t in tokens) {
+            val candidates = index[t] ?: continue
+            for (rule in candidates) {
+                if (!allowGeneric && rule.tier == BuiltInRule.TIER_GENERIC) continue
+                if (rule.beats(best) && rule.matches(hay)) best = rule
+            }
         }
-        // "TST*" (Toast) is a restaurant point-of-sale prefix.
-        if (best == null && description.uppercase().trimStart().let { it.startsWith("TST*") || it.startsWith("TST *") }) {
-            return BuiltInRule(listOf("TST*"), C.EATING_OUT)
+        // "TST*" (Toast) is a restaurant point-of-sale prefix: stronger than any generic word ("TST* MOD MARKET").
+        if ((best == null || best.tier == BuiltInRule.TIER_GENERIC) && allowGeneric && description.uppercase().trimStart().let { it.startsWith("TST*") || it.startsWith("TST *") }) {
+            return BuiltInRule(listOf("TST*"), C.EATING_OUT, BuiltInRule.TIER_GENERIC)
         }
         return best
     }

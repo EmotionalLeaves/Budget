@@ -98,7 +98,7 @@ class ImportRepositoryTest {
         val s = repo.import(account, parsed("european_comma_decimals.csv"))
         assertEquals(4, s.imported)
         val all = env.db.transactions().getByIds(CsvImport.ids(account, parsed("european_comma_decimals.csv").rows))
-        assertEquals(env.db.categories().getByKey(DefaultCategories.TRANSPORT)!!.id, all.single { it.description.startsWith("BAHN") }.categoryId)
+        assertEquals(env.db.categories().getByKey(DefaultCategories.TRAVEL)!!.id, all.single { it.description.startsWith("BAHN") }.categoryId)
         assertEquals(-4_510L - 123_456L - 350L + 245_000L, env.db.accounts().getAll().single().balanceMinor)
     }
 }

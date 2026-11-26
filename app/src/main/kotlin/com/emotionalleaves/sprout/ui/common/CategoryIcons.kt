@@ -70,6 +70,8 @@ object CategoryIcons {
         K.OTHER -> Icons.Rounded.MoreHoriz
         K.UNCATEGORIZED -> Icons.AutoMirrored.Rounded.HelpOutline
         K.TRANSFERS -> Icons.Rounded.SwapHoriz
+        K.TRAVEL -> Icons.Rounded.Flight
+        K.PETS -> Icons.Rounded.Pets
         else -> EXTRA[iconKey] ?: Icons.AutoMirrored.Rounded.Label
     }
 
@@ -89,6 +91,6 @@ object CategoryIcons {
     /** Everything the icon picker offers: the built-in category icons, then the extras. */
     val pickable: List<String> by lazy {
         listOf(K.GROCERIES, K.EATING_OUT, K.RENT, K.UTILITIES, K.PHONE, K.GAS, K.TRANSPORT, K.SUBSCRIPTIONS, K.SHOPPING, K.HOBBIES,
-            K.HEALTH, K.PERSONAL_CARE, K.ENTERTAINMENT, K.INSURANCE, K.GIFTS, K.P2P, K.INCOME) + EXTRA.keys
+            K.HEALTH, K.PERSONAL_CARE, K.ENTERTAINMENT, K.INSURANCE, K.GIFTS, K.P2P, K.INCOME, K.TRAVEL, K.PETS) + EXTRA.keys
     }
 }

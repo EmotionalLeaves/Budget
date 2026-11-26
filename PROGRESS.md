@@ -22,6 +22,7 @@ Round 16. User (2026-11-24): heavy visual and functional polish; each of the nex
 - [x] GitHub Release v1.0.0 published with the APK and marked latest (this push).
 
 ## Recent changes
+0. 2026-11-26 – v2.21.0 (round 21): on-device auto-sort — ~2,000-entry merchant catalog (indexed), tiered matching, naive-Bayes + merchant-habit learner (CategorySource.LEARNED, no schema change), one-time history re-sort, Travel/Pets categories, Auto-sort card. A helper agent is doing a visual overhaul in a separate worktree (/home/claude/wt-a) for 2.22.0.
 1. 2026-11-24 – v2.7.0 (round 8): pre-update snapshots + restore; day totals, budgets widget; merchant renaming (schema 7). Fixed a double-escaped regex before release (caught by tests).
 2. 2026-11-24 – v2.6.0 (round 7): resumable update downloads, release history; Customize Home, screen transitions; monthly PDF report, paydays on calendar, edit cash transactions, CSV tags/splits.
 3. 2026-11-24 – v2.5.0 (round 6): hands-free background installs, multi-version What's new; count-up amounts, skeletons, Black theme; manual cash transactions, challenges, money health.

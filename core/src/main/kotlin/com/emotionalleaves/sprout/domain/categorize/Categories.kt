@@ -4,9 +4,11 @@ enum class CategoryKind { INCOME, EXPENSE, TRANSFER }
 
 /**
  * Where a transaction's category came from. USER and MERCHANT_RULE are never overwritten by sync.
- * NONE = fallback (Income/Uncategorized), BUILT_IN = a built-in rule, IMPORT = set by a CSV import.
+ * NONE = fallback (Income/Uncategorized), BUILT_IN = a built-in rule, IMPORT = set by a CSV import,
+ * LEARNED = guessed on the phone from how you've categorized similar purchases (re-guessed as you teach it more).
+ * Stored by name in a TEXT column, so adding a value needs no schema change.
  */
-enum class CategorySource { NONE, BUILT_IN, MERCHANT_RULE, USER, IMPORT }
+enum class CategorySource { NONE, BUILT_IN, MERCHANT_RULE, USER, IMPORT, LEARNED }
 
 data class DefaultCategory(val key: String, val name: String, val kind: CategoryKind, val colorArgb: Long)
 
@@ -33,6 +35,12 @@ object DefaultCategories {
     const val OTHER = "other"
     const val UNCATEGORIZED = "uncategorized"
     const val TRANSFERS = "transfers"
+    /** Added in 2.21.0; existing installs get them once on update (see CategoryRepository.upgradeCatalog). */
+    const val TRAVEL = "travel"
+    const val PETS = "pets"
+
+    /** Keys added after the first release, in the order they arrived. */
+    val addedLater: List<String> = listOf(TRAVEL, PETS)
 
     val all: List<DefaultCategory> = listOf(
         DefaultCategory(INCOME, "Income", CategoryKind.INCOME, 0xFF2E7D32),
@@ -53,6 +61,8 @@ object DefaultCategories {
         DefaultCategory(FEES, "Fees & Interest", CategoryKind.EXPENSE, 0xFFB71C1C),
         DefaultCategory(P2P, "Person-to-Person", CategoryKind.EXPENSE, 0xFF00695C),
         DefaultCategory(GIFTS, "Gifts & Donations", CategoryKind.EXPENSE, 0xFFF06292),
+        DefaultCategory(TRAVEL, "Travel", CategoryKind.EXPENSE, 0xFF0097A7),
+        DefaultCategory(PETS, "Pets", CategoryKind.EXPENSE, 0xFF8D6E63),
         DefaultCategory(OTHER, "Other", CategoryKind.EXPENSE, 0xFF757575),
         DefaultCategory(UNCATEGORIZED, "Uncategorized", CategoryKind.EXPENSE, 0xFF9E9E9E),
         DefaultCategory(TRANSFERS, "Transfers", CategoryKind.TRANSFER, 0xFF78909C),

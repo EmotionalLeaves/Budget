@@ -11,7 +11,9 @@ import com.emotionalleaves.sprout.domain.split.Splits
 import com.emotionalleaves.sprout.domain.categorize.BuiltInRules
 import com.emotionalleaves.sprout.domain.categorize.CategoryKind
 import com.emotionalleaves.sprout.domain.categorize.CategoryResolver
+import com.emotionalleaves.sprout.domain.categorize.DefaultCategories
 import com.emotionalleaves.sprout.domain.categorize.CategorySource
+import com.emotionalleaves.sprout.domain.categorize.LearnedCategorizer
 import com.emotionalleaves.sprout.domain.categorize.RuleType
 import com.emotionalleaves.sprout.domain.categorize.UserRule
 import com.emotionalleaves.sprout.domain.text.Sanitize
@@ -36,12 +38,31 @@ class CategoryRepository(private val db: SproutDatabase, private val clock: Cloc
     suspend fun recategorize(transactionId: String, categoryId: Long, alwaysForMerchant: Boolean): Int =
         recategorizeWithUndo(transactionId, categoryId, alwaysForMerchant).others
 
-    /** Result of a recategorization, with a way to put everything back exactly as it was. */
-    class Change(val others: Int, val undo: suspend () -> Unit)
+    /**
+     * Result of a recategorization, with a way to put everything back. [learned] is how many other purchases
+     * the on-device learner re-sorted because of this pick.
+     */
+    class Change(val others: Int, val undo: suspend () -> Unit, val learned: Int = 0)
 
-    suspend fun recategorizeWithUndo(transactionId: String, categoryId: Long, alwaysForMerchant: Boolean): Change = withContext(Dispatchers.IO) {
+    /** The on-device learner, trained on everything you've categorized yourself. */
+    suspend fun learner(): LearnedCategorizer = withContext(Dispatchers.IO) {
+        LearnedCategorizer.train(db.transactions().learningExamples().map {
+            LearnedCategorizer.Example(it.description, it.merchantKey, it.categoryId)
+        })
+    }
+
+    /**
+     * With [learn] (the default) every purchase you haven't set by hand is re-sorted afterwards, so one pick
+     * teaches the rest. Bulk edits pass false and call [reapplyRules] once at the end.
+     */
+    suspend fun recategorizeWithUndo(
+        transactionId: String,
+        categoryId: Long,
+        alwaysForMerchant: Boolean,
+        learn: Boolean = true,
+    ): Change = withContext(Dispatchers.IO) {
         db.withTransaction {
-            val tx = db.transactions().getById(transactionId) ?: return@withTransaction Change(0) {}
+            val tx = db.transactions().getById(transactionId) ?: return@withTransaction Change(0, {})
             // Snapshot what this change can touch: the merchant's transactions and its EXACT rule.
             val before = db.transactions().ruleInputsForMerchant(tx.merchantKey)
             val ruleBefore = db.merchantRules().find(RuleType.EXACT, tx.merchantKey)
@@ -55,6 +76,7 @@ class CategoryRepository(private val db: SproutDatabase, private val clock: Cloc
                             ruleBefore == null && ruleNow != null -> db.merchantRules().delete(ruleNow.id)
                             ruleBefore != null -> db.merchantRules().update(ruleBefore)
                         }
+                        if (learn) reapplyRulesLocked()
                     }
                 }
             }
@@ -67,7 +89,8 @@ class CategoryRepository(private val db: SproutDatabase, private val clock: Cloc
                 others = updated - if (tx.categorySource != CategorySource.USER) 1 else 0
             }
             db.transactions().setCategory(transactionId, categoryId, CategorySource.USER, now)
-            Change(others, undo)
+            val learned = if (learn) reapplyRulesLocked() else 0
+            Change(others, undo, learned)
         }
     }
 
@@ -142,6 +165,28 @@ class CategoryRepository(private val db: SproutDatabase, private val clock: Cloc
         }
     }
 
+    /**
+     * Runs once after an update that changed the built-in merchant list: adds categories that arrived later
+     * (Travel, Pets) to existing installs, then re-sorts every purchase you haven't set by hand.
+     * Never touches anything you categorized yourself. Returns how many purchases moved.
+     */
+    suspend fun upgradeCatalog(fromVersion: Int): Int = withContext(Dispatchers.IO) {
+        if (fromVersion >= CATALOG_VERSION) return@withContext 0
+        db.withTransaction {
+            if (db.categories().count() == 0) return@withTransaction 0
+            if (fromVersion < 1) {
+                val have = db.categories().getAll().mapNotNull { it.key }.toSet()
+                var order = db.categories().maxSortOrder()
+                val missing = DefaultCategories.all.filter { it.key in DefaultCategories.addedLater && it.key !in have }
+                db.categories().insertIgnore(missing.map { c ->
+                    CategoryEntity(key = c.key, name = c.name, kind = c.kind, iconKey = c.key,
+                        colorArgb = c.colorArgb.toInt(), sortOrder = ++order, archived = false)
+                })
+            }
+            reapplyRulesLocked()
+        }
+    }
+
     /** Re-runs categorization for every transaction whose category wasn't set by the user or an import. */
     suspend fun reapplyRules(): Int = withContext(Dispatchers.IO) { db.withTransaction { reapplyRulesLocked() } }
 
@@ -149,7 +194,7 @@ class CategoryRepository(private val db: SproutDatabase, private val clock: Cloc
         val categories = db.categories().getAll()
         val idByKey = categories.mapNotNull { c -> c.key?.let { it to c.id } }.toMap()
         val rules = db.merchantRules().getAll().map { it.toUserRule() }
-        val resolver = CategoryResolver(rules, idByKey)
+        val resolver = CategoryResolver(rules, idByKey, learner())
         val now = now()
         var changed = 0
         for (row in db.transactions().ruleInputs()) {
@@ -199,6 +244,9 @@ class CategoryRepository(private val db: SproutDatabase, private val clock: Cloc
     }
 
     companion object {
+        /** Bump when the built-in merchant list changes so existing history is re-sorted once on update. */
+        const val CATALOG_VERSION = 1
+
         /** Colors offered for new categories (Material 600 shades). */
         val PALETTE: List<Int> = listOf(
             0xFF2E7D32, 0xFF00838F, 0xFF1565C0, 0xFF5E35B1, 0xFFAD1457, 0xFFC62828,

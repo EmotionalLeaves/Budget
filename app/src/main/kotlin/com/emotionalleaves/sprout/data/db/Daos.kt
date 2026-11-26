@@ -91,6 +91,9 @@ data class RuleInput(
     val categorySource: CategorySource,
 )
 
+/** A purchase you categorized yourself: what the on-device learner trains on. */
+data class LearnExample(val description: String, val merchantKey: String, val categoryId: Long)
+
 @Dao
 interface TransactionDao {
     @Upsert suspend fun upsert(items: List<TransactionEntity>)
@@ -140,6 +143,16 @@ interface TransactionDao {
 
     @Query("SELECT id, description, merchantKey, amountMinor, categoryId, categorySource FROM transactions WHERE categorySource NOT IN ('USER', 'IMPORT')")
     suspend fun ruleInputs(): List<RuleInput>
+
+    /** Your own picks (and bank categories from imports), minus "Uncategorized", newest first, capped. */
+    @Query(
+        "SELECT description, merchantKey, categoryId FROM transactions WHERE categorySource IN ('USER', 'IMPORT') " +
+            "AND categoryId NOT IN (SELECT id FROM categories WHERE `key` = 'uncategorized') ORDER BY postedAt DESC LIMIT :limit",
+    )
+    suspend fun learningExamples(limit: Int = 20_000): List<LearnExample>
+
+    @Query("SELECT COUNT(*) FROM transactions WHERE categorySource = :source")
+    suspend fun countBySource(source: CategorySource): Int
 
     @Query("SELECT COUNT(*) FROM transactions WHERE categoryId = :categoryId")
     suspend fun countInCategory(categoryId: Long): Int

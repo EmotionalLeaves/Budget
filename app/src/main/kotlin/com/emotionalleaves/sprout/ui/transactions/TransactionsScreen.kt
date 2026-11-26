@@ -121,8 +121,12 @@ class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
     }
 
     suspend fun bulkCategory(ids: Set<String>, categoryId: Long): suspend () -> Unit {
-        val undos = ids.map { c.categoryRepository.recategorizeWithUndo(it, categoryId, alwaysForMerchant = false).undo }
-        return { undos.forEach { it() } }
+        val undos = ids.map { c.categoryRepository.recategorizeWithUndo(it, categoryId, alwaysForMerchant = false, learn = false).undo }
+        c.categoryRepository.reapplyRules()
+        return {
+            undos.reversed().forEach { it() }
+            c.categoryRepository.reapplyRules()
+        }
     }
 
     suspend fun bulkExclude(ids: Set<String>): suspend () -> Unit {

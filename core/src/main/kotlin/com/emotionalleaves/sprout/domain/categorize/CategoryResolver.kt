@@ -38,11 +38,15 @@ data class Resolution(val categoryId: Long?, val source: CategorySource)
 /**
  * Picks a category for a transaction. First match wins:
  * 1. the user's EXACT merchant rule, 2. the user's CONTAINS rules (longest keyword first),
- * 3. built-in rules (longest pattern wins), 4. fallback: money in -> Income, money out -> Uncategorized.
+ * 3. what you've (nearly) always picked for this exact merchant ([LearnedCategorizer.merchantGuess]),
+ * 4. built-in brands, 5. a confident guess from words you've categorized before,
+ * 6. built-in generic words ("PIZZA", "PHARMACY"; money out only),
+ * 7. fallback: money in -> Income, money out -> Uncategorized.
  */
 class CategoryResolver(
     userRules: List<UserRule>,
     private val categoryIdByKey: Map<String, Long>,
+    private val learned: LearnedCategorizer = LearnedCategorizer.EMPTY,
 ) {
     private val exact: Map<String, UserRule> =
         userRules.filter { it.type == RuleType.EXACT }.associateBy { it.pattern.uppercase() }
@@ -66,9 +70,15 @@ class CategoryResolver(
                 ?.let { return Resolution(it.second.categoryId, CategorySource.MERCHANT_RULE) }
         }
 
-        BuiltInRules.match(description, merchantKey)?.let { rule ->
-            categoryIdByKey[rule.categoryKey]?.let { return Resolution(it, CategorySource.BUILT_IN) }
-        }
+        learned.merchantGuess(merchantKey)?.let { return Resolution(it.categoryId, CategorySource.LEARNED) }
+
+        val builtIn = BuiltInRules.match(description, merchantKey, amountMinor)
+        val builtInId = builtIn?.let { categoryIdByKey[it.categoryKey] }
+        if (builtInId != null && builtIn.tier != BuiltInRule.TIER_GENERIC) return Resolution(builtInId, CategorySource.BUILT_IN)
+
+        learned.wordGuess(description, merchantKey)?.let { return Resolution(it.categoryId, CategorySource.LEARNED) }
+
+        if (builtInId != null) return Resolution(builtInId, CategorySource.BUILT_IN)
 
         val fallbackKey = if (amountMinor > 0) DefaultCategories.INCOME else DefaultCategories.UNCATEGORIZED
         return Resolution(categoryIdByKey[fallbackKey], CategorySource.NONE)
@@ -78,7 +88,7 @@ class CategoryResolver(
     companion object {
         fun builtInKey(description: String, amountMinor: Long): String {
             val key = MerchantNormalizer.normalize(description)
-            return BuiltInRules.match(description, key)?.categoryKey
+            return BuiltInRules.match(description, key, amountMinor)?.categoryKey
                 ?: if (amountMinor > 0) DefaultCategories.INCOME else DefaultCategories.UNCATEGORIZED
         }
     }

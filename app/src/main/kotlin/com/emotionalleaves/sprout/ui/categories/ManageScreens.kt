@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -53,7 +55,6 @@ import com.emotionalleaves.sprout.data.db.RuleRow
 import com.emotionalleaves.sprout.domain.categorize.CategoryKind
 import com.emotionalleaves.sprout.domain.categorize.MerchantNormalizer
 import com.emotionalleaves.sprout.domain.categorize.RuleType
-import com.emotionalleaves.sprout.ui.common.EmptyState
 import com.emotionalleaves.sprout.ui.common.sproutViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -77,6 +78,79 @@ class ManageCategoriesViewModel(private val c: AppContainer) : ViewModel() {
     suspend fun preview(keyword: String, min: Long?, max: Long?) = c.categoryRepository.previewContains(keyword, min, max)
     fun changeRule(ruleId: Long, categoryId: Long) = viewModelScope.launch { c.categoryRepository.changeRuleCategory(ruleId, categoryId) }
     fun deleteRule(ruleId: Long) = viewModelScope.launch { c.categoryRepository.deleteRule(ruleId) }
+
+    /** What auto-sorting has done so far, for the card at the top of Category rules. */
+    data class AutoStats(val known: Int, val builtIn: Int, val learned: Int, val picks: Int, val left: Int)
+
+    suspend fun autoStats(): AutoStats {
+        val t = c.db.transactions()
+        val uncategorized = c.db.categories().getByKey(com.emotionalleaves.sprout.domain.categorize.DefaultCategories.UNCATEGORIZED)?.id
+        return AutoStats(
+            known = com.emotionalleaves.sprout.domain.categorize.BuiltInRules.size,
+            builtIn = t.countBySource(com.emotionalleaves.sprout.domain.categorize.CategorySource.BUILT_IN),
+            learned = t.countBySource(com.emotionalleaves.sprout.domain.categorize.CategorySource.LEARNED),
+            picks = t.learningExamples().size,
+            left = uncategorized?.let { t.countInCategory(it) } ?: 0,
+        )
+    }
+
+    suspend fun resortAll(): Int = c.categoryRepository.reapplyRules()
+}
+
+/** "Sprout sorted 1,204 purchases for you": what auto-sorting did, with a button to run it again. */
+@Composable
+private fun AutoSortCard(vm: ManageCategoriesViewModel) {
+    var tick by remember { mutableStateOf(0) }
+    var result by remember { mutableStateOf<String?>(null) }
+    var busy by remember { mutableStateOf(false) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val stats = com.emotionalleaves.sprout.ui.common.rememberLoaded(tick) { runCatching { vm.autoStats() }.getOrNull() }
+    val fmt = java.text.NumberFormat.getIntegerInstance()
+    val green = Color(0xFF2E7D32)
+    com.emotionalleaves.sprout.ui.common.SoftCard(Modifier.padding(top = 4.dp, bottom = 8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            com.emotionalleaves.sprout.ui.common.IconBadge(Icons.Filled.AutoAwesome, green)
+            Column(Modifier.weight(1f)) {
+                Text("Auto-sort is on", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "Purchases are sorted on your phone: ${stats?.known?.let(fmt::format) ?: "2,000+"} stores and keywords, " +
+                        "plus whatever you teach it. Your own picks are never changed.",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        if (stats != null) {
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                AutoStat(fmt.format(stats.builtIn + stats.learned), "sorted for you", Modifier.weight(1f))
+                AutoStat(fmt.format(stats.picks), "your picks it learns from", Modifier.weight(1f))
+                AutoStat(fmt.format(stats.left), "left to sort", Modifier.weight(1f))
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(result ?: "Tip: sort a couple of similar purchases and the rest follow.", Modifier.weight(1f),
+                style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            TextButton(enabled = !busy, onClick = {
+                busy = true
+                scope.launch {
+                    val n = runCatching { vm.resortAll() }.getOrDefault(0)
+                    result = if (n == 0) "Everything's already sorted." else "Re-sorted ${fmt.format(n)} purchases."
+                    busy = false
+                    tick++
+                }
+            }) { Text(if (busy) "Sorting…" else "Re-sort now") }
+        }
+    }
+}
+
+@Composable
+private fun AutoStat(value: String, label: String, modifier: Modifier = Modifier) {
+    Column(modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
+        .background(MaterialTheme.colorScheme.surfaceContainerHigh).padding(horizontal = 10.dp, vertical = 10.dp)) {
+        Text(value, style = MaterialTheme.typography.titleLarge, maxLines = 1)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
 }
 
 @Composable
@@ -211,14 +285,18 @@ fun RulesScreen(onBack: () -> Unit) {
         ScreenHeader("Category rules", onBack) {
             IconButton(onClick = { adding = true }) { Icon(Icons.Filled.Add, contentDescription = "Add keyword rule") }
         }
-        if (rules.isEmpty()) {
-            EmptyState(
-                "No rules yet",
-                "When you change a transaction's category with \"Always use this\" on, Sprout remembers it here. " +
-                    "Tap + to add a keyword rule.",
-            )
-        }
         LazyColumn {
+            item { AutoSortCard(vm) }
+            if (rules.isEmpty()) {
+                item {
+                    Text(
+                        "No rules of your own yet. Change a category with \"Always use this\" on and Sprout remembers it here, " +
+                            "or tap + to add a keyword rule.",
+                        Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                        style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
             items(rules, key = { it.id }) { r ->
                 Row(
                     Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable { editing = r }.padding(start = 16.dp),
