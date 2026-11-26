@@ -58,7 +58,13 @@ class ReviewViewModel(private val c: AppContainer) : ViewModel() {
     @OptIn(ExperimentalCoroutinesApi::class)
     val queue: StateFlow<List<TransactionRow>?> = flow { emit(c.db.categories().getByKey(DefaultCategories.UNCATEGORIZED)?.id) }
         .flatMapLatest { id -> if (id == null) flowOf(emptyList()) else c.db.transactions().observeRows("", 500, id) }
-        .combine(skipped) { rows, skip -> rows.filter { it.id !in skip } }
+        .combine(skipped) { rows, skip ->
+            // Biggest merchants first: sorting one with "Always use this" clears all its purchases at once,
+            // so 250 purchases are often only a few dozen decisions.
+            val left = rows.filter { it.id !in skip }
+            val counts = left.groupingBy { it.merchantKey }.eachCount()
+            left.sortedWith(compareByDescending<TransactionRow> { counts[it.merchantKey] ?: 0 }.thenBy { it.merchantKey }.thenByDescending { it.occurredAt })
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     val categories: StateFlow<List<CategoryEntity>> =
@@ -114,6 +120,14 @@ fun ReviewScreen(onBack: () -> Unit) {
         }
         com.emotionalleaves.sprout.ui.common.FatProgress(if (startCount == 0) 0f else done.toFloat() / startCount, MaterialTheme.colorScheme.primary)
         val merchant = com.emotionalleaves.sprout.ui.common.merchantName(row.merchantKey)
+        val sameMerchant = list.count { it.merchantKey == row.merchantKey }
+        val merchantsLeft = list.map { it.merchantKey }.distinct().size
+        if (merchantsLeft < list.size) {
+            Text(
+                "That's only $merchantsLeft ${if (merchantsLeft == 1) "place" else "places"} to decide on: biggest first.",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         val c = com.emotionalleaves.sprout.ui.theme.LocalSproutColors.current
         androidx.compose.animation.AnimatedContent(targetState = row, label = "review-card") { r ->
             com.emotionalleaves.sprout.ui.common.HeroCard(c.hero, inset = 0.dp) {
@@ -127,7 +141,7 @@ fun ReviewScreen(onBack: () -> Unit) {
             Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(role = Role.Switch) { always = !always },
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("Always use this for $merchant", Modifier.weight(1f))
+            Text(if (sameMerchant > 1) "Use this for all $sameMerchant from $merchant" else "Always use this for $merchant", Modifier.weight(1f))
             Switch(checked = always, onCheckedChange = null)
         }
         val also by vm.alsoSorted.collectAsStateWithLifecycle()

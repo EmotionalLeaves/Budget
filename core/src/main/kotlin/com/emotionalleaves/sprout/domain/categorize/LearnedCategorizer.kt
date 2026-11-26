@@ -27,11 +27,14 @@ class LearnedCategorizer private constructor(
 
     val exampleCount: Int = docCounts.values.sum()
 
-    /** The category you've (nearly) always used for this merchant, if you've done it at least twice. */
-    fun merchantGuess(merchantKey: String): Guess? {
+    /**
+     * The category you've (nearly) always used for this merchant, if you've done it at least [minExamples] times.
+     * Two picks are needed to beat the built-in list; one is enough for a place the list doesn't know.
+     */
+    fun merchantGuess(merchantKey: String, minExamples: Int = MERCHANT_MIN_EXAMPLES): Guess? {
         val counts = byMerchant[merchantKey.uppercase()] ?: return null
         val total = counts.values.sum()
-        if (total < MERCHANT_MIN_EXAMPLES) return null
+        if (total < minExamples) return null
         val (best, n) = counts.maxByOrNull { it.value } ?: return null
         val share = n.toDouble() / total
         return if (share >= MERCHANT_MIN_SHARE) Guess(best, share) else null

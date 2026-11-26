@@ -77,6 +77,14 @@ class AutoCategorizeTest {
         "DISCOVER E-PAYMENT 2345" to C.TRANSFERS,
         "1-800-FLOWERS.COM" to C.GIFTS,
         "SP * SOMEINDIEBRAND" to C.SHOPPING,
+        "LINCOLN ORTHODONTICS" to C.HEALTH,
+        "SOUTH ST CHIROPRACTIC" to C.HEALTH,
+        "SQ *GOLDEN DRAGON" to C.EATING_OUT,
+        "MAIN ST HAIR STUDIO" to C.PERSONAL_CARE,
+        "BRANCHED OAK CAMPGROUND" to C.TRAVEL,
+        "CITY OF LINCOLN PUBLIC WORKS" to C.UTILITIES,
+        "SUNSET MINI MART" to C.GAS,
+        "STARLITE LANES" to C.ENTERTAINMENT,
         "FS *SOFTWARETOOL" to C.SUBSCRIPTIONS,
     )
 
@@ -183,5 +191,15 @@ class AutoCategorizeTest {
         assertNull(l.merchantGuess("KIDS ART CLASS"))
         assertEquals(11L, l.suggestion("PAYPAL *KIDS ART CLASS", "KIDS ART CLASS")?.categoryId)
         assertNull(l.suggestion("ZZYZX 9000", "ZZYZX"))
+    }
+
+    @Test fun onePickIsEnoughForAPlaceTheListDoesntKnow() {
+        val ids = C.all.mapIndexed { i, c -> c.key to (i + 1L) }.toMap()
+        val learned = LearnedCategorizer.train(listOf(LearnedCategorizer.Example("ZQX HOLDINGS 12", "ZQX HOLDINGS", 42)))
+        val r = CategoryResolver(emptyList(), ids, learned)
+        assertEquals(Resolution(42L, CategorySource.LEARNED), r.resolve("ZQX HOLDINGS 99", "ZQX HOLDINGS", -500))
+        // ...but one pick doesn't override a brand the list knows.
+        val w = LearnedCategorizer.train(listOf(LearnedCategorizer.Example("NETFLIX.COM", "NETFLIX", 42)))
+        assertEquals(CategorySource.BUILT_IN, CategoryResolver(emptyList(), ids, w).resolve("NETFLIX.COM", "NETFLIX", -1599).source)
     }
 }

@@ -39,7 +39,8 @@ data class Resolution(val categoryId: Long?, val source: CategorySource)
  * Picks a category for a transaction. First match wins:
  * 1. the user's EXACT merchant rule, 2. the user's CONTAINS rules (longest keyword first),
  * 3. what you've (nearly) always picked for this exact merchant ([LearnedCategorizer.merchantGuess]),
- * 4. built-in brands, 5. a confident guess from words you've categorized before,
+ * 4. built-in brands, 5. a place the list doesn't know that you've categorized even once,
+ * 5b. a confident guess from words you've categorized before,
  * 6. built-in generic words ("PIZZA", "PHARMACY"; money out only),
  * 7. fallback: money in -> Income, money out -> Uncategorized.
  */
@@ -76,6 +77,7 @@ class CategoryResolver(
         val builtInId = builtIn?.let { categoryIdByKey[it.categoryKey] }
         if (builtInId != null && builtIn.tier != BuiltInRule.TIER_GENERIC) return Resolution(builtInId, CategorySource.BUILT_IN)
 
+        learned.merchantGuess(merchantKey, minExamples = 1)?.let { return Resolution(it.categoryId, CategorySource.LEARNED) }
         learned.wordGuess(description, merchantKey)?.let { return Resolution(it.categoryId, CategorySource.LEARNED) }
 
         if (builtInId != null) return Resolution(builtInId, CategorySource.BUILT_IN)

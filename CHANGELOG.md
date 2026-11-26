@@ -2,6 +2,16 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.23.0] - 2026-11-26
+
+Round 23: much smarter auto-sort.
+
+### New
+- **Sort a place once and you're done.** For a place Sprout's list doesn't know (your local coffee shop, a market stall), one pick is now enough: every other purchase there follows. (For brands the list knows, it still takes two picks to override it.)
+- **Review goes biggest place first.** Uncategorized purchases are grouped by where you spent, so "Use this for all 23 from Scooter's" clears the whole lot. It tells you how few places are actually left to decide on.
+- **Hundreds more words recognized**: cuisines and restaurant words (pho, shawarma, izakaya, taphouse…), clinics and specialists (orthodontics, chiropractic, dentistry…), salons, campgrounds, auto shops, mini marts, bowling lanes, public works and more.
+- Your history is re-sorted once more after this update to pick all of that up.
+
 ## [2.22.0] - 2026-11-26
 
 Round 22: transfers sort themselves.

@@ -58,6 +58,11 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 - [ ] Debounce budget/recurring recomputation after bulk recategorization — *why: smooth on big histories*
 
 ## 7. New budgeting features
+- [x] (2.21.0) On-device auto-sort: ~2,000-store catalog, generic words, learns from your picks (merchant habit + word model), one-time history re-sort, Travel/Pets — *why: the user shouldn't hand-sort hundreds of card purchases*
+- [x] (2.21.0) Review: one-tap learned suggestion — *why: fewer taps for what's left*
+- [x] (2.22.0) Transfer pairing between your own accounts — *why: savings moves looked like spending plus income*
+- [ ] Split-merchant hints: when a merchant is split between two categories (Walmart groceries vs. household), suggest an amount rule — *why: the learner refuses to guess for split merchants*
+- [ ] "Sorted for you" review list: purchases auto-sorted since the last visit, one tap to confirm or fix — *why: trust in auto-sort*
 - [x] (1.6.0) Spending trend on Home (this month vs same days last month) — *why: see direction at a glance*
 - [x] (1.7.0) Savings goals with progress — *why: popular in budgeting apps, motivating*
 - [x] (1.6.0) Cash-flow forecast to month end (balance − upcoming bills + expected income) — *why: "will I make it to payday?"*
