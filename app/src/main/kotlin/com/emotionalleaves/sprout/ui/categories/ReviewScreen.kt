@@ -47,6 +47,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -63,9 +64,23 @@ class ReviewViewModel(private val c: AppContainer) : ViewModel() {
     val categories: StateFlow<List<CategoryEntity>> =
         c.db.categories().observeActive().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    /** The learner, rebuilt after each pick so suggestions get better as you go. */
+    private val learner = MutableStateFlow(com.emotionalleaves.sprout.domain.categorize.LearnedCategorizer.EMPTY)
+    init { viewModelScope.launch { learner.value = c.categoryRepository.learner() } }
+
+    /** "Also sorted 6 similar" after the last pick (null when nothing else moved). */
+    val alsoSorted = MutableStateFlow<Int?>(null)
+
+    /** A one-tap guess for [row]: what you usually pick for this merchant, or for purchases with similar words. */
+    fun suggestionFor(row: TransactionRow): Long? = learner.value.suggestion(row.description, row.merchantKey)?.categoryId
+
+    val learnerVersion: StateFlow<Int> = learner.map { it.exampleCount }.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+
     fun pick(row: TransactionRow, category: CategoryEntity, always: Boolean) = viewModelScope.launch {
-        c.categoryRepository.recategorize(row.id, category.id, always)
+        val change = c.categoryRepository.recategorizeWithUndo(row.id, category.id, always)
+        alsoSorted.value = (change.others + change.learned).takeIf { it > 0 }
         c.alertRepository.evaluateBudgets()
+        learner.value = c.categoryRepository.learner()
     }
 
     fun skip(row: TransactionRow) = skipped.update { it + row.id }
@@ -114,6 +129,24 @@ fun ReviewScreen(onBack: () -> Unit) {
         ) {
             Text("Always use this for $merchant", Modifier.weight(1f))
             Switch(checked = always, onCheckedChange = null)
+        }
+        val also by vm.alsoSorted.collectAsStateWithLifecycle()
+        also?.let { n ->
+            Text("✨ Also sorted $n similar ${if (n == 1) "purchase" else "purchases"} for you",
+                style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+        }
+        val learnedFrom by vm.learnerVersion.collectAsStateWithLifecycle()
+        val suggested = androidx.compose.runtime.remember(row.id, learnedFrom) { vm.suggestionFor(row) }
+            ?.let { id -> categories.firstOrNull { it.id == id && it.key != DefaultCategories.UNCATEGORIZED } }
+        if (suggested != null) {
+            androidx.compose.material3.FilledTonalButton(
+                onClick = { vm.pick(row, suggested, always) },
+                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+            ) {
+                Icon(com.emotionalleaves.sprout.ui.common.CategoryIcons.forKey(suggested.iconKey), contentDescription = null)
+                androidx.compose.foundation.layout.Spacer(Modifier.padding(start = 8.dp))
+                Text("Looks like ${suggested.name}", style = MaterialTheme.typography.titleSmall)
+            }
         }
         CategoryGrid(categories.filter { it.key != DefaultCategories.UNCATEGORIZED }, null) { vm.pick(row, it, always) }
         OutlinedButton(onClick = { vm.skip(row) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Skip for now") }

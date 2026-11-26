@@ -13,6 +13,8 @@ Round 21: Sprout sorts your purchases for you.
 - New **Travel** and **Pets** categories (added to existing installs too).
 - **Category rules** now opens with an Auto-sort card: how many purchases were sorted for you, how many of your picks it learns from, what's left, and a "Re-sort now" button.
 - Picking a category tells you when similar purchases were re-sorted too, and Undo puts them back.
+- **Review uncategorized** offers a one-tap "Looks like Eating Out" guess based on what you've picked before, and tells you how many similar purchases it sorted along the way.
+- Online-shop, software and restaurant checkouts (Shopify, FastSpring, Paddle, Toast) are recognized from their payment prefix.
 - CSV imports map bank categories like "Travel", "Hotels" and "Pets" to the new categories.
 
 ## [2.20.0] - 2026-11-25

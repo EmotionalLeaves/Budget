@@ -176,4 +176,12 @@ class AutoCategorizeTest {
         assertTrue(t.toString(), "BLUE" in t && "MOON" in t && "CAFE" in t && "BLUE_MOON" in t)
         assertTrue(t.toString(), "POS" !in t && "DEBIT" !in t && "4521" !in t && "LINCOLN" !in t)
     }
+
+    @Test fun suggestsEvenBeforeItsSureEnoughToAct() {
+        val l = LearnedCategorizer.train(examples)
+        // One pick for this merchant: not applied on its own, but offered.
+        assertNull(l.merchantGuess("KIDS ART CLASS"))
+        assertEquals(11L, l.suggestion("PAYPAL *KIDS ART CLASS", "KIDS ART CLASS")?.categoryId)
+        assertNull(l.suggestion("ZZYZX 9000", "ZZYZX"))
+    }
 }

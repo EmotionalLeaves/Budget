@@ -38,7 +38,22 @@ class LearnedCategorizer private constructor(
     }
 
     /** A guess from the description's words, or null when it isn't confident enough to act on. */
-    fun wordGuess(description: String, merchantKey: String): Guess? {
+    fun wordGuess(description: String, merchantKey: String): Guess? =
+        score(description, merchantKey)?.takeIf { it.confidence >= WORD_MIN_CONFIDENCE }
+
+    /**
+     * A softer guess to *suggest* (never applied on its own): "Looks like Eating Out?" in Review.
+     * Merchant habit first, then words at a lower bar.
+     */
+    fun suggestion(description: String, merchantKey: String): Guess? {
+        byMerchant[merchantKey.uppercase()]?.maxByOrNull { it.value }?.let { (id, n) ->
+            val total = byMerchant.getValue(merchantKey.uppercase()).values.sum()
+            return Guess(id, n.toDouble() / total)
+        }
+        return score(description, merchantKey)?.takeIf { it.confidence >= SUGGEST_MIN_CONFIDENCE }
+    }
+
+    private fun score(description: String, merchantKey: String): Guess? {
         if (docCounts.size < 2 || exampleCount < MIN_TOTAL_EXAMPLES) return null
         val tokens = tokens(description, merchantKey).filter { it in vocabulary }
         // A word that only ever appeared once tells us little; ask for real evidence.
@@ -54,10 +69,9 @@ class LearnedCategorizer private constructor(
         val max = scores.values.max()
         val norm = scores.values.sumOf { exp(it - max) }
         val (best, score) = scores.maxBy { it.value }
-        val p = exp(score - max) / norm
         // The winner must also have actually seen at least one of these words.
-        val seen = tokens.any { (tokenCounts[best]?.get(it) ?: 0) > 0 }
-        return if (p >= WORD_MIN_CONFIDENCE && seen) Guess(best, p) else null
+        if (tokens.none { (tokenCounts[best]?.get(it) ?: 0) > 0 }) return null
+        return Guess(best, exp(score - max) / norm)
     }
 
     companion object {
@@ -69,6 +83,8 @@ class LearnedCategorizer private constructor(
         const val MIN_TOTAL_EXAMPLES = 3
         /** Act on a word guess only when it's this sure; otherwise it stays Uncategorized for you to decide. */
         const val WORD_MIN_CONFIDENCE = 0.75
+        /** Bar for a one-tap suggestion; you still confirm it. */
+        const val SUGGEST_MIN_CONFIDENCE = 0.45
         /** Laplace smoothing. */
         private const val ALPHA = 0.5
 
