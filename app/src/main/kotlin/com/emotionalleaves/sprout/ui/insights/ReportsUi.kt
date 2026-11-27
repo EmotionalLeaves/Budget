@@ -360,6 +360,10 @@ private fun CompareMonths(onBack: () -> Unit) {
     val ym = java.time.YearMonth.parse(month)
     val rows = com.emotionalleaves.sprout.ui.common.rememberLoaded(month) { runCatching { c.insightsRepository.compare(ym) }.getOrNull() }
     val fmt = java.time.format.DateTimeFormatter.ofPattern("MMM yyyy")
+    // Stop going back once the earlier month would be before your first transaction.
+    val firstMonth = com.emotionalleaves.sprout.ui.common.rememberLoaded(Unit) {
+        runCatching { c.db.budgets().firstOccurredAt()?.let { java.time.YearMonth.from(java.time.Instant.ofEpochSecond(it).atZone(java.time.ZoneId.systemDefault())) } }.getOrNull()
+    }
     val sc = LocalSproutColors.current
     Column(Modifier.fillMaxSize()) {
         TopAppBar(windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0), 
@@ -367,7 +371,8 @@ private fun CompareMonths(onBack: () -> Unit) {
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
         )
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-            androidx.compose.material3.TextButton(onClick = { month = ym.minusMonths(1).toString() }) { Text("‹ Earlier") }
+            androidx.compose.material3.TextButton(onClick = { month = ym.minusMonths(1).toString() },
+                enabled = firstMonth == null || ym.minusMonths(1) > firstMonth) { Text("‹ Earlier") }
             Text("${ym.format(fmt)} vs ${ym.minusMonths(1).format(fmt)}", Modifier.weight(1f), style = MaterialTheme.typography.titleSmall,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             androidx.compose.material3.TextButton(enabled = ym < java.time.YearMonth.now(), onClick = { month = ym.plusMonths(1).toString() }) { Text("Later ›") }

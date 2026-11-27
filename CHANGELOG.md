@@ -2,6 +2,16 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.70.0] - 2026-11-27
+
+Round 70: quicker splits.
+
+### Features
+- **Split a purchase in half** with one tap: the split dialog has a "Half · $X" chip that fills in half the amount, handy for shared purchases. Then pick where that half goes.
+
+### Polish
+- Compare months stops at your first month of data instead of letting you page back into empty months.
+
 ## [2.69.0] - 2026-11-27
 
 Round 69: recent searches.

@@ -91,8 +91,18 @@ fun SplitDialog(
                         TextButton(onClick = { drafts.removeAt(i) }, modifier = Modifier.heightIn(min = 48.dp)) { Text("✕") }
                     }
                 }
-                if (drafts.size < Splits.MAX_PARTS) {
-                    OutlinedButton(onClick = { drafts.add(PartDraft(null, "")) }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Add part") }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    if (drafts.size < Splits.MAX_PARTS) {
+                        OutlinedButton(onClick = { drafts.add(PartDraft(null, "")) }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Add part") }
+                    }
+                    // One tap for the common case: half of it goes elsewhere (a shared purchase, say).
+                    val half = abs(amountMinor) / 2
+                    if (half > 0) {
+                        androidx.compose.material3.SuggestionChip(
+                            onClick = { (drafts.lastOrNull() ?: PartDraft(null, "").also { drafts.add(it) }).text = typed(half) },
+                            label = { Text("Half · ${Money.format(half)}") },
+                        )
+                    }
                 }
                 Text(
                     "Stays in ${ownCategory?.name ?: "its category"}: ${Money.format(abs(remainder))}",
