@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.95.0] - 2026-11-27
+
+Round 95: trends lead somewhere.
+
+### Polish
+- **Stats → Trends:** tap any category's trend card to open that category, with its places and purchases.
+
 ## [2.94.0] - 2026-11-27
 
 Round 94: from the year to the month in one tap.

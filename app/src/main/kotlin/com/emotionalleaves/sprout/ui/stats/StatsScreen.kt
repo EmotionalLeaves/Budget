@@ -505,7 +505,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.trends(d: StatsData) 
     item {
         Card {
             Label("${d.trendMonths.size} months by category")
-            Text("Each line is a category's monthly spending; the dot is this month.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Each line is a category's monthly spending; the dot is this month. Tap one to open it.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
     if (rows.isEmpty()) item { Text("Nothing to show yet.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
@@ -515,7 +515,9 @@ private fun androidx.compose.foundation.lazy.LazyListScope.trends(d: StatsData) 
             val col = Color(color).readable()
             val avg = values.dropLast(1).filter { it > 0 }.let { if (it.isEmpty()) 0 else it.sum() / it.size }
             val nowV = values.last()
-            Card {
+            // Tap a category's trend to open it.
+            val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
+            Card(onClick = { navigate("category/$id") }) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(10.dp).clip(CircleShape).background(col))
                     Spacer(Modifier.width(8.dp))
@@ -539,9 +541,10 @@ private fun androidx.compose.foundation.lazy.LazyListScope.trends(d: StatsData) 
 // ---- Building blocks ----------------------------------------------------------------------------------
 
 @Composable
-private fun Card(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
+private fun Card(onClick: (() -> Unit)? = null, content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
     Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(MaterialTheme.colorScheme.surfaceContainerLow).padding(16.dp),
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier).padding(16.dp),
         content = content,
     )
 }
