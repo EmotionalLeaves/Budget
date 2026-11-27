@@ -114,7 +114,7 @@ private fun UpdateBody(updates: UpdateRepository, state: UpdateState, showLater:
                         TextButton(onClick = { com.emotionalleaves.sprout.work.UpdateWhenChargingWorker.cancel(context) }) { Text("Cancel") }
                     }
                 }
-                androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Button(onClick = {
                         val cm = context.getSystemService(android.net.ConnectivityManager::class.java)
                         // Ask once on mobile data (only when Sprout can update by itself later); otherwise just go.

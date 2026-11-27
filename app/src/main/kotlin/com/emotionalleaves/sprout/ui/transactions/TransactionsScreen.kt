@@ -333,7 +333,7 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(name, { name = it.take(40) }, singleLine = true, label = { Text("Tag") }, modifier = Modifier.fillMaxWidth())
                     @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-                    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         tags.take(12).forEach { t -> FilterChip(name == t.name, { name = t.name }, label = { Text("#" + t.name) }) }
                     }
                 }

@@ -462,7 +462,7 @@ private fun BillRow(r: RecurringRow, subtitle: String, onClick: () -> Unit) {
             androidx.compose.foundation.layout.Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-                androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(r.displayName, style = MaterialTheme.typography.titleSmall, modifier = Modifier.align(Alignment.CenterVertically))
                     if (r.status == RecurringStatus.DETECTED) {
                         Text("Suggested", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary, maxLines = 1,
@@ -568,7 +568,7 @@ private fun BillDialog(
                 Text("How often", style = MaterialTheme.typography.labelLarge)
                 // Chips instead of a column of radios: the whole choice fits in two short rows.
                 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-                androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Cadence.entries.forEach { c ->
                         androidx.compose.material3.FilterChip(cadence == c, { cadence = c }, label = { Text(cadenceLabel(c)) },
                             modifier = Modifier.heightIn(min = 48.dp))

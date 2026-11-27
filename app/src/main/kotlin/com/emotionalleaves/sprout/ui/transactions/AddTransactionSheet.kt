@@ -106,7 +106,7 @@ fun AddTransactionSheet(onDismiss: () -> Unit, onAdded: (String) -> Unit) {
             Text("Account", style = MaterialTheme.typography.titleSmall)
             // Wraps instead of running off the edge when there are several accounts.
             @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-            androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 val options = (listOf(com.emotionalleaves.sprout.data.manual.ManualRepository.CASH_ACCOUNT_ID to "Cash") +
                     manualAccounts.filter { it.id != com.emotionalleaves.sprout.data.manual.ManualRepository.CASH_ACCOUNT_ID }.map { it.id to it.label })
                 options.take(8).forEach { (id, label) ->

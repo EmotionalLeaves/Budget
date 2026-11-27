@@ -112,7 +112,7 @@ private fun AddTagDialog(existing: List<TagEntity>, onPick: (Long) -> Unit, onCr
                     label = { Text("New tag, like \"Chicago trip\"") }, modifier = Modifier.fillMaxWidth(),
                 )
                 if (matches.isNotEmpty()) {
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         matches.take(20).forEach { t ->
                             FilterChip(false, onClick = { onPick(t.id) }, label = { Text("#" + t.name) }, modifier = Modifier.heightIn(min = 48.dp))
                         }
@@ -297,7 +297,7 @@ fun TagsScreen(onBack: () -> Unit, onOpen: (Long) -> Unit) {
                     OutlinedTextField(tag, { tag = it.take(40) }, singleLine = true, label = { Text("Tag") }, modifier = Modifier.fillMaxWidth())
                     if (tags.isNotEmpty()) {
                         @OptIn(ExperimentalLayoutApi::class)
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             tags.take(12).forEach { t -> FilterChip(selected = tag == t.name, onClick = { tag = t.name }, label = { Text("#" + t.name) }) }
                         }
                     }

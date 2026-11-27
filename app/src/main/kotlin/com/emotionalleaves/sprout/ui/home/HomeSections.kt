@@ -514,7 +514,7 @@ fun PaydayCard(p: com.emotionalleaves.sprout.domain.forecast.PaydayPlan, onPickS
                 if (p.sources.size > 1) {
                     Text("Which paycheck is payday?", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 4.dp))
                     @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-                    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         p.sources.forEach { name ->
                             androidx.compose.material3.FilterChip(selected = name == p.payName, onClick = { onPickSource(name) }, label = { Text(name) })
                         }

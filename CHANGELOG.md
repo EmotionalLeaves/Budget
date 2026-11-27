@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.79.0] - 2026-11-27
+
+Round 79: room to breathe.
+
+### Polish
+- Chips that wrap onto several lines (accounts and categories when adding a purchase, bill frequency, tags, quick ideas and more) now have a small gap between rows instead of touching, most noticeable with large text.
+
 ## [2.78.0] - 2026-11-27
 
 Round 78: no cut-off choices.

@@ -223,6 +223,13 @@ class ScreenTour {
                 rule.onAllNodes(androidx.compose.ui.test.hasScrollAction())[0].performScrollToNode(androidx.compose.ui.test.hasText("Stats"))
                 tap("Stats"); shot("x-07-stats"); back()
             }
+            runCatching {
+                tap("Activity")
+                rule.onAllNodes(androidx.compose.ui.test.hasContentDescription("Hy-Vee", substring = true))[0]
+                    .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); settle(); Thread.sleep(800); settle()
+                shot("x-12-tx-sheet"); back()
+            }
+            runCatching { tap("Activity"); rule.onAllNodes(androidx.compose.ui.test.hasText("Add"), useUnmergedTree = true)[0].performClick(); settle(); shot("x-13-add"); back() }
             for ((label, name) in listOf("Reports" to "x-08-reports", "Goals" to "x-09-goals", "Net worth" to "x-10-networth", "Debt plan" to "x-11-debt")) {
                 runCatching {
                     tap("More")

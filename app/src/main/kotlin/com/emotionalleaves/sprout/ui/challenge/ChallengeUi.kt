@@ -166,7 +166,7 @@ fun ChallengesScreen(onBack: () -> Unit) {
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Category", style = MaterialTheme.typography.labelLarge)
-                    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         expense.take(12).forEach { FilterChip(catId == it.id, { catId = it.id }, label = { Text(it.name) }) }
                     }
                     Text("For", style = MaterialTheme.typography.labelLarge)
