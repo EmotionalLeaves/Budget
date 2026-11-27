@@ -252,6 +252,10 @@ fun YearScreen(onBack: () -> Unit, onCategory: (Long) -> Unit) {
                     Text("Total", Modifier.width(132.dp), style = MaterialTheme.typography.titleSmall)
                     Row(Modifier.horizontalScroll(scroll)) {
                         totals.forEach { Text(Money.formatWhole(it), Modifier.width(64.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelMedium) }
+                        // The average of months that had any spending, matching each row's Avg.
+                        val spentMonths = totals.filter { it > 0 }
+                        Text(if (spentMonths.isEmpty()) "–" else Money.formatWhole(spentMonths.sum() / spentMonths.size), Modifier.width(72.dp),
+                            textAlign = TextAlign.Center, style = MaterialTheme.typography.titleSmall)
                     }
                 }
             }

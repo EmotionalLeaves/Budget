@@ -2,6 +2,14 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.91.0] - 2026-11-27
+
+Round 91: small totals that answer questions.
+
+### Polish
+- **A tag's page** shows where its money went when it spans categories ("Travel $412 · Eating Out $96 · Gas & Fuel $54"), handy for a trip or project.
+- **Year view**'s Total row now has its own average, matching the Avg column above it.
+
 ## [2.90.0] - 2026-11-27
 
 Round 90: More with large text.

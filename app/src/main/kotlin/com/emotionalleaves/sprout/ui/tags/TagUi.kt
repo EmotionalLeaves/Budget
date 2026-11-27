@@ -343,4 +343,13 @@ fun TagHeader(id: Long?, onBack: () -> Unit) {
         }
         if (t != null) Text(com.emotionalleaves.sprout.ui.common.money(kotlin.math.abs(t.total), whole = true), style = MaterialTheme.typography.titleLarge)
     }
+    // Where a trip or project's money went, when it spans more than one category.
+    if (id != null) {
+        val byCat by remember(id) { c.db.tags().observeCategoryTotals(id) }.collectAsStateWithLifecycle(emptyList())
+        if (byCat.size > 1) {
+            Text(byCat.take(4).joinToString(" · ") { "${it.name} ${Money.formatWhole(it.total)}" } + if (byCat.size > 4) " · …" else "",
+                style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 56.dp, end = 20.dp, bottom = 4.dp))
+        }
+    }
 }
