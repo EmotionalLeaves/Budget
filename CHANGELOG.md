@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.65.0] - 2026-11-27
+
+Round 65: honest averages.
+
+### Fixes
+- **Stats → 12 months / All time:** daily average, no-spend days and "on pace for" now count from your first transaction. Before, days before Sprout had any data counted as spending nothing, so the daily average looked far too low ($20.84 instead of $52.40) and no-spend days far too high.
+
 ## [2.64.0] - 2026-11-27
 
 Round 64: Stats tell the truth about short histories.

@@ -118,7 +118,6 @@ fun StatsScreen(onBack: () -> Unit, onMerchant: (String) -> Unit = {}) {
                     first to month.plusMonths(1).atDay(1)
                 }
             }
-            val span = java.time.temporal.ChronoUnit.DAYS.between(start, end)
             val prevStart = if (period == StatsPeriod.ALL) null else when (period) {
                 StatsPeriod.THIS_MONTH, StatsPeriod.LAST_MONTH -> YearMonth.from(start).minusMonths(1).atDay(1)
                 StatsPeriod.THREE_MONTHS -> YearMonth.from(start).minusMonths(3).atDay(1)
@@ -127,7 +126,10 @@ fun StatsScreen(onBack: () -> Unit, onMerchant: (String) -> Unit = {}) {
             val loadFrom = minOf(prevStart ?: start, month.minusMonths(11).atDay(1), today.minusDays(HEAT_DAYS.toLong()))
             val rows = c.db.budgets().statsRows(loadFrom.atStartOfDay(zone).toEpochSecond(), end.atStartOfDay(zone).toEpochSecond())
                 .map { SpendingStats.Row(it.amountMinor, it.occurredAt, it.categoryId, it.kind, it.merchantKey) }
-            val now = SpendingStats.summarize(rows, start, end, today, zone)
+            val firstDay = c.db.budgets().firstOccurredAt()?.let { java.time.Instant.ofEpochSecond(it).atZone(zone).toLocalDate() }
+            // Averages and no-spend days count only from your first transaction, not from before Sprout had data.
+            val effStart = firstDay?.takeIf { it > start && it < end } ?: start
+            val now = SpendingStats.summarize(rows, effStart, end, today, zone)
             // The previous period, compared like for like: the same number of days into it.
             val before = prevStart?.let { ps ->
                 val prevToday = ps.plusDays((now.days - 1).toLong().coerceAtLeast(0))
@@ -135,7 +137,6 @@ fun StatsScreen(onBack: () -> Unit, onMerchant: (String) -> Unit = {}) {
             }
             // Trends start at your first month of data (up to 12), so months before Sprout had anything don't
             // show as zeros and drag every "usually" down.
-            val firstDay = c.db.budgets().firstOccurredAt()?.let { java.time.Instant.ofEpochSecond(it).atZone(zone).toLocalDate() }
             val trendCount = firstDay?.let { (java.time.temporal.ChronoUnit.MONTHS.between(YearMonth.from(it), month) + 1).toInt() }
                 ?.coerceIn(2, 12) ?: 12
             val trendMonths = (trendCount - 1 downTo 0).map { month.minusMonths(it.toLong()) }
@@ -145,7 +146,7 @@ fun StatsScreen(onBack: () -> Unit, onMerchant: (String) -> Unit = {}) {
                 trendMonths = trendMonths,
                 categories = c.db.categories().getAll().associate { it.id to (it.name to it.colorArgb) },
                 inProgress = today < end && today >= start,
-                daysInPeriod = span.toInt(),
+                daysInPeriod = java.time.temporal.ChronoUnit.DAYS.between(effStart, end).toInt(),
                 heat = SpendingStats.dailySpending(rows, today, HEAT_DAYS, zone),
                 heatEnd = today,
                 inOut = SpendingStats.monthlyInOut(rows, month, trendCount, zone),
