@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.bills
 
+import com.emotionalleaves.sprout.ui.common.showUndoable
 import androidx.compose.material3.SegmentedButton
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.mapLatest
@@ -111,7 +112,7 @@ class BillsViewModel(private val c: AppContainer) : ViewModel() {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun confirm(id: Long) = viewModelScope.launch { c.recurringRepository.confirm(id) }
-    fun dismiss(id: Long) = viewModelScope.launch { c.recurringRepository.dismiss(id) }
+    suspend fun dismiss(id: Long): suspend () -> Unit = c.recurringRepository.dismiss(id)
     fun edit(id: Long, amount: Long, cadence: Cadence, next: LocalDate, category: Long) =
         viewModelScope.launch { c.recurringRepository.edit(id, amount, cadence, next, category) }
     fun add(name: String, amount: Long, cadence: Cadence, next: LocalDate, category: Long) =
@@ -177,6 +178,8 @@ fun BillsScreen() {
     val categories by vm.categories.collectAsStateWithLifecycle()
     var editing by remember { mutableStateOf<RecurringRow?>(null) }
     var adding by remember { mutableStateOf(false) }
+    val snackbar = remember { androidx.compose.material3.SnackbarHostState() }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     var calendarView by com.emotionalleaves.sprout.ui.common.rememberViewPref("bills-calendar", false, { it.toString() }, { it.toBooleanStrictOrNull() })
     val context = androidx.compose.ui.platform.LocalContext.current
     val cancelIds by vm.cancelIds.collectAsStateWithLifecycle()
@@ -271,7 +274,7 @@ fun BillsScreen() {
                         if (r.status == RecurringStatus.DETECTED) {
                             Row(Modifier.padding(start = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 TextButton(onClick = { vm.confirm(r.id) }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Confirm") }
-                                TextButton(onClick = { vm.dismiss(r.id) }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Dismiss") }
+                                TextButton(onClick = { scope.launch { scope.showUndoable(snackbar, "Dismissed ${r.displayName}", vm.dismiss(r.id)) } }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Dismiss") }
                             }
                         }
                         HorizontalDivider(Modifier.padding(start = 16.dp))
@@ -285,6 +288,7 @@ fun BillsScreen() {
             text = { Text("Add bill") },
             modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
         )
+        androidx.compose.material3.SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp))
     }
 
     editing?.let { r ->
@@ -298,7 +302,7 @@ fun BillsScreen() {
             categories = categories,
             onDismiss = { editing = null },
             onSave = { _, amount, cadence, next, cat -> vm.edit(r.id, amount, cadence, next, cat); editing = null },
-            onRemove = { vm.dismiss(r.id); editing = null },
+            onRemove = { editing = null; scope.launch { scope.showUndoable(snackbar, "Dismissed ${r.displayName}", vm.dismiss(r.id)) } },
             cancelReminder = r.id in cancelIds,
             onCancelReminder = { vm.setCancel(r.id, it) },
         )

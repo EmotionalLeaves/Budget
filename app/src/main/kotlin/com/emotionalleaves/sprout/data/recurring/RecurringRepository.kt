@@ -140,10 +140,21 @@ class RecurringRepository(
 
     suspend fun confirm(id: Long) = setStatus(id, RecurringStatus.CONFIRMED)
 
-    /** Dismissed charges never come back for that merchant. */
-    suspend fun dismiss(id: Long) = withContext(Dispatchers.IO) {
+    /** Dismissed charges never come back for that merchant. Returns an undo that restores the bill and its links. */
+    suspend fun dismiss(id: Long): suspend () -> Unit = withContext(Dispatchers.IO) {
+        val before = db.recurring().getById(id)
+        val linked = db.recurring().linkedIds(id)
         db.recurring().unlink(listOf(id))
         setStatus(id, RecurringStatus.DISMISSED)
+        val undo: suspend () -> Unit = {
+            withContext(Dispatchers.IO) {
+                before?.let { b ->
+                    db.recurring().update(b.copy(updatedAt = now()))
+                    linked.chunked(500).forEach { db.recurring().relink(id, it) }
+                }
+            }
+        }
+        undo
     }
 
     suspend fun edit(id: Long, amountMinor: Long, cadence: Cadence, nextDue: LocalDate, categoryId: Long) = withContext(Dispatchers.IO) {

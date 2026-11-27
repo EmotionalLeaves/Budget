@@ -78,6 +78,17 @@ class RecurringRepositoryTest {
         assertEquals(RecurringStatus.DISMISSED, env.db.recurring().getById(id)!!.status)
     }
 
+    @Test fun dismissCanBeUndone() = runBlocking {
+        val id = recurring.observeActive().first().single().id
+        val linked = env.db.recurring().linkedIds(id)
+        assertTrue(linked.isNotEmpty())
+        val undo = recurring.dismiss(id)
+        assertTrue(env.db.recurring().linkedIds(id).isEmpty())
+        undo()
+        assertEquals("Netflix", recurring.observeActive().first().single().displayName)
+        assertEquals(linked.toSet(), env.db.recurring().linkedIds(id).toSet())
+    }
+
     @Test fun userEditsSurviveRedetection() = runBlocking {
         val id = recurring.observeActive().first().single().id
         recurring.edit(id, 2_000, Cadence.MONTHLY, LocalDate.of(2026, 11, 20), cat(DefaultCategories.ENTERTAINMENT))

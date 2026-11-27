@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.74.0] - 2026-11-27
+
+Round 74: undo for dismissed bills.
+
+### Features
+- **Dismissing a bill** ("Not a bill") can be undone from the snackbar. It comes back with its purchases still linked, so "Paid ✓" and the calendar stay right.
+
 ## [2.73.0] - 2026-11-27
 
 Round 73: undo for deleted cash purchases.

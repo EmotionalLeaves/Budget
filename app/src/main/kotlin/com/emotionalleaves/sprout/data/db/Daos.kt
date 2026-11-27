@@ -642,6 +642,8 @@ interface RecurringDao {
     @Query("UPDATE transactions SET recurringChargeId = :id WHERE merchantKey = :merchantKey AND amountMinor < 0")
     suspend fun linkTransactions(id: Long, merchantKey: String)
 
+    @Query("SELECT id FROM transactions WHERE recurringChargeId = :recurringId") suspend fun linkedIds(recurringId: Long): List<String>
+    @Query("UPDATE transactions SET recurringChargeId = :recurringId WHERE id IN (:ids)") suspend fun relink(recurringId: Long, ids: List<String>)
     @Query("UPDATE transactions SET recurringChargeId = NULL WHERE recurringChargeId IN (:ids)")
     suspend fun unlink(ids: List<Long>)
 
