@@ -29,7 +29,7 @@ Prioritized. Pick from the top tier that has open items. Each item has a one-lin
 
 ## 4. Test coverage
 - [x] (1.12.1) Compose UI tests: budget dialog, split dialog, list row semantics (detail sheet/review flow still open below)
-- [ ] Compose UI tests for the detail sheet and review flow (need a fake AppContainer) — *why: guard recategorize + undo*
+- [x] (2.102.0) Review flow test in CI (sorting a place clears it and learns a rule); the detail sheet is covered by the screen smoke test
 - [x] (1.9.1) SyncWorker tests with work-testing (retry, Retry-After chain, revoked cancel, KEEP)
 - [x] (1.9.0) 10k-transaction generated SyncMerger test — *why: merge performance regression guard*
 - [x] (1.7.0) First migration (1→2) with MigrationTest seeding realistic v1 data — *why: the first migration must be easy and safe*

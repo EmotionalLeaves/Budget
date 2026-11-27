@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.screens
 
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTextInput
 import android.graphics.Bitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -207,6 +208,27 @@ class ScreenTour {
                 tap(tool); settle()
                 back(); settle()
             }
+        }
+    }
+
+    /** Runs in normal CI: sorting a place with "Use this for all" on clears every purchase from it, and learns it. */
+    @Test fun sortPurchasesClearsAPlace() {
+        seed()
+        ActivityScenario.launch(MainActivity::class.java).use {
+            scenario = it
+            settle()
+            tap("More")
+            rule.onAllNodes(androidx.compose.ui.test.hasScrollAction())[0].performScrollToNode(androidx.compose.ui.test.hasText("Sort purchases"))
+            tap("Sort purchases"); Thread.sleep(300); settle()
+            rule.onNodeWithText("3 left").assertExists()
+            // The two ZQX Bloom Studio purchases come first (the place with most), and both go at once.
+            rule.onAllNodes(androidx.compose.ui.test.hasText("Hobbies & Art Supplies") and androidx.compose.ui.test.hasClickAction())[0]
+                .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
+            Thread.sleep(500); settle()
+            rule.onNodeWithText("1 left").assertExists()
+            val app = ApplicationProvider.getApplicationContext<SproutApp>()
+            val rules = runBlocking { app.container.db.merchantRules().getAll() }
+            org.junit.Assert.assertTrue(rules.any { r -> r.pattern.contains("ZQX BLOOM STUDIO") })
         }
     }
 

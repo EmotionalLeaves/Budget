@@ -862,6 +862,17 @@ interface InsightDao {
     )
     suspend fun biggestOneOff(start: Long, end: Long): MerchantCharge?
 
+    /** The spending categories you use most since [since], for one-tap picks when sorting. */
+    @Query(
+        """
+        SELECT t.categoryId AS categoryId, COUNT(*) AS n FROM transactions t JOIN categories c ON c.id = t.categoryId
+        WHERE t.occurredAt >= :since AND t.amountMinor < 0 AND c.kind = 'EXPENSE' AND c.archived = 0
+          AND (c.key IS NULL OR c.key != 'uncategorized')
+        GROUP BY t.categoryId ORDER BY n DESC LIMIT :limit
+        """,
+    )
+    suspend fun topSpendingCategories(since: Long, limit: Int = 4): List<CategoryCount>
+
     /** Purchases at one place in a range (positive cents), for "4 visits · $312 in November". */
     @Query(
         """
@@ -919,3 +930,5 @@ data class AmountAt(val amountMinor: Long, val occurredAt: Long)
 data class TagInput(val id: String, val description: String, val merchantKey: String)
 
 data class FilteredTotals(val count: Int, val outMinor: Long, val inMinor: Long)
+
+data class CategoryCount(val categoryId: Long, val n: Int)

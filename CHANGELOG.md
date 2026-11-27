@@ -2,6 +2,16 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.102.0] - 2026-11-27
+
+Round 102: sorting with your usual picks.
+
+### Features
+- **Sort purchases** shows "Your usual": the four spending categories you've used most in the last 90 days, as one-tap chips above the full list.
+
+### Quality
+- A new test runs in every build: sorting a place in Sort purchases clears all its purchases and remembers the place.
+
 ## [2.101.0] - 2026-11-27
 
 Round 101: the right categories first.

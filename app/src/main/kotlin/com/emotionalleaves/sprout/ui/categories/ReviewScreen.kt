@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.categories
 
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.TextButton
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.clip
@@ -72,6 +73,11 @@ class ReviewViewModel(private val c: AppContainer) : ViewModel() {
 
     val categories: StateFlow<List<CategoryEntity>> =
         c.db.categories().observeActive().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Your most-used spending categories over the last 90 days, offered as one-tap picks. */
+    val usual: StateFlow<List<Long>> = flow {
+        emit(runCatching { c.db.insights().topSpendingCategories(System.currentTimeMillis() / 1000 - 90 * 86_400).map { it.categoryId } }.getOrDefault(emptyList()))
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /** The learner, rebuilt after each pick so suggestions get better as you go. */
     private val learner = MutableStateFlow(com.emotionalleaves.sprout.domain.categorize.LearnedCategorizer.EMPTY)
@@ -192,6 +198,23 @@ fun ReviewScreen(onBack: () -> Unit) {
                 androidx.compose.foundation.layout.Spacer(Modifier.padding(start = 8.dp))
                 Text("Looks like ${suggested.name}", style = MaterialTheme.typography.titleSmall)
             }
+        }
+        val usualIds by vm.usual.collectAsStateWithLifecycle()
+        val usual = if (row.amountMinor < 0) usualIds.mapNotNull { id -> categories.firstOrNull { it.id == id } }.filter { it.id != suggested?.id } else emptyList()
+        if (usual.isNotEmpty()) {
+            Text("Your usual", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+            androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                usual.forEach { cat ->
+                    androidx.compose.material3.AssistChip(
+                        onClick = { vm.pick(row, cat, always && realPlace) },
+                        label = { Text(cat.name) },
+                        leadingIcon = { Icon(com.emotionalleaves.sprout.ui.common.CategoryIcons.forKey(cat.iconKey), contentDescription = null, modifier = Modifier.size(18.dp)) },
+                        modifier = Modifier.heightIn(min = 48.dp),
+                    )
+                }
+            }
+            Text("All categories", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         CategoryGrid(categories.filter { it.key != DefaultCategories.UNCATEGORIZED }.orderedFor(row.amountMinor), null) { vm.pick(row, it, always && realPlace) }
         OutlinedButton(onClick = { vm.skip(row) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Skip for now") }
