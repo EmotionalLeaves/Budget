@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.92.0] - 2026-11-27
+
+Round 92: cash, day by day.
+
+### Features
+- **Cash to month end:** tap "Cash by Nov 30" on Home to see your projected balance as a line through the end of the month. Drag along it to read any day, see the paychecks and bills still coming with their dates, and how the number is worked out. A dip below zero before payday shows up in amber.
+
 ## [2.91.0] - 2026-11-27
 
 Round 91: small totals that answer questions.

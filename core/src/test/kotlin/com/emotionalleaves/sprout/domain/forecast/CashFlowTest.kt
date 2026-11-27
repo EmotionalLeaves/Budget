@@ -26,6 +26,11 @@ class CashFlowTest {
         assertEquals(-45_000L, f.lowMinor)
         assertEquals(d(22), f.lowDate)
         assertEquals(140_000L, f.endMinor)
+        // One point per day through month end, ending at the month-end balance; the dip is visible on its day.
+        assertEquals(10, f.daily.size)
+        assertEquals(d(30) to 140_000L, f.daily.last())
+        assertEquals(-45_000L, f.daily.first { it.first == d(22) }.second)
+        assertEquals(listOf("Rent" to false, "Payroll" to true), f.events.map { it.first.name to it.second })
     }
 
     @Test fun pastAndNextMonthItemsIgnored() {

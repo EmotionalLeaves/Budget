@@ -18,6 +18,10 @@ data class Forecast(
     val nextIncome: Expected?,
     /** True when everyday spending came from budgets; false when from the last 30 days' average. */
     val spendingFromBudgets: Boolean,
+    /** Projected balance at the end of each day from today to month end. */
+    val daily: List<Pair<LocalDate, Long>> = emptyList(),
+    /** Paychecks (true) and bills (false) still expected this month, by date. */
+    val events: List<Pair<Expected, Boolean>> = emptyList(),
 )
 
 /**
@@ -51,11 +55,13 @@ object CashFlow {
         var lowDate = today
         var d = today
         var i = 0
+        val daily = ArrayList<Pair<LocalDate, Long>>(days)
         while (!d.isAfter(monthEnd)) {
             balance += inc.filter { it.date == d }.sumOf { it.amountMinor }
             balance -= out.filter { it.date == d }.sumOf { it.amountMinor }
             balance -= perDay + if (i == 0) remainder else 0
             if (balance < low) { low = balance; lowDate = d }
+            daily += d to balance
             d = d.plusDays(1)
             i++
         }
@@ -69,6 +75,8 @@ object CashFlow {
             lowDate = lowDate,
             nextIncome = income.filter { !it.date.isBefore(today) }.minByOrNull { it.date },
             spendingFromBudgets = budgetRemainingMinor != null,
+            daily = daily,
+            events = (inc.map { it to true } + out.map { it to false }).sortedBy { it.first.date },
         )
     }
 

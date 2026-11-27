@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.home
 
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Spacer
@@ -282,24 +283,56 @@ private fun ForecastCard(f: com.emotionalleaves.sprout.domain.forecast.Forecast)
             )
         }
     }
-    if (details) {
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { details = false },
-            title = { Text("How it's worked out") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Cash now: ${Money.format(f.startMinor)}")
-                    Text("+ expected paychecks: ${Money.format(f.incomeMinor)}")
-                    Text("− bills still due: ${Money.format(f.billsMinor)}")
-                    Text("− everyday spending: ${Money.format(f.spendingMinor)}" +
-                        if (f.spendingFromBudgets) " (budget left)" else " (your last 30 days' pace)")
-                    Text("= ≈ ${Money.format(f.endMinor)} at month end", style = MaterialTheme.typography.titleSmall)
-                    Text("Cash means checking, savings and cash accounts counted in your total. It's an estimate.",
-                        style = MaterialTheme.typography.bodySmall)
+    if (details) ForecastSheet(f) { details = false }
+}
+
+/** Day by day to month end: the projected balance (drag to read any day), what's coming, and how it's worked out. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun ForecastSheet(f: com.emotionalleaves.sprout.domain.forecast.Forecast, onDismiss: () -> Unit) {
+    val dayFmt = java.time.format.DateTimeFormatter.ofPattern("EEE, MMM d", java.util.Locale.US)
+    val sc = LocalSproutColors.current
+    androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(Modifier.fillMaxWidth().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Cash to month end", style = MaterialTheme.typography.headlineSmall)
+            var picked by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Int?>(null) }
+            val shown = picked?.let { f.daily.getOrNull(it) } ?: f.daily.lastOrNull()
+            shown?.let { (d, v) ->
+                Text("${d.format(dayFmt)} · ≈ ${com.emotionalleaves.sprout.ui.common.money(v, whole = true)}", style = MaterialTheme.typography.titleMedium,
+                    color = if (v < 0) sc.danger else MaterialTheme.colorScheme.onSurface)
+            }
+            if (f.daily.size >= 2) {
+                com.emotionalleaves.sprout.ui.common.LineChart(f.daily.map { it.second }, if (f.lowMinor < 0) sc.warning else MaterialTheme.colorScheme.primary,
+                    onScrub = { picked = it })
+                // The line is scaled to its own range, so say what that range is.
+                val hi = f.daily.maxOf { it.second }; val lo = f.daily.minOf { it.second }
+                Text("Between ${com.emotionalleaves.sprout.ui.common.money(lo, whole = true)} and ${com.emotionalleaves.sprout.ui.common.money(hi, whole = true)} · drag along the line to see any day.",
+                    style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (f.events.isNotEmpty()) {
+                Text("Coming up", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
+                f.events.forEach { (e, income) ->
+                    Row(Modifier.fillMaxWidth().heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(e.date.format(dayFmt), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.width(96.dp))
+                        Text(e.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                        Text((if (income) "+" else "−") + com.emotionalleaves.sprout.ui.common.money(e.amountMinor, whole = true),
+                            style = MaterialTheme.typography.titleSmall, color = if (income) sc.ok else MaterialTheme.colorScheme.onSurface)
+                    }
                 }
-            },
-            confirmButton = { TextButton(onClick = { details = false }) { Text("OK") } },
-        )
+            }
+            Text("How it's worked out", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
+            Text("Cash now: ${Money.format(f.startMinor)}", style = MaterialTheme.typography.bodyMedium)
+            Text("+ expected paychecks: ${Money.format(f.incomeMinor)}", style = MaterialTheme.typography.bodyMedium)
+            Text("− bills still due: ${Money.format(f.billsMinor)}", style = MaterialTheme.typography.bodyMedium)
+            Text("− everyday spending: ${Money.format(f.spendingMinor)}" +
+                if (f.spendingFromBudgets) " (budget left, spread evenly)" else " (your last 30 days' pace)", style = MaterialTheme.typography.bodyMedium)
+            Text("= ≈ ${Money.format(f.endMinor)} at month end", style = MaterialTheme.typography.titleSmall)
+            Text("Cash means checking, savings and cash accounts counted in your total. It's an estimate.",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
 

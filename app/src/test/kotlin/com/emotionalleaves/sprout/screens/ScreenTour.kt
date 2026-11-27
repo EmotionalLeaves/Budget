@@ -348,6 +348,14 @@ class ScreenTour {
                         .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); settle(); Thread.sleep(500); settle()
                     s("71-day"); back()
                 }
+                t("forecast") {
+                    tap("Home")
+                    rule.onAllNodes(androidx.compose.ui.test.hasScrollAction())[0]
+                        .performScrollToNode(androidx.compose.ui.test.hasText("Cash by", substring = true)); settle()
+                    rule.onAllNodes(androidx.compose.ui.test.hasText("Cash by", substring = true) and androidx.compose.ui.test.hasClickAction())[0]
+                        .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); settle(); Thread.sleep(600); settle()
+                    s("72-forecast"); back()
+                }
                 t("customize") {
                     tap("Home")
                     rule.onAllNodes(androidx.compose.ui.test.hasScrollAction())[0]
