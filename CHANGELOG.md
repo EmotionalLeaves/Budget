@@ -2,6 +2,14 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.90.0] - 2026-11-27
+
+Round 90: More with large text.
+
+### Polish
+- With large text, More's Explore section is a compact list (icon, name, what it's for) instead of ten tall tiles stacked one per row, so it takes about half the scrolling.
+- The Notifications page no longer repeats its own title.
+
 ## [2.89.0] - 2026-11-27
 
 Round 89: a More tab you can take in at a glance.

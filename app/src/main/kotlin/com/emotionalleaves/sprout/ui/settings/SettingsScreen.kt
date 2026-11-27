@@ -273,7 +273,6 @@ fun SettingsScreen(
         }
 
         if (section == "notifications") {
-        item { SectionTitle("Notifications") }
         item {
             SettingsGroup {
                 if (!vm.canPost()) {
@@ -615,7 +614,16 @@ private val EXPLORE = listOf(
 /** Explore: every tool as a coloured tile, two per row (one per row with large text). */
 @Composable
 private fun ExploreGrid(onRoute: (String) -> Unit) {
-    val perRow = if (androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.3f) 1 else 2
+    // With large text, tall tiles one per row make a very long page: use compact rows instead.
+    if (androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.3f) {
+        NavGroup {
+            EXPLORE.forEachIndexed { i, t ->
+                NavRow(icon = t.icon, title = t.title, subtitle = t.subtitle, onClick = { onRoute(t.route) }, divider = i < EXPLORE.lastIndex)
+            }
+        }
+        return
+    }
+    val perRow = 2
     Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         EXPLORE.chunked(perRow).forEach { row ->
             Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
