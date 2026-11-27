@@ -2,6 +2,14 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.89.0] - 2026-11-27
+
+Round 89: a More tab you can take in at a glance.
+
+### Polish
+- **More** is now about a third as long. Explore, bank connection, categories and your data stay on it; everything else moved to four pages under **Settings**: Notifications, Sync and accounts, Privacy and appearance, Updates and about. Each row says what's inside, plus live status ("Off for Sprout right now", "Last synced 5 min ago").
+- A "connection needs attention" notification now opens Sync and accounts directly.
+
 ## [2.88.0] - 2026-11-27
 
 Round 88: pull to sync everywhere.

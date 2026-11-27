@@ -243,7 +243,7 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
         when (deepLink) {
             is DeepLink.Category -> nav.navigate("category/${deepLink.id}")
             is DeepLink.Transaction -> openTx = deepLink.id
-            DeepLink.Settings -> goTab(Tab.SETTINGS)
+            DeepLink.Settings -> { goTab(Tab.SETTINGS); nav.navigate("settings/sync") }
             is DeepLink.Route -> if (deepLink.route == "bills") goTab(Tab.BILLS) else nav.navigate(deepLink.route)
             null -> return@LaunchedEffect
         }
@@ -388,6 +388,20 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
                     onExport = { nav.navigate("export") },
                     onBackup = { nav.navigate("backup") },
                     onRoute = { nav.navigate(it) },
+                )
+            }
+            composable("settings/{section}") { entry ->
+                SettingsScreen(
+                    snackbar,
+                    onReplaceToken = { nav.navigate("connect") },
+                    onCategories = { nav.navigate("categories") },
+                    onRules = { nav.navigate("rules") },
+                    onImport = { nav.navigate("import") },
+                    onExport = { nav.navigate("export") },
+                    onBackup = { nav.navigate("backup") },
+                    onRoute = { nav.navigate(it) },
+                    section = entry.arguments?.getString("section"),
+                    onBack = { nav.popBackStack() },
                 )
             }
             composable("export") { ExportScreen(snackbar, onBack = { nav.popBackStack() }) }

@@ -368,8 +368,13 @@ class ScreenTour {
             if (only == "settings") {
                 tap("More")
                 val list = rule.onAllNodes(androidx.compose.ui.test.hasScrollAction())[0]
-                list.performScrollToNode(androidx.compose.ui.test.hasText("Notifications", substring = true)); settle(); s("40-settings-a")
-                list.performScrollToNode(androidx.compose.ui.test.hasText("Open-source licenses")); settle(); s("41-settings-b")
+                list.performScrollToNode(androidx.compose.ui.test.hasText("Updates and about")); settle(); s("40-settings-a")
+                for ((page, name) in listOf("Notifications" to "41-settings-notifications", "Sync and accounts" to "42-settings-sync",
+                    "Privacy and appearance" to "43-settings-privacy", "Updates and about" to "44-settings-about")) {
+                    tap("More")
+                    rule.onAllNodes(androidx.compose.ui.test.hasScrollAction())[0].performScrollToNode(androidx.compose.ui.test.hasText(page))
+                    tap(page); s(name); back()
+                }
                 return@use
             }
             if (only == "detail") {

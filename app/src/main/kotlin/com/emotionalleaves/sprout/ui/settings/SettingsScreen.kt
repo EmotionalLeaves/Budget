@@ -1,5 +1,10 @@
 package com.emotionalleaves.sprout.ui.settings
 
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Sync
+import androidx.compose.material.icons.rounded.Notifications
 import com.emotionalleaves.sprout.domain.accounts.label
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
@@ -168,6 +173,9 @@ fun SettingsScreen(
     onExport: () -> Unit,
     onBackup: () -> Unit,
     onRoute: (String) -> Unit = {},
+    /** null: the More tab. Otherwise one settings page: "notifications", "sync", "privacy" or "about". */
+    section: String? = null,
+    onBack: () -> Unit = {},
 ) {
     val vm = sproutViewModel { SettingsViewModel(it) }
     val state by vm.state.collectAsStateWithLifecycle()
@@ -180,6 +188,15 @@ fun SettingsScreen(
     LaunchedEffect(vm) { vm.messages.collect { snackbar.showSnackbar(it) } }
 
     LazyColumn(Modifier.fillMaxSize()) {
+        if (section != null) item {
+            Row(Modifier.fillMaxWidth().padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                androidx.compose.material3.IconButton(onClick = onBack) {
+                    Icon(androidx.compose.material.icons.Icons.AutoMirrored.Rounded.ArrowBack, "Back")
+                }
+                Text(settingsPages.firstOrNull { it.first == section }?.second ?: "Settings", style = MaterialTheme.typography.titleLarge)
+            }
+        }
+        if (section == null) {
         item { SectionTitle("Explore") }
         item { ExploreGrid(onRoute) }
         item { SectionTitle("Bank connections") }
@@ -237,6 +254,25 @@ fun SettingsScreen(
         }
         item { NavGroup { NavRow(icon = Icons.Rounded.DeleteForever, title = "Delete all data", subtitle = "Erase everything Sprout stored on this phone", onClick = { deleteStep = 1 }, divider = false) } }
 
+        // The rest of the settings live on their own pages, so More stays short.
+        item { SectionTitle("Settings") }
+        item {
+            NavGroup {
+                val icons = listOf(Icons.Rounded.Notifications, Icons.Rounded.Sync, Icons.Rounded.Lock, Icons.Rounded.Info)
+                val notes = listOf(
+                    if (!vm.canPost()) "Off for Sprout right now" else "Alerts, bill reminders, weekly summary",
+                    state.settings.lastSuccessfulSyncAt?.let { "Last synced " + Format.ago(it, now) } ?: "History, force sync, accounts",
+                    "App lock, theme, hide amounts",
+                    "Sprout ${BuildConfig.VERSION_NAME}, updates, licenses",
+                )
+                settingsPages.forEachIndexed { i, (key, title) ->
+                    NavRow(icon = icons[i], title = title, subtitle = notes[i], onClick = { onRoute("settings/$key") }, divider = i < settingsPages.lastIndex)
+                }
+            }
+        }
+        }
+
+        if (section == "notifications") {
         item { SectionTitle("Notifications") }
         item {
             SettingsGroup {
@@ -271,6 +307,8 @@ fun SettingsScreen(
             }
         }
 
+        }
+        if (section == "sync") {
         item { SectionTitle("Sync") }
         item {
             SettingsGroup {
@@ -374,6 +412,8 @@ fun SettingsScreen(
             }
         }
 
+        }
+        if (section == "privacy") {
         item { SectionTitle("Privacy") }
         item {
             SettingsGroup {
@@ -412,6 +452,8 @@ fun SettingsScreen(
                 ToggleRow("Hide amounts on Home", state.settings.privacyMode, "Tap the eye on Home to show them") { vm.setPrivacyMode(it) }
             }
         }
+        }
+        if (section == "about") {
         item { SectionTitle("Updates") }
         item { SettingsGroup { com.emotionalleaves.sprout.ui.update.UpdateSettings(vm.updates, state.settings.betaUpdates) { vm.setBeta(it) } } }
         item { SectionTitle("About") }
@@ -425,6 +467,7 @@ fun SettingsScreen(
                 TextButton(onClick = { openUrl(context, REPO_URL) }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Source code") }
                 TextButton(onClick = { showLicenses = true }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Open-source licenses") }
             }
+        }
         }
     }
 
@@ -691,3 +734,11 @@ private fun historyStatus(s: com.emotionalleaves.sprout.data.settings.Settings, 
         else -> "Older history loads in 90-day steps over the next few syncs."
     }
 }
+
+/** The settings pages behind More → Settings: route key and title. */
+val settingsPages = listOf(
+    "notifications" to "Notifications",
+    "sync" to "Sync and accounts",
+    "privacy" to "Privacy and appearance",
+    "about" to "Updates and about",
+)
