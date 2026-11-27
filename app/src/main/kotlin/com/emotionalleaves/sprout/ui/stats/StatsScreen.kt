@@ -222,7 +222,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.overview(d: StatsData
     }
     s.biggest?.let { b ->
         item {
-            Card {
+            val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
+            Card(onClick = { navigate("merchant/" + android.net.Uri.encode(b.merchantKey)) }) {
                 Label("Biggest purchase")
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(merchantName(b.merchantKey), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)

@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.98.0] - 2026-11-27
+
+Round 98: fewer dead ends.
+
+### Polish
+- Home's **Spent** tile opens Stats, and Stats' **Biggest purchase** card opens that place's history.
+
 ## [2.97.0] - 2026-11-27
 
 Round 97: Year in review, clickable.

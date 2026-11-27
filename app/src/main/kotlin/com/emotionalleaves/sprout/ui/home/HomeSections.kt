@@ -191,8 +191,9 @@ fun StatsRow(netWorthMinor: Long, trend: CashFlow.Trend?, forecastEndMinor: Long
     com.emotionalleaves.sprout.ui.common.TileRow(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
         StatTile("Net worth", money(netWorthMinor, whole = true), Modifier.tile().clickable(onClick = onNetWorth), note = "see trend ›")
         val p = trend?.percent
+        val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
         StatTile(
-            "Spent", money(trend?.thisMonthMinor ?: 0, whole = true), Modifier.tile(),
+            "Spent", money(trend?.thisMonthMinor ?: 0, whole = true), Modifier.tile().clickable { navigate("stats") },
             note = p?.let { if (it > 0) "↑ $it% vs last mo." else if (it < 0) "↓ ${-it}% vs last mo." else "Same as last mo." },
             noteColor = if ((p ?: 0) > 10) c.warning else if ((p ?: 0) < 0) c.ok else Color.Unspecified,
         )
