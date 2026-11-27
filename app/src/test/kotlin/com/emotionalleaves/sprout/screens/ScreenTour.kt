@@ -223,6 +223,13 @@ class ScreenTour {
                 rule.onAllNodes(androidx.compose.ui.test.hasScrollAction())[0].performScrollToNode(androidx.compose.ui.test.hasText("Stats"))
                 tap("Stats"); shot("x-07-stats"); back()
             }
+            for ((label, name) in listOf("Reports" to "x-08-reports", "Goals" to "x-09-goals", "Net worth" to "x-10-networth", "Debt plan" to "x-11-debt")) {
+                runCatching {
+                    tap("More")
+                    rule.onAllNodes(androidx.compose.ui.test.hasScrollAction())[0].performScrollToNode(androidx.compose.ui.test.hasText(label))
+                    tap(label); shot(name); back()
+                }
+            }
         }
     }
 

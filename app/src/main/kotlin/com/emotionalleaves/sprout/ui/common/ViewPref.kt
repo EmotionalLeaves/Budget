@@ -1,6 +1,11 @@
 package com.emotionalleaves.sprout.ui.common
 
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.unit.dp
+import androidx.compose.material3.SegmentedButton
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
@@ -40,4 +45,35 @@ fun <T : Any> rememberViewPref(key: String, default: T, encode: (T) -> String, d
         }
     }
     return PersistedState(inner) { v -> scope.launch { runCatching { c.settings.setViewPref(key, encode(v)) } } }
+}
+
+/**
+ * A single choice among a few short labels: one segmented row at normal text sizes, scrollable chips with
+ * large text, so no label is ever cut off ("Mont").
+ */
+@Composable
+fun ChoiceRow(labels: List<String>, selected: Int, onSelect: (Int) -> Unit, modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier) {
+    if (androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.3f) {
+        androidx.compose.foundation.lazy.LazyRow(modifier, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+            items(labels.size) { i ->
+                androidx.compose.material3.FilterChip(selected = i == selected, onClick = { onSelect(i) },
+                    label = { androidx.compose.material3.Text(labels[i], maxLines = 1) },
+                    modifier = androidx.compose.ui.Modifier.heightIn(min = 48.dp))
+            }
+        }
+    } else {
+        androidx.compose.material3.SingleChoiceSegmentedButtonRow(modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+            // Four or more segments: no check mark and smaller text, so every label fits.
+            val tight = labels.size >= 4
+            labels.forEachIndexed { i, l ->
+                val shape = androidx.compose.material3.SegmentedButtonDefaults.itemShape(i, labels.size)
+                if (tight) SegmentedButton(i == selected, { onSelect(i) }, shape, icon = {}) {
+                    androidx.compose.material3.Text(l, maxLines = 1, style = androidx.compose.material3.MaterialTheme.typography.labelMedium)
+                } else SegmentedButton(i == selected, { onSelect(i) }, shape) {
+                    androidx.compose.material3.Text(l, maxLines = 1)
+                }
+            }
+        }
+    }
 }

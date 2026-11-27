@@ -169,22 +169,8 @@ fun StatsScreen(onBack: () -> Unit, onMerchant: (String) -> Unit = {}) {
         Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             StatsPeriod.entries.forEach { p -> FilterChip(selected = p == period, onClick = { period = p }, label = { Text(p.label) }, modifier = Modifier.heightIn(min = 40.dp)) }
         }
-        // Five tabs fit as one segmented row at normal text sizes; with large text they become scrollable chips
-        // so "Patterns" is never cut to "Patt".
-        if (androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.3f) {
-            androidx.compose.foundation.lazy.LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(StatsView.entries.size) { i ->
-                    val v = StatsView.entries[i]
-                    FilterChip(selected = v == view, onClick = { view = v }, label = { Text(v.label, maxLines = 1) }, modifier = Modifier.heightIn(min = 48.dp))
-                }
-            }
-        } else SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-            StatsView.entries.forEachIndexed { i, v ->
-                SegmentedButton(selected = v == view, onClick = { view = v }, shape = SegmentedButtonDefaults.itemShape(i, StatsView.entries.size), icon = {}) {
-                    Text(v.label, maxLines = 1, style = MaterialTheme.typography.labelMedium)
-                }
-            }
-        }
+        com.emotionalleaves.sprout.ui.common.ChoiceRow(StatsView.entries.map { it.label }, StatsView.entries.indexOf(view),
+            { view = StatsView.entries[it] }, Modifier.padding(vertical = 8.dp))
         val d = data
         if (d == null) {
             com.emotionalleaves.sprout.ui.common.LoadingSkeleton()

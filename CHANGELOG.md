@@ -2,6 +2,16 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.77.0] - 2026-11-27
+
+Round 77: one switch style everywhere.
+
+### Fixes
+- **Reports** now remembers "Month" and "6 mo" too. Before, only "3 mo" and "Year" were kept after closing Sprout.
+
+### Polish
+- Reports' range switch and Stats' tabs share one component: a clean segmented row normally, scrollable chips with large text ("Mont" is gone).
+
 ## [2.76.0] - 2026-11-27
 
 Round 76: large text, checked again.
