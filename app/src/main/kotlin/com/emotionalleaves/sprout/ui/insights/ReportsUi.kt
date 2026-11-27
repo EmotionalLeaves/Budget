@@ -196,20 +196,26 @@ fun ReportsScreen(onBack: () -> Unit) {
     Column(Modifier.fillMaxSize()) {
         val context = androidx.compose.ui.platform.LocalContext.current
         val scope = androidx.compose.runtime.rememberCoroutineScope()
+        // Compare, PDF and ranges only once there's anything to report on.
+        val anyData = com.emotionalleaves.sprout.ui.common.rememberHasData()
         TopAppBar(windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0), 
             title = { Text("Reports") },
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
             actions = {
-                androidx.compose.material3.TextButton(onClick = { comparing = true }) { Text("Compare") }
-                androidx.compose.material3.TextButton(onClick = { scope.launch { shareMonthPdf(context, c, java.time.YearMonth.now()) } }) { Text("PDF") }
+                if (anyData != false) {
+                    androidx.compose.material3.TextButton(onClick = { comparing = true }) { Text("Compare") }
+                    androidx.compose.material3.TextButton(onClick = { scope.launch { shareMonthPdf(context, c, java.time.YearMonth.now()) } }) { Text("PDF") }
+                }
             },
         )
-        com.emotionalleaves.sprout.ui.common.ChoiceRow(ranges.map { it.second }, range, { range = it }, Modifier.padding(vertical = 4.dp))
+        if (anyData != false) {
+            com.emotionalleaves.sprout.ui.common.ChoiceRow(ranges.map { it.second }, range, { range = it }, Modifier.padding(vertical = 4.dp))
+        }
         val rep = r ?: run { com.emotionalleaves.sprout.ui.common.LoadingSkeleton(); return@Column }
         val totalIn = rep.incomeByMonth.sum()
         val totalOut = rep.spendingByMonth.sum()
         if (totalIn == 0L && totalOut == 0L) {
-            EmptyState("Nothing in this range", "Reports fill in as transactions sync or import.") { com.emotionalleaves.sprout.ui.common.GetDataActions() }
+            EmptyState(if (anyData == false) "No reports yet" else "Nothing in this range", "Reports fill in as transactions sync or import.") { com.emotionalleaves.sprout.ui.common.GetDataActions() }
             return@Column
         }
         val sc = LocalSproutColors.current

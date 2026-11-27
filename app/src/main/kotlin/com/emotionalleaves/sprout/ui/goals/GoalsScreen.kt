@@ -216,7 +216,8 @@ fun GoalsScreen(onBack: () -> Unit) {
                 )
             }
         }
-        ExtendedFloatingActionButton(
+        // The empty state has its own button; one "add" on screen is enough.
+        if (!goals.isNullOrEmpty()) ExtendedFloatingActionButton(
             onClick = { adding = true },
             icon = { Icon(Icons.Filled.Add, contentDescription = null) },
             text = { Text("Add goal") },

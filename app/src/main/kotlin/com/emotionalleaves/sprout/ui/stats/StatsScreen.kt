@@ -166,11 +166,15 @@ fun StatsScreen(onBack: () -> Unit, onMerchant: (String) -> Unit = {}) {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
             Text("Stats", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
         }
-        Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            StatsPeriod.entries.forEach { p -> FilterChip(selected = p == period, onClick = { period = p }, label = { Text(p.label) }, modifier = Modifier.heightIn(min = 40.dp)) }
+        // Periods and views only once there's something to look at.
+        val anyData = com.emotionalleaves.sprout.ui.common.rememberHasData()
+        if (anyData != false) {
+            Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                StatsPeriod.entries.forEach { p -> FilterChip(selected = p == period, onClick = { period = p }, label = { Text(p.label) }, modifier = Modifier.heightIn(min = 40.dp)) }
+            }
+            com.emotionalleaves.sprout.ui.common.ChoiceRow(StatsView.entries.map { it.label }, StatsView.entries.indexOf(view),
+                { view = StatsView.entries[it] }, Modifier.padding(vertical = 8.dp))
         }
-        com.emotionalleaves.sprout.ui.common.ChoiceRow(StatsView.entries.map { it.label }, StatsView.entries.indexOf(view),
-            { view = StatsView.entries[it] }, Modifier.padding(vertical = 8.dp))
         val d = data
         if (d == null) {
             com.emotionalleaves.sprout.ui.common.LoadingSkeleton()
@@ -178,7 +182,7 @@ fun StatsScreen(onBack: () -> Unit, onMerchant: (String) -> Unit = {}) {
         }
         if (d.now.purchases == 0 && d.now.earned == 0L && d.now.spent == 0L) {
             com.emotionalleaves.sprout.ui.common.EmptyState(
-                "Nothing in ${period.label.lowercase()}",
+                if (anyData == false) "No stats yet" else "Nothing in ${period.label.lowercase()}",
                 "Stats fill in from your synced or imported transactions.",
                 icon = androidx.compose.material.icons.Icons.Rounded.BarChart,
             ) {

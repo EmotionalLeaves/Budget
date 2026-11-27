@@ -2,6 +2,14 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.107.0] - 2026-11-27
+
+Round 107: quieter first look at the tools.
+
+### Polish
+- Before any transactions arrive, Stats and Reports hide their periods, views, Compare and PDF (there's nothing to slice yet), and say "No stats yet" / "No reports yet" with Connect a bank and Import a CSV.
+- Savings goals with no goals shows one "Add your first goal" button instead of two.
+
 ## [2.106.0] - 2026-11-27
 
 Round 106: a clear start on Budgets.
