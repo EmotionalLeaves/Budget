@@ -2,6 +2,14 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.32.0] - 2026-11-26
+
+Round 32: a tidier More screen.
+
+### Polish
+- Settings rows are grouped on shared cards with thin dividers (Categories, Your data), with shorter descriptions and proper chevrons; "Delete all data" stands apart in red.
+- When notifications are off, a clear warning card with a "Turn on notifications" button replaces the red line of text.
+
 ## [2.31.0] - 2026-11-26
 
 Round 31: see where your money flows.

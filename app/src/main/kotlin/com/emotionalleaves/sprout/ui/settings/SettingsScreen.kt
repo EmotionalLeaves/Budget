@@ -1,5 +1,9 @@
 package com.emotionalleaves.sprout.ui.settings
 
+import androidx.compose.material3.Icon
+import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.NotificationsOff
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -209,22 +213,37 @@ fun SettingsScreen(
         }
 
         item { SectionTitle("Categories") }
-        item { NavRow(icon = Icons.Rounded.Category, title = "Categories", subtitle = "Add, rename, recolor or archive", onClick = onCategories) }
-        item { NavRow(icon = Icons.Rounded.Rule, title = "Category rules", subtitle = "What Sprout learned from your changes, plus keyword rules", onClick = onRules) }
+        item {
+            NavGroup {
+                NavRow(icon = Icons.Rounded.Category, title = "Categories", subtitle = "Add, rename, recolor or archive", onClick = onCategories)
+                NavRow(icon = Icons.Rounded.Rule, title = "Category rules", subtitle = "Auto-sort, plus what you taught it", onClick = onRules, divider = false)
+            }
+        }
 
         item { SectionTitle("Your data") }
-        item { NavRow(icon = Icons.Rounded.FileUpload, title = "Import CSV", subtitle = "Add transactions from a bank's CSV export", onClick = onImport) }
-        item { NavRow(icon = Icons.Rounded.FileDownload, title = "Export CSV", subtitle = "Transactions, accounts, categories, budgets, rules or bills", onClick = onExport) }
-        item { NavRow(icon = Icons.Rounded.Backup, title = "Backup and restore", subtitle = "A password-protected file with all your data, for a new phone", onClick = onBackup) }
-        item { NavRow(icon = Icons.Rounded.DeleteForever, title = "Delete all data", subtitle = "Erase everything Sprout stored on this phone", onClick = { deleteStep = 1 }) }
+        item {
+            NavGroup {
+                NavRow(icon = Icons.Rounded.FileUpload, title = "Import CSV", subtitle = "From your bank's website", onClick = onImport)
+                NavRow(icon = Icons.Rounded.FileDownload, title = "Export CSV", subtitle = "Transactions, budgets, rules or bills", onClick = onExport)
+                NavRow(icon = Icons.Rounded.Backup, title = "Backup and restore", subtitle = "A password-protected file, for a new phone", onClick = onBackup, divider = false)
+            }
+        }
+        item { NavGroup { NavRow(icon = Icons.Rounded.DeleteForever, title = "Delete all data", subtitle = "Erase everything Sprout stored on this phone", onClick = { deleteStep = 1 }, divider = false) } }
 
         item { SectionTitle("Notifications") }
         item {
             SettingsGroup {
                 if (!vm.canPost()) {
-                    Text("Notifications are off for Sprout, so none of these can reach you.", style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 10.dp))
-                    TextButton(
+                    Row(
+                        Modifier.padding(top = 12.dp).fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
+                            .background(MaterialTheme.colorScheme.errorContainer).padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(androidx.compose.material.icons.Icons.Rounded.NotificationsOff, contentDescription = null, tint = MaterialTheme.colorScheme.onErrorContainer)
+                        Text("Notifications are off for Sprout, so these can't reach you yet.", style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onErrorContainer, modifier = Modifier.padding(start = 12.dp))
+                    }
+                    androidx.compose.material3.FilledTonalButton(
                         onClick = {
                             runCatching {
                                 context.startActivity(
@@ -233,8 +252,8 @@ fun SettingsScreen(
                                 )
                             }
                         },
-                        modifier = Modifier.heightIn(min = 48.dp),
-                    ) { Text("Turn on in system settings") }
+                        modifier = Modifier.padding(top = 8.dp).heightIn(min = 48.dp),
+                    ) { Text("Turn on notifications") }
                 }
                 ToggleRow("Budget alerts", state.settings.notifyBudget, "When a budget reaches 80% and 100%") { vm.setNotifyBudget(it) }
                 ToggleRow("Large or unusual charges", state.settings.notifyUnusual, "Big amounts, and charges unlike your usual ones") { vm.setNotifyUnusual(it) }
@@ -534,26 +553,39 @@ private fun ExploreGrid(onRoute: (String) -> Unit) {
     }
 }
 
+/** Several navigation rows on one rounded card, like a settings group. */
 @Composable
-private fun NavRow(title: String, subtitle: String, onClick: () -> Unit, icon: androidx.compose.ui.graphics.vector.ImageVector? = null) {
+private fun NavGroup(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
     androidx.compose.material3.Surface(
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp),
         color = MaterialTheme.colorScheme.surfaceContainerLow,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 3.dp),
-    ) {
-        Row(Modifier.clickable(onClick = onClick).heightIn(min = 60.dp).padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (icon != null) {
-                val danger = title.startsWith("Delete")
-                com.emotionalleaves.sprout.ui.common.IconBadge(icon, if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary, 36.dp)
-                androidx.compose.foundation.layout.Spacer(Modifier.width(14.dp))
-            }
-            Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleSmall)
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Text("›", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+    ) { Column(content = content) }
+}
+
+@Composable
+private fun NavRow(
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    divider: Boolean = true,
+) {
+    val danger = title.startsWith("Delete")
+    Row(Modifier.fillMaxWidth().clickable(onClick = onClick).heightIn(min = 64.dp).padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+        if (icon != null) {
+            com.emotionalleaves.sprout.ui.common.IconBadge(icon, if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary, 36.dp)
+            androidx.compose.foundation.layout.Spacer(Modifier.width(14.dp))
         }
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleSmall, color = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Icon(androidx.compose.material.icons.Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
+    if (divider) androidx.compose.material3.HorizontalDivider(Modifier.padding(start = if (icon != null) 66.dp else 16.dp),
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 }
 
 @Composable
