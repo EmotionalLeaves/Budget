@@ -2,6 +2,15 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.64.0] - 2026-11-27
+
+Round 64: Stats tell the truth about short histories.
+
+### Fixes
+- **Trends** start at your first month of data instead of always showing 12 months. Empty months before Sprout had anything no longer show as zeros or pull every "Usually $X a month" down. "You kept $X over 5 months" says how many months it actually covers.
+- **Patterns** counts spending days only since your first transaction ("72 of the last 144 days", not "of the last 371").
+- A category with nothing in earlier months says "New this month" instead of "Usually $0.00 a month".
+
 ## [2.63.0] - 2026-11-27
 
 Round 63: first-look hints.

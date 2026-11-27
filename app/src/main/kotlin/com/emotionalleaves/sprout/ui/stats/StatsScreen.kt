@@ -92,6 +92,8 @@ private class StatsData(
     val heat: List<Long>,
     val heatEnd: LocalDate,
     val inOut: List<Pair<Long, Long>>,
+    /** Days of the heatmap since your first transaction (the rest is before Sprout had data). */
+    val heatDataDays: Int,
 )
 
 /** Stats: numbers and views of your spending beyond budgets: patterns, places and trends. */
@@ -131,17 +133,23 @@ fun StatsScreen(onBack: () -> Unit, onMerchant: (String) -> Unit = {}) {
                 val prevToday = ps.plusDays((now.days - 1).toLong().coerceAtLeast(0))
                 SpendingStats.summarize(rows, ps, start, prevToday, zone)
             }
-            val trendMonths = (11 downTo 0).map { month.minusMonths(it.toLong()) }
+            // Trends start at your first month of data (up to 12), so months before Sprout had anything don't
+            // show as zeros and drag every "usually" down.
+            val firstDay = c.db.budgets().firstOccurredAt()?.let { java.time.Instant.ofEpochSecond(it).atZone(zone).toLocalDate() }
+            val trendCount = firstDay?.let { (java.time.temporal.ChronoUnit.MONTHS.between(YearMonth.from(it), month) + 1).toInt() }
+                ?.coerceIn(2, 12) ?: 12
+            val trendMonths = (trendCount - 1 downTo 0).map { month.minusMonths(it.toLong()) }
             StatsData(
                 now = now, before = before,
-                trends = SpendingStats.categoryTrends(rows, month, 12, zone),
+                trends = SpendingStats.categoryTrends(rows, month, trendCount, zone),
                 trendMonths = trendMonths,
                 categories = c.db.categories().getAll().associate { it.id to (it.name to it.colorArgb) },
                 inProgress = today < end && today >= start,
                 daysInPeriod = span.toInt(),
                 heat = SpendingStats.dailySpending(rows, today, HEAT_DAYS, zone),
                 heatEnd = today,
-                inOut = SpendingStats.monthlyInOut(rows, month, 12, zone),
+                inOut = SpendingStats.monthlyInOut(rows, month, trendCount, zone),
+                heatDataDays = firstDay?.let { (java.time.temporal.ChronoUnit.DAYS.between(it, today) + 1).toInt() }?.coerceIn(1, HEAT_DAYS) ?: HEAT_DAYS,
             )
         }.getOrNull()
     }
@@ -391,7 +399,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.patterns(d: StatsData
         Card {
             Label("Your year, day by day")
             val active = d.heat.count { it > 0 }
-            Text("You spent something on $active of the last ${d.heat.size} days", style = MaterialTheme.typography.titleMedium)
+            Text("You spent something on $active of the last ${d.heatDataDays} days", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(12.dp))
             YearHeatmap(d.heat, d.heatEnd, Modifier.fillMaxWidth())
         }
@@ -470,7 +478,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.trends(d: StatsData) 
         Card {
             Label("Money in vs. out, by month")
             val kept = d.inOut.sumOf { it.first - it.second }
-            Text(if (kept >= 0) "You kept ${Money.format(kept)} over 12 months" else "You spent ${Money.format(-kept)} more than came in over 12 months",
+            val n = d.trendMonths.size
+            Text(if (kept >= 0) "You kept ${Money.format(kept)} over $n months" else "You spent ${Money.format(-kept)} more than came in over $n months",
                 style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(12.dp))
             InOutBars(d.inOut, d.trendMonths)
@@ -482,7 +491,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.trends(d: StatsData) 
     }
     item {
         Card {
-            Label("12 months by category")
+            Label("${d.trendMonths.size} months by category")
             Text("Each line is a category's monthly spending; the dot is this month.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
@@ -503,7 +512,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.trends(d: StatsData) 
                 Spark(values, col, Modifier.fillMaxWidth().height(44.dp).padding(vertical = 6.dp))
                 val change = SpendingStats.changePercent(avg, nowV)
                 Text(
-                    "Usually ${Money.format(avg)} a month" + (change?.let {
+                    if (avg == 0L) "New this month · nothing here in the months before"
+                    else "Usually ${Money.format(avg)} a month" + (change?.let {
                         if (abs(it) < 3) " · about the same this month" else " · this month ${if (it > 0) "+" else ""}$it%"
                     } ?: ""),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
