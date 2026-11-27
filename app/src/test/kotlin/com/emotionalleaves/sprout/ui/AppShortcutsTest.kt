@@ -15,7 +15,7 @@ class AppShortcutsTest {
         val ctx = ApplicationProvider.getApplicationContext<android.content.Context>()
         AppShortcuts.install(ctx)
         val list = ShortcutManagerCompat.getDynamicShortcuts(ctx)
-        assertEquals(setOf("review", "stats", "bills"), list.map { it.id }.toSet())
+        assertEquals(setOf("add", "review", "stats", "bills"), list.map { it.id }.toSet())
         list.forEach { s -> assertTrue(s.intent.getStringExtra(AppShortcuts.EXTRA_ROUTE) in AppShortcuts.ALLOWED) }
     }
 }

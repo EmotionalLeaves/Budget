@@ -349,6 +349,8 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
                     TransactionsScreen(snackbar, onReview = { nav.navigate("review") }, initialTagId = id)
                 }
             }
+            // From the "Add purchase" home-screen shortcut: Activity with the add sheet open.
+            composable("add") { TransactionsScreen(snackbar, onReview = { nav.navigate("review") }, startAdding = true) }
             // A ready-made search ("nov 24" from a calendar day), with a way back.
             composable("search/{q}") { entry ->
                 val q = entry.arguments?.getString("q").orEmpty()

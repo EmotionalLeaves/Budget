@@ -281,7 +281,7 @@ class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initialTagId: Long? = null, initialAccountId: String? = null,
-                       initialQuery: String? = null) {
+                       initialQuery: String? = null, startAdding: Boolean = false) {
     val vm = sproutViewModel { TransactionsViewModel(it) }
     val filter by vm.filter.collectAsStateWithLifecycle()
     val uncategorized by vm.uncategorizedCount.collectAsStateWithLifecycle()
@@ -370,7 +370,7 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
     openId?.let { id ->
         TransactionDetailSheet(id, onDismiss = { openId = null }, onMessage = { msg, undo -> scope.showUndoable(snackbar, msg, undo) })
     }
-    var adding by rememberSaveable { mutableStateOf(false) }
+    var adding by rememberSaveable { mutableStateOf(startAdding) }
     if (adding) AddTransactionSheet(onDismiss = { adding = false }, onAdded = { adding = false; scope.launch { snackbar.showSnackbar("Added") } })
 
     Box(Modifier.fillMaxSize()) {

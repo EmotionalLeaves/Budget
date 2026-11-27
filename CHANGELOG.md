@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.80.0] - 2026-11-27
+
+Round 80: log cash in one tap from your home screen.
+
+### Features
+- **"Add purchase" shortcut:** long-press Sprout's icon and pick Add purchase to go straight to the add sheet. The category fills itself in from the name as you type.
+
 ## [2.79.0] - 2026-11-27
 
 Round 79: room to breathe.

@@ -16,7 +16,7 @@ object AppShortcuts {
     const val EXTRA_ROUTE = "com.emotionalleaves.sprout.ROUTE"
 
     /** Routes a shortcut may open; anything else in the intent is ignored. */
-    val ALLOWED = setOf("review", "stats", "bills")
+    val ALLOWED = setOf("add", "review", "stats", "bills")
 
     fun install(context: Context) {
         fun shortcut(id: String, label: String, long: String, icon: Int) = ShortcutInfoCompat.Builder(context, id)
@@ -27,6 +27,7 @@ object AppShortcuts {
             .build()
         runCatching {
             ShortcutManagerCompat.setDynamicShortcuts(context, listOf(
+                shortcut("add", "Add purchase", "Add a cash purchase", R.drawable.ic_shortcut_add),
                 shortcut("review", "Sort purchases", "Sort uncategorized purchases", R.drawable.ic_shortcut_sort),
                 shortcut("stats", "Stats", "Spending stats and money flow", R.drawable.ic_shortcut_stats),
                 shortcut("bills", "Bills", "Bills coming up", R.drawable.ic_shortcut_bills),
