@@ -11,6 +11,7 @@ Round 69: recent searches.
 
 ### Fixes
 - A bar chart with no bars can no longer crash when tapped.
+- Year in review only offers "‹ 2025" when you have data from that year.
 
 ## [2.68.0] - 2026-11-27
 

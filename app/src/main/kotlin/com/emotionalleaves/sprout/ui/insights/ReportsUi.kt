@@ -270,12 +270,16 @@ fun YearInReviewScreen(onBack: () -> Unit) {
     val c = appContainer()
     var year by rememberSaveable { mutableIntStateOf(java.time.LocalDate.now().year) }
     val y = com.emotionalleaves.sprout.ui.common.rememberLoaded(year) { runCatching { c.insightsRepository.yearReview(year) }.getOrNull() }
+    // The earliest year you have data for, so "‹ 2025" only shows when there's something to see.
+    val firstYear = com.emotionalleaves.sprout.ui.common.rememberLoaded(Unit) {
+        runCatching { c.db.budgets().firstOccurredAt()?.let { java.time.Instant.ofEpochSecond(it).atZone(java.time.ZoneId.systemDefault()).year } }.getOrNull()
+    }
     Column(Modifier.fillMaxSize()) {
         TopAppBar(windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0), 
             title = { Text("$year in review") },
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
             actions = {
-                androidx.compose.material3.TextButton(onClick = { year -= 1 }) { Text("‹ ${year - 1}") }
+                if (firstYear != null && year > firstYear) androidx.compose.material3.TextButton(onClick = { year -= 1 }) { Text("‹ ${year - 1}") }
                 if (year < java.time.LocalDate.now().year) androidx.compose.material3.TextButton(onClick = { year += 1 }) { Text("${year + 1} ›") }
             },
         )
