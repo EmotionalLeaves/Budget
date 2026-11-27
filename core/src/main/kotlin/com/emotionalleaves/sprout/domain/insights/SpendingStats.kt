@@ -46,6 +46,8 @@ object SpendingStats {
         val topByVisits: List<Place>,
         /** Cumulative spending per day of the period (index 0 = first day). */
         val cumulative: List<Long>,
+        /** Net spending per category in the period (refunds subtract), only categories above zero. */
+        val byCategory: Map<Long, Long> = emptyMap(),
     ) {
         val net: Long get() = earned - spent
         val dailyAverage: Long get() = if (days == 0) 0 else spent / days
@@ -111,6 +113,7 @@ object SpendingStats {
             topByTotal = places.sortedByDescending { it.total }.take(top),
             topByVisits = places.sortedWith(compareByDescending<Place> { it.visits }.thenByDescending { it.total }).take(top),
             cumulative = cumulative,
+            byCategory = spending.groupBy { it.categoryId }.mapValues { (_, l) -> -l.sumOf { it.amountMinor } }.filterValues { it > 0 },
         )
     }
 
@@ -155,6 +158,26 @@ object SpendingStats {
             }
         }
         return (0 until months).map { inc[it] to out[it] }
+    }
+
+    /** One band of the money-flow chart: from income (or savings) to where it went. */
+    data class Flow(val label: String, val amount: Long, val categoryId: Long?)
+
+    /**
+     * Where the money went: the [top] biggest categories, the rest as "Everything else", and what was kept.
+     * When spending is more than came in, the gap is shown as coming "From savings" instead of a "Kept" band.
+     */
+    fun flows(summary: Summary, top: Int = 6): Pair<List<Flow>, List<Flow>> {
+        val sorted = summary.byCategory.entries.sortedByDescending { it.value }
+        val out = sorted.take(top).map { Flow("", it.value, it.key) }.toMutableList()
+        val rest = sorted.drop(top).sumOf { it.value }
+        if (rest > 0) out += Flow("Everything else", rest, null)
+        val spent = out.sumOf { it.amount }
+        val sources = mutableListOf<Flow>()
+        if (summary.earned > 0) sources += Flow("Income", summary.earned, null)
+        if (summary.earned > spent) out += Flow("Kept", summary.earned - spent, null)
+        else if (spent > summary.earned) sources += Flow("From savings", spent - summary.earned, null)
+        return sources to out
     }
 
     /** "+12%" style change from [before] to [now]; null when there's nothing to compare with. */

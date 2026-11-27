@@ -54,4 +54,15 @@ class SpendingStatsTest {
         assertEquals(listOf(10_00L, 0L, 5_00L), SpendingStats.dailySpending(rows, nov.plusDays(2), 3, zone))
         assertEquals(listOf(0L to 0L, 100_00L to 15_00L), SpendingStats.monthlyInOut(rows, YearMonth.of(2026, 11), 2, zone))
     }
+
+    @Test fun moneyFlowBalances() {
+        val rows = listOf(spend(nov, 30_00, cat = 1), spend(nov, 20_00, cat = 2), spend(nov, 5_00, cat = 3), Row(100_00, at(nov), 9, CategoryKind.INCOME, "PAY"))
+        val s = SpendingStats.summarize(rows, nov, nov.plusMonths(1), nov.plusDays(5), zone)
+        val (inn, out) = SpendingStats.flows(s, top = 2)
+        assertEquals(listOf(100_00L), inn.map { it.amount })
+        assertEquals(listOf(30_00L, 20_00L, 5_00L, 45_00L), out.map { it.amount })
+        assertEquals("Kept", out.last().label)
+        val over = SpendingStats.summarize(rows.take(3) + Row(40_00, at(nov), 9, CategoryKind.INCOME, "PAY"), nov, nov.plusMonths(1), nov.plusDays(5), zone)
+        assertEquals(listOf("Income" to 40_00L, "From savings" to 15_00L), SpendingStats.flows(over).first.map { it.label to it.amount })
+    }
 }

@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.31.0] - 2026-11-26
+
+Round 31: see where your money flows.
+
+### New
+- **Stats → Flow**: a money-flow (Sankey) chart for any period. Income on the left flows into your six biggest categories, everything else, and what you kept, each band drawn to scale with its amount and share. If you spent more than came in, the gap shows up as "From savings".
+
 ## [2.30.0] - 2026-11-26
 
 Round 30: More and transaction details.

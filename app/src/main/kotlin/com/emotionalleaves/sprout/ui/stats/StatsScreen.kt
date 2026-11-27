@@ -77,7 +77,7 @@ private const val HEAT_DAYS = 53 * 7
 /** The time range the Stats screen looks at. */
 enum class StatsPeriod(val label: String) { THIS_MONTH("This month"), LAST_MONTH("Last month"), THREE_MONTHS("3 months"), YEAR("12 months"), ALL("All time") }
 
-private enum class StatsView(val label: String) { OVERVIEW("Overview"), PATTERNS("Patterns"), PLACES("Places"), TRENDS("Trends") }
+private enum class StatsView(val label: String) { OVERVIEW("Overview"), FLOW("Flow"), PATTERNS("Patterns"), PLACES("Places"), TRENDS("Trends") }
 
 private class StatsData(
     val now: SpendingStats.Summary,
@@ -170,6 +170,7 @@ fun StatsScreen(onBack: () -> Unit, onMerchant: (String) -> Unit = {}) {
                 verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 when (v) {
                     StatsView.OVERVIEW -> overview(d, period)
+                    StatsView.FLOW -> flow(d)
                     StatsView.PATTERNS -> patterns(d)
                     StatsView.PLACES -> places(d, onMerchant)
                     StatsView.TRENDS -> trends(d)
@@ -260,6 +261,112 @@ private fun HeroFigure(label: String, value: String, color: Color) {
     Column {
         Text(label, style = MaterialTheme.typography.labelMedium, color = color.copy(alpha = 0.8f))
         Text(value, style = MaterialTheme.typography.titleMedium, color = color, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+// ---- Flow ---------------------------------------------------------------------------------------------
+
+private fun androidx.compose.foundation.lazy.LazyListScope.flow(d: StatsData) {
+    val (sources, sinks) = SpendingStats.flows(d.now)
+    item {
+        Card {
+            Label("Where your money went")
+            val kept = sinks.firstOrNull { it.label == "Kept" }?.amount
+            Text(
+                when {
+                    sources.isEmpty() && sinks.isEmpty() -> "Nothing came in or went out yet"
+                    kept != null -> "You kept ${Money.format(kept)} of what came in"
+                    sources.any { it.label == "From savings" } -> "You spent ${Money.format(sources.last().amount)} more than came in"
+                    else -> "Every dollar that came in went out"
+                },
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Spacer(Modifier.height(16.dp))
+            if (sinks.isNotEmpty()) MoneyFlowChart(sources, sinks, d.categories)
+        }
+    }
+    item {
+        Text("Bands are drawn to scale: the thicker the band, the more money took that path. Transfers between your accounts aren't counted.",
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 4.dp))
+    }
+}
+
+/** A Sankey diagram: income (and savings, if you dipped in) on the left, flowing to categories and "Kept" on the right. */
+@Composable
+private fun MoneyFlowChart(sources: List<SpendingStats.Flow>, sinks: List<SpendingStats.Flow>, categories: Map<Long, Pair<String, Int>>) {
+    val sc = LocalSproutColors.current
+    val outline = MaterialTheme.colorScheme.outline
+    val keptColor = sc.income
+    val savingsColor = sc.warning
+    val colors = sinks.mapIndexed { i, f ->
+        when {
+            f.label == "Kept" -> keptColor
+            f.categoryId != null -> categories[f.categoryId]?.second?.let { Color(it).readable() } ?: sc.chart[i % sc.chart.size]
+            else -> outline
+        }
+    }
+    fun sinkLabel(f: SpendingStats.Flow) = f.categoryId?.let { categories[it]?.first } ?: f.label
+    val total = sinks.sumOf { it.amount }.coerceAtLeast(1)
+    val grow by animateFloatAsState(1f, tween(900), label = "flow")
+    val gap = 6.dp
+    val rowH = 34.dp
+    val height = rowH * sinks.size + gap * (sinks.size - 1)
+    Row(Modifier.fillMaxWidth()) {
+        Canvas(Modifier.weight(1f).height(height).semantics {
+            contentDescription = sinks.joinToString { "${sinkLabel(it)} ${Money.format(it.amount)}" }
+        }) {
+            val gapPx = gap.toPx()
+            val usable = size.height - gapPx * (sinks.size - 1)
+            val nodeW = 10.dp.toPx()
+            // Left: one column of source nodes stacked; right: one node per sink, evenly spaced.
+            var sy = 0f
+            val srcTotal = sources.sumOf { it.amount }.coerceAtLeast(1)
+            val srcRects = sources.map { f ->
+                val h = size.height * f.amount / srcTotal
+                val r = sy to (sy + h); sy += h; r
+            }
+            sources.forEachIndexed { i, f ->
+                val (a, b) = srcRects[i]
+                drawRoundRect(if (f.label == "From savings") savingsColor else keptColor, Offset(0f, a), Size(nodeW, (b - a).coerceAtLeast(2f)), CornerRadius(4f, 4f))
+            }
+            // Band thickness on the left follows each sink's share of all money; the right end fills its row.
+            var leftY = 0f
+            val rowPx = rowH.toPx()
+            sinks.forEachIndexed { i, f ->
+                val thick = size.height * f.amount / total
+                val rightTop = i * (rowPx + gapPx)
+                val rightThick = maxOf(rowPx * 0.25f, minOf(rowPx, thick * (usable / size.height)))
+                val rTop = rightTop + (rowPx - rightThick) / 2
+                val x0 = nodeW
+                val x1 = (size.width - nodeW) * grow + nodeW * (1 - grow)
+                val cx = (x0 + x1) / 2
+                val c = colors[i]
+                val path = Path().apply {
+                    moveTo(x0, leftY)
+                    cubicTo(cx, leftY, cx, rTop, x1, rTop)
+                    lineTo(x1, rTop + rightThick)
+                    cubicTo(cx, rTop + rightThick, cx, leftY + thick, x0, leftY + thick)
+                    close()
+                }
+                drawPath(path, Brush.horizontalGradient(listOf(c.copy(alpha = 0.18f), c.copy(alpha = 0.55f)), startX = x0, endX = x1))
+                drawRoundRect(c, Offset(size.width - nodeW, rTop), Size(nodeW, rightThick), CornerRadius(4f, 4f))
+                leftY += thick
+            }
+        }
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.width(150.dp), verticalArrangement = Arrangement.spacedBy(gap)) {
+            sinks.forEachIndexed { i, f ->
+                Column(Modifier.height(rowH), verticalArrangement = Arrangement.Center) {
+                    Text(sinkLabel(f), style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        color = if (f.label == "Kept") keptColor else MaterialTheme.colorScheme.onSurface)
+                    Text("${Money.format(f.amount)} · ${f.amount * 100 / total}%", style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                }
+            }
+        }
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(top = 12.dp)) {
+        sources.forEach { LegendDot(if (it.label == "From savings") savingsColor else keptColor, "${it.label} ${Money.format(it.amount)}") }
     }
 }
 
