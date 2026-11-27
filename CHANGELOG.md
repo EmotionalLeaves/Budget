@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.85.0] - 2026-11-27
+
+Round 85: a shorter More tab.
+
+### Polish
+- **Settings → Last sync** shows only the latest sync. "Show the last 8 syncs" opens the history when you need it, so the More tab is shorter and calmer.
+
 ## [2.84.0] - 2026-11-27
 
 Round 84: more from Places.

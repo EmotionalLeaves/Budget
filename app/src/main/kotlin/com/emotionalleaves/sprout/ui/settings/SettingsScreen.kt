@@ -308,11 +308,13 @@ fun SettingsScreen(
             }
         }
         if (state.logs.isNotEmpty()) {
-            item { SectionTitle("Sync log") }
+            item { SectionTitle("Last sync") }
             item {
                 SettingsGroup {
                     val sc = com.emotionalleaves.sprout.ui.theme.LocalSproutColors.current
-                    state.logs.take(8).forEach { log ->
+                    // The latest sync is what matters day to day; the history is one tap away.
+                    var allLogs by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+                    state.logs.take(if (allLogs) 8 else 1).forEach { log ->
                         val (icon, tint) = when (log.result) {
                             com.emotionalleaves.sprout.data.db.SyncResult.SUCCESS -> Icons.Rounded.CheckCircle to sc.ok
                             com.emotionalleaves.sprout.data.db.SyncResult.PARTIAL -> Icons.Rounded.Warning to sc.warning
@@ -332,6 +334,11 @@ fun SettingsScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(log.message, style = MaterialTheme.typography.bodySmall)
                             }
+                        }
+                    }
+                    if (state.logs.size > 1) {
+                        TextButton(onClick = { allLogs = !allLogs }, modifier = Modifier.heightIn(min = 48.dp)) {
+                            Text(if (allLogs) "Show only the latest" else "Show the last ${minOf(8, state.logs.size)} syncs")
                         }
                     }
                 }
