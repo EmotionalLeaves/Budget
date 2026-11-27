@@ -2,6 +2,14 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.37.0] - 2026-11-26
+
+Round 37: Debt plan you can see.
+
+### New
+- **Debt plan → Your path to zero**: a chart of what you'll still owe each month until it's gone, with a dot where each debt is paid off.
+- The payoff **Order** is a numbered list with how many months each debt takes and the month it's done.
+
 ## [2.36.0] - 2026-11-26
 
 Round 36: category pages.

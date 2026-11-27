@@ -1,5 +1,12 @@
 package com.emotionalleaves.sprout.ui.debt
 
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -121,13 +128,43 @@ fun DebtScreen(onBack: () -> Unit) {
                     )
                 }
             }
+            if (plan.remainingByMonth.size > 2) {
+                item { com.emotionalleaves.sprout.ui.common.SectionHeader("Your path to zero") }
+                item {
+                    com.emotionalleaves.sprout.ui.common.SoftCard {
+                        val fmt = DateTimeFormatter.ofPattern("MMM yyyy", Locale.US)
+                        val sc = com.emotionalleaves.sprout.ui.theme.LocalSproutColors.current
+                        PayoffChart(plan.remainingByMonth, sc.chart.first(), plan.order.map { it.month },
+                            Modifier.fillMaxWidth().height(140.dp))
+                        Row(Modifier.fillMaxWidth().padding(top = 6.dp)) {
+                            Text("Now · ${Money.formatWhole(plan.remainingByMonth.first())}", style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                            Text(YearMonth.now().plusMonths((plan.remainingByMonth.size - 1).toLong()).format(fmt) + " · $0",
+                                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
             if (plan.order.isNotEmpty()) {
                 item { com.emotionalleaves.sprout.ui.common.SectionHeader("Order") }
-                items(plan.order, key = { "o-" + it.id }) { p ->
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 6.dp)) {
-                        Text(p.name, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
-                        Text("paid off ${YearMonth.now().plusMonths(p.month.toLong()).format(DateTimeFormatter.ofPattern("MMM yyyy", Locale.US))}",
-                            style = MaterialTheme.typography.labelLarge)
+                item {
+                    com.emotionalleaves.sprout.ui.common.SoftCard {
+                        val fmt = DateTimeFormatter.ofPattern("MMM yyyy", Locale.US)
+                        plan.order.forEachIndexed { i, p ->
+                            Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                androidx.compose.foundation.layout.Box(
+                                    Modifier.size(32.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
+                                    contentAlignment = Alignment.Center,
+                                ) { Text("${i + 1}", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer) }
+                                Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                                    Text(p.name, style = MaterialTheme.typography.titleSmall)
+                                    Text("Paid off in ${p.month} month${if (p.month == 1) "" else "s"}", style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Text(YearMonth.now().plusMonths(p.month.toLong()).format(fmt), style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.primary)
+                            }
+                        }
                     }
                 }
             }
@@ -159,6 +196,32 @@ private fun DebtRow(d: Debt, onChange: (Double?, Long?) -> Unit) {
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.weight(1f))
             OutlinedTextField(min, { min = it.take(8) }, label = { Text("Minimum") }, prefix = { Text("$") }, singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.weight(1f))
+        }
+    }
+}
+
+/** What you'll still owe, month by month, with a dot where each debt is paid off. */
+@androidx.compose.runtime.Composable
+private fun PayoffChart(remaining: List<Long>, color: androidx.compose.ui.graphics.Color, payoffs: List<Int>, modifier: Modifier) {
+    val reveal by androidx.compose.animation.core.animateFloatAsState(1f, androidx.compose.animation.core.tween(900), label = "payoff")
+    androidx.compose.foundation.Canvas(modifier.semantics { contentDescription = "Owed goes from ${Money.formatWhole(remaining.first())} to zero in ${remaining.size - 1} months" }) {
+        val max = remaining.maxOrNull()?.coerceAtLeast(1) ?: 1
+        val n = remaining.size - 1
+        fun x(i: Int) = size.width * i / n
+        fun y(v: Long) = size.height - size.height * 0.92f * (v.toFloat() / max)
+        val shown = (n * reveal).toInt().coerceIn(1, n)
+        val line = androidx.compose.ui.graphics.Path()
+        val fill = androidx.compose.ui.graphics.Path()
+        for (i in 0..shown) {
+            if (i == 0) { line.moveTo(x(0), y(remaining[0])); fill.moveTo(x(0), size.height); fill.lineTo(x(0), y(remaining[0])) }
+            else { line.lineTo(x(i), y(remaining[i])); fill.lineTo(x(i), y(remaining[i])) }
+        }
+        fill.lineTo(x(shown), size.height); fill.close()
+        drawPath(fill, androidx.compose.ui.graphics.Brush.verticalGradient(listOf(color.copy(alpha = 0.35f), color.copy(alpha = 0.02f))))
+        drawPath(line, color, style = androidx.compose.ui.graphics.drawscope.Stroke(5f, cap = androidx.compose.ui.graphics.StrokeCap.Round))
+        payoffs.filter { it in 1..shown }.forEach { m ->
+            drawCircle(androidx.compose.ui.graphics.Color.White, 8f, androidx.compose.ui.geometry.Offset(x(m), y(remaining[m])))
+            drawCircle(color, 6f, androidx.compose.ui.geometry.Offset(x(m), y(remaining[m])))
         }
     }
 }

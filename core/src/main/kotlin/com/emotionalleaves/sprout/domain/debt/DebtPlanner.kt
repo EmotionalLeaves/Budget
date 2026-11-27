@@ -20,6 +20,8 @@ data class DebtPlan(
     val order: List<Payoff>,
     /** The monthly payment is below the sum of minimums. */
     val belowMinimums: Boolean,
+    /** Total still owed at the start and after each month, for the payoff chart. */
+    val remainingByMonth: List<Long> = emptyList(),
 )
 
 /**
@@ -39,6 +41,7 @@ object DebtPlanner {
         var paid = 0.0
         val order = mutableListOf<Payoff>()
         var month = 0
+        val remaining = mutableListOf(Math.round(balances.values.sum()))
         while (balances.values.any { it > 0.5 } && month < MAX_MONTHS) {
             month++
             open.forEach { d ->
@@ -72,8 +75,9 @@ object DebtPlanner {
                 balances[d.id] = b - p; budget -= p; paid += p
             }
             open.forEach { d -> if (balances.getValue(d.id) <= 0.5 && order.none { it.id == d.id }) order += Payoff(d.id, d.name, month) }
+            remaining += Math.round(balances.values.sumOf { maxOf(it, 0.0) })
         }
         val done = balances.values.all { it <= 0.5 }
-        return DebtPlan(if (done) month else null, Math.round(interest), Math.round(paid), order, monthlyPaymentMinor < minimums)
+        return DebtPlan(if (done) month else null, Math.round(interest), Math.round(paid), order, monthlyPaymentMinor < minimums, remaining)
     }
 }

@@ -36,4 +36,9 @@ class DebtPlannerTest {
     }
 
     @Test fun noDebt() = assertEquals(0, DebtPlanner.plan(emptyList(), 10_000, Strategy.SNOWBALL).months)
+
+    @Test fun remainingBalanceGoesDownToZero() {
+        val p = DebtPlanner.plan(listOf(Debt("a", "Card", 1_000_00, 0.0, 100_00)), 250_00, Strategy.AVALANCHE)
+        assertEquals(listOf(1_000_00L, 750_00L, 500_00L, 250_00L, 0L), p.remainingByMonth)
+    }
 }
