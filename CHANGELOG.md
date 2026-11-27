@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.97.0] - 2026-11-27
+
+Round 97: Year in review, clickable.
+
+### Polish
+- **Year in review:** tap a top category to open it, or a top place to see every visit there.
+
 ## [2.96.0] - 2026-11-27
 
 Round 96: reports lead somewhere too.

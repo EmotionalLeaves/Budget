@@ -319,11 +319,17 @@ fun YearInReviewScreen(onBack: () -> Unit) {
             }
             if (r.topCategories.isNotEmpty()) {
                 item { SectionHeader("Top categories") }
-                item { RankedCard(r.topCategories) }
+                item {
+                    val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
+                    RankedCard(r.topCategories) { i -> r.topCategoryIds.getOrNull(i)?.let { navigate("category/$it") } }
+                }
             }
             if (r.topMerchants.isNotEmpty()) {
                 item { SectionHeader("Top places") }
-                item { RankedCard(r.topMerchants) }
+                item {
+                    val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
+                    RankedCard(r.topMerchants) { i -> r.topMerchantKeys.getOrNull(i)?.let { navigate("merchant/" + android.net.Uri.encode(it)) } }
+                }
             }
             r.biggest?.let { (n, v) ->
                 item {
@@ -453,11 +459,12 @@ private fun CompareMonths(onBack: () -> Unit) {
 
 /** A numbered top-5 list in one card, each with a bar relative to the first. */
 @Composable
-private fun RankedCard(rows: List<Pair<String, Long>>) {
+private fun RankedCard(rows: List<Pair<String, Long>>, onOpen: ((Int) -> Unit)? = null) {
     val max = rows.maxOfOrNull { it.second }?.coerceAtLeast(1) ?: 1
     SoftCard {
         rows.forEachIndexed { i, (n, v) ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.then(if (onOpen != null) Modifier.clickable { onOpen(i) } else Modifier).padding(vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     Modifier.size(28.dp).clip(androidx.compose.foundation.shape.CircleShape)
                         .background(if (i == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer),

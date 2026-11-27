@@ -225,6 +225,9 @@ class InsightsRepository(private val db: SproutDatabase, private val clock: Cloc
         val mostVisited: Pair<String, Int>? = null,
         /** The longest run of days in a row without spending. */
         val longestNoSpendStreak: Int = 0,
+        /** Where each ranked row leads: a category id for [topCategories], a merchant key for [topMerchants]. */
+        val topCategoryIds: List<Long> = emptyList(),
+        val topMerchantKeys: List<String> = emptyList(),
     )
 
     /** A whole year in review (this year so far by default). */
@@ -252,7 +255,9 @@ class InsightsRepository(private val db: SproutDatabase, private val clock: Cloc
             spentMinor = byCat.values.sum(),
             incomeMinor = db.insights().income(start, end),
             topCategories = byCat.entries.sortedByDescending { it.value }.take(5).map { expense.getValue(it.key).name to it.value },
+            topCategoryIds = byCat.entries.sortedByDescending { it.value }.take(5).map { it.key },
             topMerchants = db.insights().merchantTotals(start, end).take(5).map { nm(it.merchantKey) to it.total },
+            topMerchantKeys = db.insights().merchantTotals(start, end).take(5).map { it.merchantKey },
             biggest = (db.insights().biggestOneOff(start, end) ?: db.insights().biggestCharge(start, end))?.let { nm(it.merchantKey) to -it.amountMinor },
             mostVisited = db.insights().merchantTotals(start, end)
                 .filter { !com.emotionalleaves.sprout.domain.categorize.MerchantNormalizer.isGeneric(it.merchantKey) }
