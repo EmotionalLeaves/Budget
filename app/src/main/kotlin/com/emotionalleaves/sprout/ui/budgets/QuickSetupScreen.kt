@@ -124,13 +124,29 @@ fun QuickSetupScreen(onBack: () -> Unit) {
         fun valueFor(id: Long): String = edits[id]
             ?: (if (useTemplate) templateAmounts[id] else (current[id] ?: sugg[id]?.suggestedMinor))?.let(::minorToText) ?: ""
 
+        // Categories with something to suggest first; the rest tucked away until you want them.
+        val (main, others) = categories.partition { c ->
+            // Stable while you type: a field you've touched never jumps into the hidden group.
+            sugg[c.id] != null || current[c.id] != null || templateAmounts[c.id] != null || c.id in edits
+        }
+        var showOthers by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
         LazyColumn(Modifier.weight(1f), contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(categories, key = { it.id }) { c ->
+            items(main + if (showOthers) others else emptyList(), key = { it.id }) { c ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    com.emotionalleaves.sprout.ui.common.IconBadge(com.emotionalleaves.sprout.ui.common.CategoryIcons.forKey(c.iconKey),
+                        androidx.compose.ui.graphics.Color(c.colorArgb), 36.dp)
+                    androidx.compose.foundation.layout.Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Text(c.name, style = MaterialTheme.typography.bodyLarge)
-                        sugg[c.id]?.let { Text("Suggested ${Money.formatWhole(it.suggestedMinor)}", style = MaterialTheme.typography.labelSmall) }
+                        val s = sugg[c.id]
+                        val cur = current[c.id]
+                        val note = when {
+                            s == null -> null
+                            !useTemplate && cur != null && cur != s.suggestedMinor -> "You usually spend about ${Money.formatWhole(s.suggestedMinor)}"
+                            else -> "Usually about ${Money.formatWhole(s.suggestedMinor)}"
+                        }
+                        note?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     }
                     OutlinedTextField(
                         value = valueFor(c.id),
@@ -139,11 +155,19 @@ fun QuickSetupScreen(onBack: () -> Unit) {
                         singleLine = true,
                         isError = valueFor(c.id).isNotBlank() && Money.parseUserInput(valueFor(c.id)) == null,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        modifier = Modifier.width(130.dp),
+                        modifier = Modifier.width(120.dp),
                     )
                 }
             }
+            if (others.isNotEmpty()) item {
+                androidx.compose.material3.TextButton(onClick = { showOthers = !showOthers }, modifier = Modifier.heightIn(min = 48.dp)) {
+                    Text(if (showOthers) "Hide categories without spending" else "More categories (${others.size})")
+                }
+            }
         }
+        val total = categories.sumOf { c -> valueFor(c.id).takeIf { it.isNotBlank() }?.let { Money.parseUserInput(it) }?.coerceAtLeast(0) ?: 0L }
+        Text("Total ${Money.formatWhole(total)} a month", style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(horizontal = 16.dp).padding(top = 8.dp))
         Button(
             onClick = {
                 val amounts = categories.mapNotNull { c ->

@@ -2,6 +2,14 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.71.0] - 2026-11-27
+
+Round 71: a clearer Quick budget setup.
+
+### Polish
+- **Quick setup** lists the categories you actually spend in first, each with its icon and "usually about $X". When your budget differs from what you usually spend, it says so ("You usually spend about $210"). Categories with no spending are tucked under "More categories (12)".
+- A running **Total $X a month** sits above Save, so you see the whole plan before you commit.
+
 ## [2.70.0] - 2026-11-27
 
 Round 70: quicker splits.

@@ -311,6 +311,7 @@ class ScreenTour {
                     rule.onAllNodes(androidx.compose.ui.test.hasContentDescription("Clear search"))[0].performClick(); settle()
                 }
                 t("goals") { tap("More"); tap("Goals"); s("60-goals"); back() }
+                t("quick") { tap("Budgets"); tap("Quick setup"); s("69-quick-setup"); back() }
                 t("stats") {
                     tap("More"); tap("Stats"); s("64-stats"); tap("Flow"); s("64b-stats-flow")
                     tap("Patterns"); s("65-stats-patterns"); tap("Places"); s("66-stats-places"); tap("Trends"); s("67-stats-trends")
