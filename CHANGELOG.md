@@ -2,6 +2,17 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.34.0] - 2026-11-26
+
+Round 34: Tags worth opening.
+
+### New
+- **Tags** opens with your total tagged spending and your biggest tag, and offers **Quick ideas**: one tap makes #Coffee, #Fast food, #Gaming, #Delivery, #Travel or #Art supplies and tags every past and future purchase with the words that give them away.
+- Each tag shows a bar of how it compares with your biggest, and a proper edit button.
+
+### Under the hood
+- Every build keeps its crash-decoding map for 90 days, so crash reports from your phone can be traced to the exact line.
+
 ## [2.33.0] - 2026-11-26
 
 Round 33: a crash fix, and sorting that's easier to undo.

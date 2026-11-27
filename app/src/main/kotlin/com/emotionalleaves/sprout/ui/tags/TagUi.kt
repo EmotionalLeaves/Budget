@@ -1,5 +1,12 @@
 package com.emotionalleaves.sprout.ui.tags
 
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -126,8 +133,29 @@ class TagsViewModel(private val c: AppContainer) : ViewModel() {
         lastApplied.value = c.tagRepository.addRule(pattern, id)
     }
     fun deleteRule(id: Long) = viewModelScope.launch { c.tagRepository.deleteRule(id) }
+
+    /** One tap: a ready-made tag with a handful of auto-tag words. Returns how many existing purchases got it. */
+    fun addPack(pack: TagPack) = viewModelScope.launch {
+        val id = c.tagRepository.getOrCreate(pack.tag) ?: return@launch
+        var total = 0
+        val existing = rules.value.filter { it.tagId == id }.map { it.pattern.uppercase() }.toSet()
+        pack.words.filter { it.uppercase() !in existing }.forEach { w -> total += c.tagRepository.addRule(w, id) ?: 0 }
+        lastApplied.value = total
+    }
     suspend fun preview(word: String) = c.tagRepository.previewRule(word)
 }
+
+/** A ready-made tag idea: the tag and the words that give it away on a bank statement. */
+data class TagPack(val tag: String, val blurb: String, val words: List<String>)
+
+val TAG_PACKS = listOf(
+    TagPack("Coffee", "Scooter's, Starbucks, 7 Brew…", listOf("SCOOTERS", "STARBUCKS", "DUNKIN", "7 BREW", "DUTCH BROS", "CARIBOU", "COFFEE", "ESPRESSO")),
+    TagPack("Fast food", "McDonald's, Wendy's, Runza…", listOf("MCDONALD", "WENDY", "BURGER KING", "TACO BELL", "RUNZA", "ARBYS", "SONIC", "KFC", "POPEYES", "HARDEE", "CULVERS", "PANDA EXPRESS")),
+    TagPack("Gaming", "Steam, PlayStation, Roblox…", listOf("STEAM", "PLAYSTATION", "XBOX", "NINTENDO", "ROBLOX", "INSTANTG", "EPIC GAMES", "ROUND1")),
+    TagPack("Delivery", "DoorDash, Uber Eats, Grubhub", listOf("DOORDASH", "UBER EATS", "GRUBHUB", "POSTMATES", "INSTACART")),
+    TagPack("Travel", "Airlines, hotels, Airbnb", listOf("AIRBNB", "DELTA", "SOUTHWEST", "UNITED AIR", "AMERICAN AIR", "HILTON", "MARRIOTT", "HOTEL", "EXPEDIA")),
+    TagPack("Art supplies", "Blick, Michaels, Hobby Lobby", listOf("BLICK", "MICHAELS", "HOBBY LOBBY", "JERRYS", "ART SUPPLY")),
+)
 
 /** Every tag with its total; tap to see its transactions. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -152,7 +180,50 @@ fun TagsScreen(onBack: () -> Unit, onOpen: (Long) -> Unit) {
             }
             return@Column
         }
-        LazyColumn {
+        LazyColumn(contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp)) {
+            if (tags.isNotEmpty()) {
+                item {
+                    val sc = com.emotionalleaves.sprout.ui.theme.LocalSproutColors.current
+                    val total = tags.sumOf { -it.total }
+                    com.emotionalleaves.sprout.ui.common.HeroCard(sc.hero) {
+                        Text("Tagged spending", style = MaterialTheme.typography.labelLarge, color = sc.onHero.copy(alpha = 0.85f))
+                        Text(Money.format(total), style = MaterialTheme.typography.displaySmall, color = sc.onHero)
+                        val top = tags.maxByOrNull { -it.total }
+                        Text("${tags.size} tag${if (tags.size == 1) "" else "s"}" + (top?.let { " · biggest: #${it.name}" } ?: ""),
+                            style = MaterialTheme.typography.bodyMedium, color = sc.onHero)
+                    }
+                }
+            }
+            val used = tags.map { it.name.lowercase() }.toSet()
+            val ideas = TAG_PACKS.filter { it.tag.lowercase() !in used }
+            if (ideas.isNotEmpty()) {
+                item { com.emotionalleaves.sprout.ui.common.SectionTitle("Quick ideas") }
+                item {
+                    Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        ideas.forEach { pack ->
+                            androidx.compose.material3.Surface(
+                                onClick = { vm.addPack(pack) },
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                modifier = Modifier.width(170.dp),
+                            ) {
+                                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text("#" + pack.tag, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                                        Icon(Icons.Rounded.Add, contentDescription = "Add #${pack.tag}", tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                    Text(pack.blurb, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
+                                }
+                            }
+                        }
+                    }
+                }
+                item {
+                    Text("One tap makes the tag and tags past and future purchases with those words.",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp))
+                }
+            }
             if (rules.isNotEmpty()) {
                 item {
                     SoftCard {
@@ -170,6 +241,8 @@ fun TagsScreen(onBack: () -> Unit, onOpen: (Long) -> Unit) {
                     }
                 }
             }
+            if (tags.isNotEmpty()) item { com.emotionalleaves.sprout.ui.common.SectionTitle("Your tags") }
+            val biggest = tags.maxOfOrNull { kotlin.math.abs(it.total) }?.coerceAtLeast(1) ?: 1
             items(tags, key = { it.id }) { t ->
                 SoftCard(onClick = { onOpen(t.id) }) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -179,11 +252,14 @@ fun TagsScreen(onBack: () -> Unit, onOpen: (Long) -> Unit) {
                             Text("#" + t.name, style = MaterialTheme.typography.titleSmall)
                             Text("${t.count} transaction${if (t.count == 1) "" else "s"}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(Money.format(-t.total), style = MaterialTheme.typography.titleSmall)
-                            Text("Edit", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.clickable { editing = t }.padding(4.dp))
-                        }
+                        Text(Money.format(-t.total), style = MaterialTheme.typography.titleSmall)
+                        IconButton(onClick = { editing = t }) { Icon(Icons.Rounded.Edit, contentDescription = "Rename or delete #${t.name}", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp)) }
+                    }
+                    val col = with(Color(t.colorArgb)) { this }
+                    androidx.compose.foundation.layout.Box(Modifier.padding(start = 52.dp, top = 6.dp).fillMaxWidth().height(6.dp)
+                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(3.dp)).background(MaterialTheme.colorScheme.surfaceContainerHighest)) {
+                        androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth(kotlin.math.abs(t.total).toFloat() / biggest).height(6.dp)
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(3.dp)).background(col))
                     }
                 }
             }
