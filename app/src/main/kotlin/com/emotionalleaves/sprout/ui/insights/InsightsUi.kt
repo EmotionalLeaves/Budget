@@ -1,5 +1,7 @@
 package com.emotionalleaves.sprout.ui.insights
 
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.ui.semantics.semantics
@@ -124,9 +126,13 @@ fun NetWorthScreen(onBack: () -> Unit) {
         LazyColumn {
             item {
                 SoftCard {
-                    Text("Today", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(money(now), style = MaterialTheme.typography.displaySmall)
-                    LineChart(s.map { it.second }, MaterialTheme.colorScheme.primary)
+                    // Touch and drag the line to read any month; let go to go back to today.
+                    var picked by remember { mutableStateOf<Int?>(null) }
+                    val p = picked?.let { s.getOrNull(it) }
+                    Text(p?.let { if (it == s.last()) "Today" else it.first.format(monthLabel) } ?: "Today",
+                        style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(money(p?.second ?: now), style = MaterialTheme.typography.displaySmall)
+                    LineChart(s.map { it.second }, MaterialTheme.colorScheme.primary, onScrub = { picked = it })
                     Row(Modifier.fillMaxWidth()) {
                         Text(s.first().first.format(monthLabel), style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
                         Text("Today", style = MaterialTheme.typography.labelSmall)

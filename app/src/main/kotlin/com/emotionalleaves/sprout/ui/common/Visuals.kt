@@ -1,5 +1,8 @@
 package com.emotionalleaves.sprout.ui.common
 
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -399,15 +402,37 @@ fun LegendRow(color: Color, label: String, value: String, onClick: (() -> Unit)?
     }
 }
 
-/** Smooth line with a soft fill below, faint guides and a glowing dot on the last point. Decorative; pair it with text. */
+/**
+ * Smooth line with a soft fill below, faint guides and a glowing dot on the last point. Pair it with text.
+ * With [onScrub], touching and dragging picks a point (shown with a guide line) and reports its index; null on release.
+ */
 @Composable
-fun LineChart(values: List<Long>, color: Color, modifier: Modifier = Modifier) {
+fun LineChart(values: List<Long>, color: Color, modifier: Modifier = Modifier, onScrub: ((Int?) -> Unit)? = null) {
     if (values.size < 2) return
+    var scrub by remember { androidx.compose.runtime.mutableStateOf<Int?>(null) }
     val progress = remember(values) { Animatable(0f) }
     LaunchedEffect(values) { progress.animateTo(1f, tween(900, easing = FastOutSlowInEasing)) }
     val grid = MaterialTheme.colorScheme.outlineVariant
     val dot = MaterialTheme.colorScheme.surfaceContainerLow
-    Canvas(modifier.fillMaxWidth().height(160.dp)) {
+    val scrubMod = if (onScrub == null) Modifier else Modifier.pointerInput(values) {
+        fun pick(x: Float): Int {
+            val pad = 10.dp.toPx()
+            val f = ((x - pad) / (size.width - 2 * pad)).coerceIn(0f, 1f)
+            return kotlin.math.round(f * (values.size - 1)).toInt()
+        }
+        awaitEachGesture {
+            val down = awaitFirstDown()
+            scrub = pick(down.position.x); onScrub(scrub)
+            do {
+                val e = awaitPointerEvent()
+                e.changes.firstOrNull()?.let { ch ->
+                    if (ch.pressed) { val i = pick(ch.position.x); if (i != scrub) { scrub = i; onScrub(i) }; ch.consume() }
+                }
+            } while (e.changes.any { it.pressed })
+            scrub = null; onScrub(null)
+        }
+    }
+    Canvas(modifier.fillMaxWidth().height(160.dp).then(scrubMod)) {
         val min = values.min().toFloat()
         val max = values.max().toFloat()
         val span = (max - min).takeIf { it > 0f } ?: 1f
@@ -434,7 +459,8 @@ fun LineChart(values: List<Long>, color: Color, modifier: Modifier = Modifier) {
         drawPath(fill, Brush.verticalGradient(listOf(color.copy(alpha = 0.32f), color.copy(alpha = 0.04f), Color.Transparent)))
         drawPath(line, color.copy(alpha = 0.18f), style = Stroke(9.dp.toPx(), cap = StrokeCap.Round))
         drawPath(line, color, style = Stroke(3.dp.toPx(), cap = StrokeCap.Round))
-        val end = pts[shown - 1]
+        val end = scrub?.let { pts.getOrNull(it) } ?: pts[shown - 1]
+        if (scrub != null) drawLine(color.copy(alpha = 0.5f), Offset(end.x, 0f), Offset(end.x, size.height), 1.5.dp.toPx())
         drawCircle(color.copy(alpha = 0.2f), 11.dp.toPx(), end)
         drawCircle(color, 6.dp.toPx(), end)
         drawCircle(dot, 2.5.dp.toPx(), end)

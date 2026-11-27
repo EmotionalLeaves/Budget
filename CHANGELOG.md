@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.67.0] - 2026-11-27
+
+Round 67: read the net worth chart with your finger.
+
+### Features
+- **Net worth:** touch and drag along the chart to see the value at any month. The big number and its label follow your finger, and letting go returns to today.
+
 ## [2.66.0] - 2026-11-27
 
 Round 66: faster month flipping.
