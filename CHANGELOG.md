@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.44.0] - 2026-11-26
+
+Round 44: Compare months reads at a glance.
+
+### Polish
+- **Reports → Compare** groups categories into **Went up**, **Went down** and **About the same**, each on its own card, and every bar uses one shared scale, so a $34 change finally looks small next to rent.
+
 ## [2.43.0] - 2026-11-26
 
 Round 43: Challenges.

@@ -392,24 +392,42 @@ private fun CompareMonths(onBack: () -> Unit) {
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            items(list, key = { "cmp-" + it.name }) { r ->
-                val max = maxOf(r.nowMinor, r.beforeMinor).coerceAtLeast(1)
-                Column(Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(r.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-                        val up = r.deltaMinor > 0
-                        Text(
-                            if (r.deltaMinor == 0L) "same" else
-                                (if (up) "▲ " else "▼ ") + Money.formatWhole(kotlin.math.abs(r.deltaMinor)) +
-                                    (r.percent?.let { " (${kotlin.math.abs(it)}%)" } ?: if (r.beforeMinor == 0L) " (new)" else ""),
-                            style = MaterialTheme.typography.labelLarge, color = if (up) sc.danger else if (r.deltaMinor < 0) sc.ok else MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+            // One scale for every row, so a $34 change looks small next to a $950 one.
+            val scale = list.maxOfOrNull { maxOf(it.nowMinor, it.beforeMinor) }?.coerceAtLeast(1) ?: 1
+            val groups = listOf(
+                "Went up" to list.filter { it.deltaMinor > 0 },
+                "Went down" to list.filter { it.deltaMinor < 0 },
+                "About the same" to list.filter { it.deltaMinor == 0L },
+            ).filter { it.second.isNotEmpty() }
+            groups.forEach { (label, rows) ->
+                item(key = "cmp-h-$label") {
+                    Text(label.uppercase(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 24.dp, top = 14.dp, bottom = 4.dp))
+                }
+                item(key = "cmp-g-$label") {
+                    SoftCard {
+                        rows.forEachIndexed { i, r ->
+                            Column(Modifier.padding(vertical = 6.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(r.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                                    val up = r.deltaMinor > 0
+                                    Text(
+                                        if (r.deltaMinor == 0L) Money.formatWhole(r.nowMinor) else
+                                            (if (up) "▲ " else "▼ ") + Money.formatWhole(kotlin.math.abs(r.deltaMinor)) +
+                                                (r.percent?.let { " (${kotlin.math.abs(it)}%)" } ?: if (r.beforeMinor == 0L) " (new)" else ""),
+                                        style = MaterialTheme.typography.labelLarge,
+                                        color = if (up) sc.danger else if (r.deltaMinor < 0) sc.ok else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                Spacer(Modifier.height(4.dp))
+                                FatProgress(r.nowMinor.toFloat() / scale, MaterialTheme.colorScheme.primary, height = 6.dp)
+                                Spacer(Modifier.height(3.dp))
+                                FatProgress(r.beforeMinor.toFloat() / scale, MaterialTheme.colorScheme.outline, height = 6.dp)
+                                Text("${Money.formatWhole(r.nowMinor)} vs ${Money.formatWhole(r.beforeMinor)}", style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
                     }
-                    FatProgress(r.nowMinor.toFloat() / max, MaterialTheme.colorScheme.primary, height = 6.dp)
-                    Spacer(Modifier.height(3.dp))
-                    FatProgress(r.beforeMinor.toFloat() / max, MaterialTheme.colorScheme.outline, height = 6.dp)
-                    Text("${Money.formatWhole(r.nowMinor)} vs ${Money.formatWhole(r.beforeMinor)}", style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             item { Box(Modifier.height(24.dp)) }
