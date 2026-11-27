@@ -1,5 +1,9 @@
 package com.emotionalleaves.sprout.ui.transactions
 
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.filled.History
+import androidx.compose.ui.focus.onFocusChanged
 import kotlinx.coroutines.flow.mapLatest
 import java.util.Locale
 import java.time.format.DateTimeFormatter
@@ -405,6 +409,16 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
                 }
             }
         } else {
+            // Recent searches: kept on this phone only, offered when you tap into an empty search box.
+            var recentRaw by com.emotionalleaves.sprout.ui.common.rememberViewPref("recent-searches", "")
+            val recent = recentRaw.split('\u001F').filter { it.isNotBlank() }
+            var searchFocused by remember { mutableStateOf(false) }
+            LaunchedEffect(filter.query) {
+                val q = filter.query.trim()
+                if (q.length < 2) return@LaunchedEffect
+                kotlinx.coroutines.delay(1500) // only searches you paused on, not every keystroke
+                recentRaw = (listOf(q) + recent.filter { !it.equals(q, ignoreCase = true) }).take(6).joinToString("\u001F")
+            }
             OutlinedTextField(
                 value = filter.query,
                 onValueChange = vm::setQuery,
@@ -438,8 +452,20 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
                     focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                     unfocusedBorderColor = androidx.compose.ui.graphics.Color.Transparent,
                 ),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+                    .onFocusChanged { searchFocused = it.isFocused },
             )
+            if (searchFocused && filter.query.isBlank() && recent.isNotEmpty()) {
+                androidx.compose.foundation.lazy.LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(recent) { q ->
+                        androidx.compose.material3.SuggestionChip(onClick = { vm.setQuery(q) }, label = { Text(q, maxLines = 1) },
+                            icon = { Icon(Icons.Filled.History, contentDescription = null, modifier = Modifier.size(16.dp)) })
+                    }
+                    item {
+                        androidx.compose.material3.TextButton(onClick = { recentRaw = "" }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Clear") }
+                    }
+                }
+            }
             if (filter.query.isNotBlank()) SearchUnderstood(filter.query)
             val totals by vm.matchTotals.collectAsStateWithLifecycle()
             totals?.takeIf { it.count > 0 }?.let { t ->

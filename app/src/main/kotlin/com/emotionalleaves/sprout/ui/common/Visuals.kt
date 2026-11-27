@@ -326,6 +326,7 @@ fun BarChart(values: List<Long>, labels: List<String>, color: Color, modifier: M
     Column(modifier.semantics { contentDescription = desc }) {
         Canvas(Modifier.fillMaxWidth().height(140.dp).pointerInput(values) {
             detectTapGestures { pos ->
+                if (values.isEmpty()) return@detectTapGestures
                 val i = (pos.x / (size.width.toFloat() / values.size.coerceAtLeast(1))).toInt().coerceIn(0, values.lastIndex)
                 selected = if (i == active && selected != null || i == values.lastIndex && selected == null) null else i
             }

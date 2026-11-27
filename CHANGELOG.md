@@ -2,6 +2,16 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.69.0] - 2026-11-27
+
+Round 69: recent searches.
+
+### Features
+- **Recent searches:** tap into an empty search box on Activity to see your last few searches as chips. One tap runs one again, and **Clear** forgets them. They're kept only on this phone and erased by Delete all data.
+
+### Fixes
+- A bar chart with no bars can no longer crash when tapped.
+
 ## [2.68.0] - 2026-11-27
 
 Round 68: every bar chart answers a tap.
