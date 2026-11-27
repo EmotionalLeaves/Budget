@@ -112,6 +112,7 @@ fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit, onGoals:
 
     // Swipe sideways anywhere to change month, like flipping pages.
     val swipe = with(androidx.compose.ui.platform.LocalDensity.current) { 96.dp.toPx() }
+    com.emotionalleaves.sprout.ui.common.SyncPullBox {
     Column(Modifier.fillMaxSize().pointerInput(Unit) {
         var dx = 0f
         detectHorizontalDragGestures(
@@ -260,6 +261,7 @@ fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit, onGoals:
                 )
             }
         }
+    }
     }
 
     editing?.let { line ->

@@ -184,7 +184,7 @@ fun BillsScreen() {
     val context = androidx.compose.ui.platform.LocalContext.current
     val cancelIds by vm.cancelIds.collectAsStateWithLifecycle()
 
-    Box(Modifier.fillMaxSize()) {
+    com.emotionalleaves.sprout.ui.common.SyncPullBox {
         val list = upcoming
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 96.dp)) {
             item {

@@ -1,5 +1,9 @@
 package com.emotionalleaves.sprout.ui.common
 
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import kotlinx.coroutines.flow.map
 import com.emotionalleaves.sprout.AppContainer
 import com.emotionalleaves.sprout.data.db.SyncTrigger
 import com.emotionalleaves.sprout.domain.sync.SyncPolicy
@@ -48,4 +52,31 @@ fun kotlinx.coroutines.CoroutineScope.showUndoable(
         duration = if (undo != null) androidx.compose.material3.SnackbarDuration.Long else androidx.compose.material3.SnackbarDuration.Short,
     )
     if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) undo?.invoke()
+}
+
+/**
+ * Pull down to sync, on any screen. Shows the spinner while a sync runs and a short note when Sprout
+ * answers instead of syncing ("Synced 3 min ago — pull again to sync anyway").
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@androidx.compose.runtime.Composable
+fun SyncPullBox(modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier, content: @androidx.compose.runtime.Composable androidx.compose.foundation.layout.BoxScope.() -> Unit) {
+    val c = appContainer()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val syncing by androidx.compose.runtime.remember {
+        androidx.work.WorkManager.getInstance(context.applicationContext)
+            .getWorkInfosForUniqueWorkFlow(com.emotionalleaves.sprout.work.SyncScheduler.ONE_TIME_WORK)
+            .map { list -> list.any { it.state == androidx.work.WorkInfo.State.RUNNING } }
+    }.collectAsState(initial = false)
+    androidx.compose.material3.pulltorefresh.PullToRefreshBox(
+        isRefreshing = syncing,
+        onRefresh = {
+            scope.launch {
+                SyncActions.requestSync(c)?.let { android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_SHORT).show() }
+            }
+        },
+        modifier = modifier.fillMaxSize(),
+        content = content,
+    )
 }

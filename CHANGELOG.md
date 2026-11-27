@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.88.0] - 2026-11-27
+
+Round 88: pull to sync everywhere.
+
+### Features
+- **Budgets** and **Bills** now sync when you pull down, like Home and Activity, so fresh numbers are one gesture away wherever you are.
+
 ## [2.87.0] - 2026-11-27
 
 Round 87: see what came in.
