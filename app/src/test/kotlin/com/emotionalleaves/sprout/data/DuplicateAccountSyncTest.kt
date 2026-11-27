@@ -49,4 +49,26 @@ class DuplicateAccountSyncTest {
         env.db.accounts().setHidden(hidden.id, false)
         assertEquals(0, env.repo().hideDuplicateAccounts())
     }
+
+    @Test fun ifTheKeptLoginStopsSyncingTheLiveCopyTakesOver() = runBlocking {
+        env.server.enqueue(MockResponse().setBody(body("C")))
+        env.repo().sync(SyncTrigger.MANUAL)
+        env.server.enqueue(MockResponse().setBody(body("D")))
+        env.repo().sync(SyncTrigger.MANUAL)
+        val kept = env.db.accounts().getAll().single { !it.hidden }
+        val hidden = env.db.accounts().getAll().single { it.hidden }
+        val gifts = env.db.categories().getByKey(DefaultCategories.GIFTS)!!.id
+        env.db.transactions().setCategory("${kept.id}:2", gifts, CategorySource.USER, 1)
+        // The kept login stopped three days ago; the other one is still syncing.
+        val now = env.clock.instant().epochSecond
+        env.db.openHelper.writableDatabase.execSQL("UPDATE accounts SET lastSyncedAt = ${now - 3 * 86_400} WHERE id = '${kept.id}'")
+        env.db.openHelper.writableDatabase.execSQL("UPDATE accounts SET lastSyncedAt = $now WHERE id = '${hidden.id}'")
+
+        env.repo().hideDuplicateAccounts()
+
+        val after = env.db.accounts().getAll().associateBy { it.id }
+        assertEquals(true, after.getValue(kept.id).hidden)
+        assertEquals(false, after.getValue(hidden.id).hidden)
+        assertEquals(gifts, env.db.transactions().getById("${hidden.id}:2")!!.categoryId)
+    }
 }

@@ -2,6 +2,16 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.29.0] - 2026-11-26
+
+Round 29: shared accounts and a calmer Activity list.
+
+### New
+- **Shared accounts stay live.** When a joint account is seen through two logins (yours and a partner's), Sprout shows it once. If the login whose copy it kept stops syncing for two days (an expired token, say) while the other keeps going, it switches to the live copy and carries your categories and notes over.
+
+### Polish
+- **Activity**: each day's purchases sit together on one rounded card with soft dividers, under a clean day heading with the day's totals. Banners are quieter cards with an icon and a tonal button.
+
 ## [2.28.0] - 2026-11-26
 
 Round 28: a richer look.

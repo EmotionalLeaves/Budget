@@ -8,6 +8,7 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.runtime.LaunchedEffect
 import com.emotionalleaves.sprout.ui.common.showUndoable
 import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.horizontalScroll
@@ -485,7 +486,16 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
                     val row = items[index] ?: return@items
                     val date = Format.localDate(row.occurredAt)
                     val prev = if (index > 0) items.peek(index - 1)?.let { Format.localDate(it.occurredAt) } else null
+                    val next = if (index + 1 < items.itemCount) items.peek(index + 1)?.let { Format.localDate(it.occurredAt) } else null
                     if (prev != date) DayHeader(Format.dayHeader(date, today), dayTotals[date])
+                    // Each day's purchases sit together on one rounded card.
+                    val r = 20.dp
+                    val shape = androidx.compose.foundation.shape.RoundedCornerShape(
+                        topStart = if (prev != date) r else 0.dp, topEnd = if (prev != date) r else 0.dp,
+                        bottomStart = if (next != date) r else 0.dp, bottomEnd = if (next != date) r else 0.dp,
+                    )
+                    Column(Modifier.padding(horizontal = 12.dp).padding(bottom = if (next != date) 4.dp else 0.dp).clip(shape)
+                        .background(MaterialTheme.colorScheme.surfaceContainerLow)) {
                     if (selected.isNotEmpty()) {
                         val on = row.id in selected
                         TransactionItem(row, selected = on, hideAccount = initialAccountId != null, onLongClick = { selected = if (on) selected - row.id else selected + row.id }) {
@@ -497,12 +507,14 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
                             onLeft = { scope.launch { vm.toggleExcluded(row.id)?.let { (msg, undo) -> scope.showUndoable(snackbar, msg, undo) } } },
                         ) { TransactionItem(row, hideAccount = initialAccountId != null, onLongClick = { selected = setOf(row.id) }) { openId = row.id } }
                     }
-
+                    if (next == date) androidx.compose.material3.HorizontalDivider(Modifier.padding(start = 72.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                    }
                 }
             }
             val d = floatingDate
             if (d != null && (listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0)) {
-                DayHeader(Format.dayHeader(d, today), dayTotals[d])
+                DayHeader(Format.dayHeader(d, today), dayTotals[d], floating = true)
             }
         }
     }
@@ -563,17 +575,18 @@ private fun SwipeRow(onRight: () -> Unit, onLeft: () -> Unit, content: @Composab
                 Text(if (toRight) "Change category" else "Leave out of budget", color = fg, style = MaterialTheme.typography.labelLarge)
             }
         },
-    ) { Box(Modifier.background(MaterialTheme.colorScheme.background)) { content() } }
+    ) { Box(Modifier.background(MaterialTheme.colorScheme.surfaceContainerLow)) { content() } }
 }
 
 @Composable
-private fun DayHeader(text: String, totals: Pair<Long, Long>? = null) {
+private fun DayHeader(text: String, totals: Pair<Long, Long>? = null, floating: Boolean = false) {
     Row(
-        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer).padding(horizontal = 16.dp, vertical = 6.dp)
+        Modifier.fillMaxWidth().background(if (floating) MaterialTheme.colorScheme.background.copy(alpha = 0.96f) else androidx.compose.ui.graphics.Color.Transparent)
+            .padding(start = 24.dp, end = 24.dp, top = if (floating) 8.dp else 14.dp, bottom = 6.dp)
             .semantics(mergeDescendants = true) { heading() },
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text, style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
+        Text(text, style = MaterialTheme.typography.titleSmall, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold, modifier = Modifier.weight(1f))
         totals?.let { (out, inn) ->
             if (inn > 0) Text("+" + com.emotionalleaves.sprout.domain.money.Money.formatWhole(inn) + "  ", style = MaterialTheme.typography.labelMedium,
                 color = com.emotionalleaves.sprout.ui.theme.LocalSproutColors.current.income)

@@ -109,6 +109,7 @@ class SyncRepository(
      * transactions in the kept one. Returns how many accounts were hidden. An account you un-hide stays visible.
      */
     suspend fun hideDuplicateAccounts(): Int = withContext(Dispatchers.IO) {
+        switchStaleCopies()
         val s = settings.current()
         val accounts = db.accounts().getAll().filter { it.source == AccountSource.SIMPLEFIN && !it.hidden && it.id !in s.dedupedAccounts }
         if (accounts.size < 2) return@withContext 0
@@ -136,8 +137,50 @@ class SyncRepository(
                 db.accounts().setIncludeInTotals(dup, false)
             }
         }
-        pairs.forEach { settings.addDedupedAccount(it.first) }
+        pairs.forEach { (dup, keep) -> settings.setDedupPair(dup, keep) }
         pairs.size
+    }
+
+    /** Two days without an update while the hidden copy keeps syncing = that login stopped; show the live copy. */
+    private val STALE_COPY_SECONDS = 2L * 24 * 3600
+
+    /**
+     * Shared accounts seen through two logins (yours and a partner's): if the login whose copy Sprout kept stops
+     * syncing (expired token, removed from Bridge), switch to the copy that's still updating, carrying your
+     * categories and notes over, so the account never goes stale.
+     */
+    private suspend fun switchStaleCopies() {
+        val s = settings.current()
+        if (s.dedupPairs.isEmpty()) return
+        val accounts = db.accounts().getAll().associateBy { it.id }
+        val now = clock.instant().epochSecond
+        for (pair in s.dedupPairs) {
+            val (hiddenId, keptId) = pair.split('|').takeIf { it.size == 2 } ?: continue
+            val hidden = accounts[hiddenId] ?: continue
+            val kept = accounts[keptId] ?: continue
+            if (!hidden.hidden || kept.hidden) continue // you changed these yourself: leave them
+            val keptLast = kept.lastSyncedAt ?: 0
+            val hiddenLast = hidden.lastSyncedAt ?: 0
+            if (hiddenLast - keptLast < STALE_COPY_SECONDS) continue
+            val rows = db.transactions().sigRowsFor(listOf(hiddenId, keptId))
+            fun sig(r: com.emotionalleaves.sprout.data.db.SigRow) =
+                com.emotionalleaves.sprout.domain.sync.DuplicateAccounts.signature(r.occurredAt, r.amountMinor, r.description)
+            val target = rows.filter { it.accountId == hiddenId }.associateBy(::sig)
+            db.withTransaction {
+                for (r in rows.filter { it.accountId == keptId }) {
+                    val t = target[sig(r)] ?: continue
+                    if (r.categorySource == CategorySource.USER && t.categorySource != CategorySource.USER) {
+                        db.transactions().setCategory(t.id, r.categoryId, CategorySource.USER, now)
+                    }
+                    if (!r.note.isNullOrBlank() && t.note.isNullOrBlank()) db.transactions().setNote(t.id, r.note, now)
+                }
+                db.accounts().setHidden(hiddenId, false)
+                db.accounts().setIncludeInTotals(hiddenId, true)
+                db.accounts().setHidden(keptId, true)
+                db.accounts().setIncludeInTotals(keptId, false)
+            }
+            settings.setDedupPair(keptId, hiddenId)
+        }
     }
 
     suspend fun sync(trigger: SyncTrigger): SyncRunResult = withContext(Dispatchers.IO) {

@@ -35,6 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -78,20 +79,23 @@ fun Banner(
     onAction: (() -> Unit)? = null,
     warning: Boolean = true,
 ) {
-    val colors = if (warning) {
-        CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer, contentColor = MaterialTheme.colorScheme.onErrorContainer)
-    } else {
-        CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer)
-    }
-    Card(colors = colors, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
-        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+    val container = if (warning) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceContainerLow
+    val content = if (warning) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurface
+    Card(
+        colors = CardDefaults.cardColors(containerColor = container, contentColor = content),
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+    ) {
+        Row(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             if (warning) {
                 Icon(Icons.Filled.Warning, contentDescription = "Warning")
-                Spacer(Modifier.width(12.dp))
+            } else {
+                Icon(androidx.compose.material.icons.Icons.Rounded.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             }
+            Spacer(Modifier.width(12.dp))
             Text(message, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
             if (actionLabel != null && onAction != null) {
-                TextButton(onClick = onAction, modifier = Modifier.heightIn(min = 48.dp)) { Text(actionLabel) }
+                androidx.compose.material3.FilledTonalButton(onClick = onAction, modifier = Modifier.heightIn(min = 40.dp)) { Text(actionLabel) }
             }
         }
     }

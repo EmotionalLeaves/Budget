@@ -175,6 +175,12 @@ interface TransactionDao {
     )
     suspend fun sigRows(): List<SigRow>
 
+    @Query(
+        "SELECT id, accountId, occurredAt, amountMinor, description, categoryId, categorySource, note " +
+            "FROM transactions WHERE accountId IN (:accountIds) AND pending = 0",
+    )
+    suspend fun sigRowsFor(accountIds: List<String>): List<SigRow>
+
     @Query("SELECT id, description, merchantKey FROM transactions")
     suspend fun keyRows(): List<KeyRow>
 
