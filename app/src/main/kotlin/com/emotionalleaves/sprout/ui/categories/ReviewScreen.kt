@@ -119,12 +119,12 @@ fun ReviewScreen(onBack: () -> Unit) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
-            Text("Review uncategorized", style = MaterialTheme.typography.titleLarge)
+            Text("Sort purchases", style = MaterialTheme.typography.titleLarge)
         }
         val list = queue ?: return@Column
         val row = list.firstOrNull()
         if (row == null) {
-            EmptyState("All caught up", "Every transaction has a category.")
+            EmptyState("All sorted", "Every purchase has a category. New ones are sorted for you as they arrive.")
             return@Column
         }
         var startCount by rememberSaveable { mutableStateOf(0) }

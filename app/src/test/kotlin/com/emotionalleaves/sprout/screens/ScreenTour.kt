@@ -286,8 +286,8 @@ class ScreenTour {
                 t("rules") { tap("More"); tap("Category rules"); s("52-rules"); back() }
                 t("review") {
                     tap("Activity")
-                    val n = rule.onAllNodes(androidx.compose.ui.test.hasText("Review") and androidx.compose.ui.test.hasClickAction()).fetchSemanticsNodes().size
-                    rule.onAllNodes(androidx.compose.ui.test.hasText("Review") and androidx.compose.ui.test.hasClickAction())[n - 1]
+                    val n = rule.onAllNodes(androidx.compose.ui.test.hasText("Check") and androidx.compose.ui.test.hasClickAction()).fetchSemanticsNodes().size
+                    rule.onAllNodes(androidx.compose.ui.test.hasText("Check") and androidx.compose.ui.test.hasClickAction())[n - 1]
                         .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); settle()
                     s("58-review"); back()
                 }

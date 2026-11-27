@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.41.0] - 2026-11-26
+
+Round 41: one word per job.
+
+### Polish
+- The two Activity banners no longer both say "Review": new activity is "4 new since you last looked · Check", and purchases without a category are "12 purchases need a category · Sort". The sorting screen is called **Sort purchases** everywhere (its tile in More, its shortcut and its title), and says "All sorted" when you're done.
+
 ## [2.40.0] - 2026-11-26
 
 Round 40: hints for the hidden moves.

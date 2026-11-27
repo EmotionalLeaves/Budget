@@ -408,12 +408,12 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
                 "Swipe a purchase right to change its category, left to leave it out of budgets. Long-press to select several.")
         }
         if (inbox > 0 && !scoped) {
-            Banner("$inbox new to review", actionLabel = "Review", onAction = { navigate("inbox") }, warning = false)
+            Banner("$inbox new since you last looked", actionLabel = "Check", onAction = { navigate("inbox") }, warning = false)
         }
         if (uncategorized > 0 && !scoped) {
             Banner(
-                "$uncategorized uncategorized transaction${if (uncategorized == 1) "" else "s"}",
-                actionLabel = "Review",
+                "$uncategorized ${if (uncategorized == 1) "purchase needs" else "purchases need"} a category",
+                actionLabel = "Sort",
                 onAction = onReview,
                 warning = false,
             )
