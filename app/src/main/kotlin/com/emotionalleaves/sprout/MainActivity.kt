@@ -333,7 +333,8 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
             composable("year-review") { com.emotionalleaves.sprout.ui.insights.YearInReviewScreen(onBack = { nav.popBackStack() }) }
             composable("challenges") { com.emotionalleaves.sprout.ui.challenge.ChallengesScreen(onBack = { nav.popBackStack() }) }
             composable("networth") { com.emotionalleaves.sprout.ui.insights.NetWorthScreen(onBack = { nav.popBackStack() }) }
-            composable("year") { com.emotionalleaves.sprout.ui.insights.YearScreen(onBack = { nav.popBackStack() }, onCategory = { nav.navigate("category/$it") }) }
+            composable("year") { com.emotionalleaves.sprout.ui.insights.YearScreen(onBack = { nav.popBackStack() }, onCategory = { nav.navigate("category/$it") },
+                onCategoryMonth = { id, ym -> nav.navigate("category/$id?month=$ym") }) }
             composable("tags") { com.emotionalleaves.sprout.ui.tags.TagsScreen(onBack = { nav.popBackStack() }, onOpen = { nav.navigate("tag/$it") }) }
             composable("account/{id}") { entry ->
                 val id = entry.arguments?.getString("id").orEmpty()
@@ -367,11 +368,15 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
             }
             composable("quick-setup") { QuickSetupScreen(onBack = { nav.popBackStack() }) }
             composable(
-                "category/{id}",
-                arguments = listOf(navArgument("id") { type = NavType.LongType }),
+                "category/{id}?month={month}",
+                arguments = listOf(
+                    navArgument("id") { type = NavType.LongType },
+                    navArgument("month") { type = NavType.StringType; nullable = true; defaultValue = null },
+                ),
             ) { entry ->
                 CategoryDetailScreen(
                     categoryId = entry.arguments?.getLong("id") ?: 0L,
+                    initialMonth = entry.arguments?.getString("month")?.let { runCatching { java.time.YearMonth.parse(it) }.getOrNull() },
                     snackbar = snackbar,
                     onBack = { nav.popBackStack() },
                     onEditCategories = { nav.navigate("categories") },

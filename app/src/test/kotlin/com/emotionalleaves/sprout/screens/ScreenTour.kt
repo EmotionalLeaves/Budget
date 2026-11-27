@@ -356,6 +356,14 @@ class ScreenTour {
                         .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); settle(); Thread.sleep(600); settle()
                     s("72-forecast"); back()
                 }
+                t("yearcell") {
+                    tap("More")
+                    rule.onAllNodes(androidx.compose.ui.test.hasScrollAction())[0].performScrollToNode(androidx.compose.ui.test.hasText("Year view"))
+                    tap("Year view"); Thread.sleep(400); settle()
+                    rule.onAllNodes(androidx.compose.ui.test.hasText("\$205") and androidx.compose.ui.test.hasClickAction())[0]
+                        .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); settle(); Thread.sleep(400); settle()
+                    s("73-year-cell"); back(); back()
+                }
                 t("customize") {
                     tap("Home")
                     rule.onAllNodes(androidx.compose.ui.test.hasScrollAction())[0]

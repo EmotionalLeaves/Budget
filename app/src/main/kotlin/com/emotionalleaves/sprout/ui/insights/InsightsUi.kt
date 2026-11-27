@@ -178,7 +178,7 @@ fun NetWorthScreen(onBack: () -> Unit) {
 /** A year at a glance: every category's spending per month, as a heat grid. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun YearScreen(onBack: () -> Unit, onCategory: (Long) -> Unit) {
+fun YearScreen(onBack: () -> Unit, onCategory: (Long) -> Unit, onCategoryMonth: (Long, java.time.YearMonth) -> Unit = { id, _ -> onCategory(id) }) {
     val c: AppContainer = appContainer()
     val data by produceState<Pair<List<java.time.YearMonth>, List<YearRow>>?>(null) { value = runCatching { c.insightsRepository.yearGrid(12) }.getOrNull() }
     Column(Modifier.fillMaxSize()) {
@@ -231,10 +231,12 @@ fun YearScreen(onBack: () -> Unit, onCategory: (Long) -> Unit) {
                     }
                     Row(Modifier.horizontalScroll(scroll)) {
                         val scale = if (perRow) r.byMonth.max().coerceAtLeast(1) else maxCell
-                        r.byMonth.forEach { v ->
+                        r.byMonth.forEachIndexed { mi, v ->
                             val a = (v.toFloat() / scale).coerceIn(0f, 1f)
+                            // Tap a month to open the category at that month.
                             Box(
                                 Modifier.width(60.dp).height(36.dp).padding(horizontal = 2.dp).clip(RoundedCornerShape(8.dp))
+                                    .clickable { onCategoryMonth(r.categoryId, months[mi]) }
                                     .background(heat.copy(alpha = 0.06f + 0.7f * a)),
                                 contentAlignment = Alignment.Center,
                             ) {

@@ -85,6 +85,7 @@ class CategoryDetailViewModel(private val c: AppContainer, val categoryId: Long)
     private fun window(m: YearMonth) = MonthWindow.of(m, ZoneId.systemDefault())
 
     fun prev() { _month.value = _month.value.minusMonths(1) }
+    fun show(month: java.time.YearMonth) { _month.value = month }
     fun next() { _month.value = _month.value.plusMonths(1) }
 
     val category: StateFlow<CategoryEntity?> = c.db.categories().observeAll().map { l -> l.firstOrNull { it.id == categoryId } }
@@ -114,8 +115,12 @@ private val shortMonth = DateTimeFormatter.ofPattern("MMM", Locale.US)
 private val monthTitle = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.US)
 
 @Composable
-fun CategoryDetailScreen(categoryId: Long, snackbar: SnackbarHostState, onBack: () -> Unit, onEditCategories: () -> Unit) {
-    val vm = sproutViewModel(key = "cat-$categoryId") { CategoryDetailViewModel(it, categoryId) }
+fun CategoryDetailScreen(categoryId: Long, snackbar: SnackbarHostState, onBack: () -> Unit, onEditCategories: () -> Unit,
+                         initialMonth: java.time.YearMonth? = null) {
+    val vm = sproutViewModel(key = "cat-$categoryId-${initialMonth ?: ""}") { CategoryDetailViewModel(it, categoryId) }
+    // Opened from a month (a Year view cell): start there. Once only, so swiping months afterwards sticks.
+    var startedAt by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(initialMonth) { if (initialMonth != null && !startedAt) { vm.show(initialMonth); startedAt = true } }
     val category by vm.category.collectAsStateWithLifecycle()
     val budgetMonth by vm.budgetMonth.collectAsStateWithLifecycle()
     val merchants by vm.merchants.collectAsStateWithLifecycle()

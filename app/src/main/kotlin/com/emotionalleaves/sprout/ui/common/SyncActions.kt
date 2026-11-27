@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.common
 
+import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -60,7 +61,7 @@ fun kotlinx.coroutines.CoroutineScope.showUndoable(
  */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @androidx.compose.runtime.Composable
-fun SyncPullBox(modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier, content: @androidx.compose.runtime.Composable androidx.compose.foundation.layout.BoxScope.() -> Unit) {
+fun SyncPullBox(modifier: Modifier = Modifier, content: @androidx.compose.runtime.Composable androidx.compose.foundation.layout.BoxScope.() -> Unit) {
     val c = appContainer()
     val context = androidx.compose.ui.platform.LocalContext.current
     val scope = androidx.compose.runtime.rememberCoroutineScope()

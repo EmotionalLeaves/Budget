@@ -2,6 +2,16 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.94.0] - 2026-11-27
+
+Round 94: from the year to the month in one tap.
+
+### Features
+- **Year view:** tap any month's cell to open that category at that month (tap "$205" under Aug for Groceries and you land on Groceries, August). Tapping the row's name still opens it at this month.
+
+### Fixes
+- A code-quality warning in the pull-to-sync component is gone.
+
 ## [2.93.0] - 2026-11-27
 
 Round 93: know a bill before you edit it.
