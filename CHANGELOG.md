@@ -9,6 +9,9 @@ Round 59: budgets that start from real numbers.
 ### Features
 - **Setting a category budget** offers "Use $X · your recent months", based on what that category cost over your last three full months. Tap it to fill in the amount.
 
+### Polish
+- **Categories** are grouped into Spending, Income, Transfers and Archived. Each row shows what it cost this month (or "Nothing this month"). Reorder still shows one list, because the order is shared.
+
 ## [2.58.0] - 2026-11-27
 
 Round 58: Flex mode starts from your real spending.

@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.categories
 
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import com.emotionalleaves.sprout.ui.common.readable
@@ -189,8 +190,17 @@ fun CategoriesScreen(onBack: () -> Unit) {
             Text("This order is used everywhere you pick a category.", Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+        // Grouped by kind while browsing; one flat list while reordering, because the order is shared by all kinds.
+        val groups: List<Pair<String?, List<CategoryEntity>>> = if (reordering) listOf(null to all) else listOf(
+            "Spending" to all.filter { it.kind == CategoryKind.EXPENSE && !it.archived },
+            "Income" to all.filter { it.kind == CategoryKind.INCOME && !it.archived },
+            "Transfers · never counted as spending" to all.filter { it.kind == CategoryKind.TRANSFER && !it.archived },
+            "Archived" to all.filter { it.archived },
+        ).filter { it.second.isNotEmpty() }
         LazyColumn {
-            items(all, key = { it.id }) { c ->
+            groups.forEach { (header, list) ->
+            header?.let { h -> item(key = "h-$h") { com.emotionalleaves.sprout.ui.common.SectionTitle(h) } }
+            items(list, key = { it.id }) { c ->
                 Row(
                     Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(enabled = !reordering) { editing = c }.padding(horizontal = 16.dp)
                         .animateItem(),
@@ -203,9 +213,9 @@ fun CategoriesScreen(onBack: () -> Unit) {
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Text(c.name, style = MaterialTheme.typography.bodyLarge)
+                        val amount = spent?.get(c.id)?.takeIf { it != 0L }?.let { com.emotionalleaves.sprout.domain.money.Money.formatWhole(kotlin.math.abs(it)) + " this month" }
                         Text(
-                            kindLabel(c.kind) + (spent?.get(c.id)?.takeIf { it != 0L }?.let { " · " + com.emotionalleaves.sprout.domain.money.Money.formatWhole(kotlin.math.abs(it)) + " this month" } ?: "") +
-                                if (c.archived) " · archived" else "",
+                            if (reordering) kindLabel(c.kind) + (amount?.let { " · $it" } ?: "") else amount ?: "Nothing this month",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -213,9 +223,12 @@ fun CategoriesScreen(onBack: () -> Unit) {
                     if (reordering && !c.archived) {
                         IconButton(onClick = { vm.move(c.id, -1) }) { Icon(Icons.Filled.KeyboardArrowUp, contentDescription = "Move ${c.name} up") }
                         IconButton(onClick = { vm.move(c.id, +1) }) { Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Move ${c.name} down") }
+                    } else if (!reordering) {
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-                HorizontalDivider(Modifier.padding(start = 16.dp))
+                HorizontalDivider(Modifier.padding(start = 60.dp))
+            }
             }
         }
     }
