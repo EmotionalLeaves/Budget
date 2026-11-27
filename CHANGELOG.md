@@ -2,6 +2,19 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.27.0] - 2026-11-26
+
+Round 27: fixes from your real transactions.
+
+### Fixed
+- **"Visa Debit" is no longer treated as a store.** Your bank writes card purchases as "18370 VISA DEBIT PURC Carriage Park…", and Sprout took "Visa Debit" as the merchant, so all of them looked like one place: "Use this for all 41" and one pick sorted every card purchase into the same category. Sprout now reads the real place name after the bank's wording (Carriage Park, Salvage Warehouse…). After the update it re-reads every description, removes "always" rules that were made for bank wording, and re-sorts. "Use this for all" only appears for a real place.
+- **Your bank connected twice.** Every transaction showed up twice (the same bank linked again gets new ids), doubling spending. Sprout now spots a copy of an account (same name, same transactions), hides it, keeps the one that still syncs, and carries your categories and notes over. If it ever hides one you want, show it again in Settings and it stays visible.
+- Toast restaurants are recognized even without the "*" ("PURC TST COPAL MEXIC"), and so are Visa's international service fees, Discover/Capital One card payments, Tello, Google Play purchases, Paddle, Squarespace, Copyleaks, Surfshark, Instant Gaming, Roblox, TP-Link, Kikoff, Kabredlo's, LES bill pay, Valvoline (VIOC) and cash-advance apps like AtlasFinancial (as transfers, since they're borrowed money).
+- Paychecks win over the employer's name ("ROUND ONE ENTERT PAYROLL" is income, not entertainment).
+
+### New
+- **The same look on every phone.** Sprout is scaled to fit your screen's width, so a smaller or bigger phone shows the same layout as a typical 1080-pixel phone (your font size setting still applies).
+
 ## [2.26.0] - 2026-11-26
 
 Round 26: Lincoln, all of it.

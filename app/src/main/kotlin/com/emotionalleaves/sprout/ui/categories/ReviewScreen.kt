@@ -137,7 +137,8 @@ fun ReviewScreen(onBack: () -> Unit) {
                 Text("${Format.dateTime(r.occurredAt)} · ${r.accountName}", style = MaterialTheme.typography.bodySmall, color = c.onHero.copy(alpha = 0.8f))
             }
         }
-        Row(
+        val realPlace = !com.emotionalleaves.sprout.domain.categorize.MerchantNormalizer.isGeneric(row.merchantKey)
+        if (realPlace) Row(
             Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(role = Role.Switch) { always = !always },
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -154,7 +155,7 @@ fun ReviewScreen(onBack: () -> Unit) {
             ?.let { id -> categories.firstOrNull { it.id == id && it.key != DefaultCategories.UNCATEGORIZED } }
         if (suggested != null) {
             androidx.compose.material3.FilledTonalButton(
-                onClick = { vm.pick(row, suggested, always) },
+                onClick = { vm.pick(row, suggested, always && realPlace) },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
             ) {
                 Icon(com.emotionalleaves.sprout.ui.common.CategoryIcons.forKey(suggested.iconKey), contentDescription = null)
@@ -162,7 +163,7 @@ fun ReviewScreen(onBack: () -> Unit) {
                 Text("Looks like ${suggested.name}", style = MaterialTheme.typography.titleSmall)
             }
         }
-        CategoryGrid(categories.filter { it.key != DefaultCategories.UNCATEGORIZED }, null) { vm.pick(row, it, always) }
+        CategoryGrid(categories.filter { it.key != DefaultCategories.UNCATEGORIZED }, null) { vm.pick(row, it, always && realPlace) }
         OutlinedButton(onClick = { vm.skip(row) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Skip for now") }
     }
 }

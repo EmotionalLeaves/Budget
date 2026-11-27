@@ -90,12 +90,24 @@ class AutoCategorizeTest {
         "PUMP & PANTRY #12" to C.GAS,
         "GOMEZ ART SUPPLY" to C.HOBBIES,
         "ZOO BAR LINCOLN NE" to C.EATING_OUT,
+        "45020 VISA DEBIT PURC TST* COPAL MEXIC LINCOLN NE 00000000 045020" to C.EATING_OUT,
+        "12345 VISA DEBIT PURC TELLO MOBILE TELLO.COM GA 00000000 012345" to C.PHONE,
+        "VISA ISA FEE PAYPAL *INSTANTG IE" to C.FEES,
+        "43548 VISA DEBIT PURC TST COPAL MEXIC LINCOLN NE 87289002 716552" to C.EATING_OUT,
+        "AtlasFinancial SmartPay 11n9bbmpb3phyef" to C.TRANSFERS,
+        "LINCOLNELECTSYS BILLPAY" to C.UTILITIES,
+        "DISCOVER CAP ONE CRCARDPMT CA0FCA2AA1F03" to C.TRANSFERS,
+        "12345 VISA DEBIT PURC GOOGLE *Poweramp g.co/helppay# CA" to C.SUBSCRIPTIONS,
         "FS *SOFTWARETOOL" to C.SUBSCRIPTIONS,
     )
 
     @Test fun recognizesARealisticFeed() {
         val misses = corpus.filter { (d, want) -> key(d) != want }.map { (d, want) -> "$d -> ${key(d)} (want $want)" }
         assertTrue(misses.joinToString("\n"), misses.isEmpty())
+    }
+
+    @Test fun paychecksAreIncomeEvenWithAStoreName() {
+        assertEquals(C.INCOME, key("ROUND ONE ENTERT PAYROLL", 45_000))
     }
 
     @Test fun genericWordsOnlyCountForMoneyGoingOut() {

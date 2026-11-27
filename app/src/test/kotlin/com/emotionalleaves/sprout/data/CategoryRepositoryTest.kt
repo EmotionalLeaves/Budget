@@ -200,4 +200,28 @@ class CategoryRepositoryTest {
         assertEquals(cat(DefaultCategories.GIFTS), get("1").categoryId)
         assertEquals(CategorySource.USER, get("1").categorySource)
     }
+
+    @Test fun bankWordingIsNeverTreatedAsOnePlace() = runBlocking {
+        sync(
+            tx("1", "18370 VISA DEBIT PURC Carriage Park 402-4418304 NE 10000971 018370", "-3.00"),
+            tx("2", "45020 VISA DEBIT PURC SALVAGE WAREHOUS LINCOLN NE 00000000 045020", "-20.37", posted = 1763710000),
+        )
+        assertEquals("CARRIAGE PARK", get("1").merchantKey)
+        // Simulate an install from before the fix: both had the key "VISA DEBIT" and an "always" rule for it.
+        env.db.transactions().setMerchantKey("sf:C:A:1", "VISA DEBIT")
+        env.db.transactions().setMerchantKey("sf:C:A:2", "VISA DEBIT")
+        env.db.merchantRules().insert(com.emotionalleaves.sprout.data.db.MerchantRuleEntity(matchType = RuleType.EXACT, pattern = "VISA DEBIT",
+            categoryId = cat(DefaultCategories.GIFTS), origin = com.emotionalleaves.sprout.data.db.RuleOrigin.USER_CORRECTION, hitCount = 1, createdAt = 1, updatedAt = 1))
+        repo.reapplyRules()
+        assertEquals(cat(DefaultCategories.GIFTS), get("2").categoryId)
+
+        repo.upgradeCatalog(3)
+
+        assertEquals("SALVAGE WAREHOUS LINCOLN", get("2").merchantKey)
+        assertTrue(env.db.merchantRules().getAll().isEmpty())
+        assertEquals(cat(DefaultCategories.SHOPPING), get("2").categoryId)
+        // Picking one with "always" on no longer sweeps up the other.
+        repo.recategorize("sf:C:A:1", cat(DefaultCategories.EATING_OUT), alwaysForMerchant = true)
+        assertEquals(cat(DefaultCategories.SHOPPING), get("2").categoryId)
+    }
 }

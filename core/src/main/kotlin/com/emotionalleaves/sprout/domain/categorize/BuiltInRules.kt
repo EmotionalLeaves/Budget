@@ -39,7 +39,7 @@ data class BuiltInRule(
 object BuiltInRules {
 
     private val CARD_ISSUERS = listOf(
-        "CAPITAL ONE", "CHASE", "DISCOVER", "AMEX", "AMERICAN EXPRESS", "CITI", "CITICARD", "SYNCHRONY",
+        "CAPITAL ONE", "CAP ONE", "CHASE", "DISCOVER", "AMEX", "AMERICAN EXPRESS", "CITI", "CITICARD", "SYNCHRONY",
         "BARCLAYCARD", "BARCLAYS", "WELLS FARGO CARD", "BANK OF AMERICA", "US BANK", "CREDIT ONE", "APPLECARD",
         "APPLE CARD", "GS BANK", "CARD SERVICES", "CREDIT CARD", "CRD",
     )
@@ -51,7 +51,8 @@ object BuiltInRules {
             if (p.isNotBlank() && seen.add(p)) add(BuiltInRule(listOf(p), category, tier))
         }
         for ((category, list) in MerchantCatalog.merchants) {
-            val tier = if (category == C.P2P) BuiltInRule.TIER_PRIORITY else BuiltInRule.TIER_BRAND
+            // Money apps and paychecks win over any store name next to them ("ROUND ONE ENTERT PAYROLL" is pay).
+            val tier = if (category == C.P2P || category == C.INCOME) BuiltInRule.TIER_PRIORITY else BuiltInRule.TIER_BRAND
             list.forEach { add(category, it, tier) }
         }
         // Lincoln places come after the brand list (a brand's category wins if both name it) and before generic words.
@@ -64,6 +65,8 @@ object BuiltInRules {
             add(BuiltInRule(listOf(issuer, "AUTO PAY"), C.TRANSFERS, BuiltInRule.TIER_PRIORITY))
             add(BuiltInRule(listOf(issuer, "PAYMENT"), C.TRANSFERS, BuiltInRule.TIER_PRIORITY))
             add(BuiltInRule(listOf(issuer, "EPAY"), C.TRANSFERS, BuiltInRule.TIER_PRIORITY))
+            add(BuiltInRule(listOf(issuer, "PMT"), C.TRANSFERS, BuiltInRule.TIER_PRIORITY))
+            add(BuiltInRule(listOf(issuer, "CRCARDPMT"), C.TRANSFERS, BuiltInRule.TIER_PRIORITY))
         }
     }.mapIndexed { i, r -> r.copy(order = i) }
 
@@ -116,8 +119,12 @@ object BuiltInRules {
         // Point-of-sale prefixes that say what kind of seller it is. Stronger than a generic word
         // ("TST* MOD MARKET" is a restaurant), weaker than a brand.
         if ((best == null || best.tier == BuiltInRule.TIER_GENERIC) && allowGeneric) {
+            // The prefix can come after the bank's own wording: "45020 VISA DEBIT PURC TST* COPAL MEXICAN".
             val d = description.uppercase().trimStart()
-            PREFIXES.firstOrNull { (p, _) -> d.startsWith("$p*") || d.startsWith("$p *") }?.let { (p, key) ->
+            // Toast's "TST" is distinctive enough to count without its star ("PURC TST COPAL MEXIC").
+            PREFIXES.firstOrNull { (p, _) ->
+                Regex("(^|\\s)" + Regex.escape(p) + " ?\\*").containsMatchIn(d) || (p == "TST" && Regex("(^|\\s)TST\\s").containsMatchIn(d))
+            }?.let { (p, key) ->
                 return BuiltInRule(listOf("$p*"), key, BuiltInRule.TIER_GENERIC)
             }
         }

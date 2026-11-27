@@ -1,6 +1,8 @@
 package com.emotionalleaves.sprout.domain.categorize
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MerchantNormalizerTest {
@@ -63,4 +65,21 @@ class MerchantNormalizerTest {
 
     @Test fun displayNameTitleCases() =
         assertEquals("Hy-Vee Lincoln", MerchantNormalizer.displayName("HY-VEE LINCOLN"))
+
+    @Test fun bankWordingInFrontIsNotTheMerchant() {
+        assertEquals("CARRIAGE PARK", MerchantNormalizer.normalize("18370 VISA DEBIT PURC Carriage Park 402-4418304 NE 10000971 018370"))
+        assertEquals("HY-VEE LINCOLN", MerchantNormalizer.normalize("4821 VISA DEBIT PURC HY-VEE LINCOLN 1234 LINCOLN NE 10000971 018370"))
+        assertEquals("RUNZA", MerchantNormalizer.normalize("MC DEBIT PURCHASE RUNZA #12"))
+        assertEquals("SALVAGE WAREHOUS LINCOLN", MerchantNormalizer.normalize("45020 VISA DEBIT PURC SALVAGE WAREHOUS LINCOLN NE 00000000 045020"))
+        assertEquals("APPLE STORE", MerchantNormalizer.normalize("APPLE STORE #R123"))
+    }
+
+    @Test fun genericKeys() {
+        assertTrue(MerchantNormalizer.isGeneric("VISA DEBIT"))
+        assertTrue(MerchantNormalizer.isGeneric("VISA DEBIT PURC"))
+        assertTrue(MerchantNormalizer.isGeneric("CHECK"))
+        assertTrue(MerchantNormalizer.isGeneric(""))
+        assertFalse(MerchantNormalizer.isGeneric("CARRIAGE PARK"))
+        assertFalse(MerchantNormalizer.isGeneric("HY-VEE LINCOLN"))
+    }
 }

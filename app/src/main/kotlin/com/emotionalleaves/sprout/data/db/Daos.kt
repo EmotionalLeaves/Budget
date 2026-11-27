@@ -95,6 +95,14 @@ data class RuleInput(
 /** A posted row Sprout couldn't place, that might be one side of a transfer between your accounts. */
 data class PairCandidate(val id: String, val accountId: String, val amountMinor: Long, val at: Long)
 
+data class KeyRow(val id: String, val description: String, val merchantKey: String)
+
+/** Enough of a posted bank transaction to spot the same account stored twice. */
+data class SigRow(
+    val id: String, val accountId: String, val occurredAt: Long, val amountMinor: Long, val description: String,
+    val categoryId: Long, val categorySource: CategorySource, val note: String?,
+)
+
 /** A purchase you categorized yourself: what the on-device learner trains on. */
 data class LearnExample(val description: String, val merchantKey: String, val categoryId: Long)
 
@@ -160,6 +168,18 @@ interface TransactionDao {
             "AND categoryId NOT IN (SELECT id FROM categories WHERE `key` = 'uncategorized') ORDER BY postedAt DESC LIMIT :limit",
     )
     suspend fun learningExamples(limit: Int = 20_000): List<LearnExample>
+
+    @Query(
+        "SELECT t.id, t.accountId, t.occurredAt, t.amountMinor, t.description, t.categoryId, t.categorySource, t.note " +
+            "FROM transactions t JOIN accounts a ON a.id = t.accountId WHERE a.source = 'SIMPLEFIN' AND a.hidden = 0 AND t.pending = 0",
+    )
+    suspend fun sigRows(): List<SigRow>
+
+    @Query("SELECT id, description, merchantKey FROM transactions")
+    suspend fun keyRows(): List<KeyRow>
+
+    @Query("UPDATE transactions SET merchantKey = :key WHERE id = :id")
+    suspend fun setMerchantKey(id: String, key: String)
 
     /** Oldest bank (SimpleFIN) transaction stored, for continuing history from where it stops. */
     @Query("SELECT MIN(occurredAt) FROM transactions WHERE id LIKE 'sf:%' AND pending = 0")

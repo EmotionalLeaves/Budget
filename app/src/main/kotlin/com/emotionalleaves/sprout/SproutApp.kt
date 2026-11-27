@@ -101,6 +101,7 @@ class SproutApp : Application() {
         container.appScope.launch {
             container.syncRepository.ensureSeeded()
             runCatching { container.settings.upgradeHistoryDefaultOnce() }
+            runCatching { container.syncRepository.hideDuplicateAccounts() }
             runCatching {
                 val v = container.settings.current().catalogVersion
                 if (v < com.emotionalleaves.sprout.data.categories.CategoryRepository.CATALOG_VERSION) {

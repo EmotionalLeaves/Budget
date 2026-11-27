@@ -32,6 +32,7 @@ class LearnedCategorizer private constructor(
      * Two picks are needed to beat the built-in list; one is enough for a place the list doesn't know.
      */
     fun merchantGuess(merchantKey: String, minExamples: Int = MERCHANT_MIN_EXAMPLES): Guess? {
+        if (MerchantNormalizer.isGeneric(merchantKey)) return null
         val counts = byMerchant[merchantKey.uppercase()] ?: return null
         val total = counts.values.sum()
         if (total < minExamples) return null
@@ -49,7 +50,7 @@ class LearnedCategorizer private constructor(
      * Merchant habit first, then words at a lower bar.
      */
     fun suggestion(description: String, merchantKey: String): Guess? {
-        byMerchant[merchantKey.uppercase()]?.maxByOrNull { it.value }?.let { (id, n) ->
+        if (!MerchantNormalizer.isGeneric(merchantKey)) byMerchant[merchantKey.uppercase()]?.maxByOrNull { it.value }?.let { (id, n) ->
             val total = byMerchant.getValue(merchantKey.uppercase()).values.sum()
             return Guess(id, n.toDouble() / total)
         }
@@ -119,7 +120,7 @@ class LearnedCategorizer private constructor(
             val docCounts = HashMap<Long, Int>()
             val docFreq = HashMap<String, Int>()
             for (e in examples) {
-                if (e.merchantKey.isNotBlank()) {
+                if (e.merchantKey.isNotBlank() && !MerchantNormalizer.isGeneric(e.merchantKey)) {
                     val m = byMerchant.getOrPut(e.merchantKey.uppercase()) { HashMap() }
                     m[e.categoryId] = (m[e.categoryId] ?: 0) + 1
                 }

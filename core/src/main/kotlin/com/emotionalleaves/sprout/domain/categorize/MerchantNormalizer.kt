@@ -32,6 +32,29 @@ object MerchantNormalizer {
         "GOOGLE*",
     )
 
+    /**
+     * Words banks put in front of the real merchant ("18370 VISA DEBIT PURC CARRIAGE PARK ..."). Dropped from the
+     * start of the key; a key made only of these isn't a merchant at all (see [isGeneric]).
+     */
+    private val BANK_NOISE = setOf(
+        "VISA", "DEBIT", "DEBITCARD", "PURC", "PURCH", "PURCHASE", "PURCHASES", "PUR", "POS", "CARD", "CHECKCARD", "CHKCARD",
+        "CRD", "DBT", "DB", "MC", "MASTERCARD", "PIN", "SIG", "SIGNATURE", "ACH", "RECURRING", "AUTHORIZED",
+        "PREAUTHORIZED", "AUTH", "ON", "NON-PIN", "NONPIN", "INTL", "INTERNATIONAL", "TRANSACTION", "TRANS", "TXN",
+        "ELECTRONIC", "EFT", "ONLINE", "WEB", "MOBILE", "PAYMENT", "PMT", "PYMT", "CONTACTLESS",
+    )
+
+    /** Keys that aren't a merchant: bank wording only, or nothing left after cleaning. */
+    private val GENERIC_KEYS = setOf("UNKNOWN", "ATM", "CHECK", "DEPOSIT", "WITHDRAWAL", "TRANSFER", "PAYMENT", "FEE", "INTEREST")
+
+    /**
+     * True when [merchantKey] doesn't name a real place ("VISA DEBIT", "POS PURCHASE", "CHECK"). Such keys never
+     * get "use this for all", merchant rules or learned habits: they'd sweep up unrelated purchases.
+     */
+    fun isGeneric(merchantKey: String): Boolean {
+        val tokens = merchantKey.uppercase().split(' ').filter { it.isNotEmpty() }
+        return tokens.isEmpty() || merchantKey.uppercase() in GENERIC_KEYS || tokens.all { it in BANK_NOISE || it in GENERIC_KEYS || it.none(Char::isLetter) }
+    }
+
     private val US_STATES = setOf(
         "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY",
         "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND",
@@ -51,6 +74,8 @@ object MerchantNormalizer {
     fun normalize(description: String): String {
         var s = description.uppercase().replace('’', '\'').trim()
         s = s.replace(Regex("""\s+"""), " ")
+        // Some banks start with a reference number ("18370 VISA DEBIT PURC ...").
+        s = s.replace(Regex("""^(\d+\s+)+"""), "")
 
         // Strip processor and bank prefixes, repeatedly ("POS DEBIT CARD PURCHASE SQ *CAFE").
         var changed = true
@@ -101,12 +126,16 @@ object MerchantNormalizer {
             .map { it.trim('-') }
             .filter { it.isNotEmpty() && it.any(Char::isLetter) }
             .toMutableList()
+        // Bank wording in front of the merchant ("VISA DEBIT PURC"), only when something else remains.
+        while (tokens.size > 1 && tokens.first() in BANK_NOISE) tokens.removeAt(0)
         // Trailing US state code ("LINCOLN NE"), only when something else remains.
         while (tokens.size > 1 && tokens.last() in US_STATES) tokens.removeAt(tokens.lastIndex)
         // A trailing "US" country code is noise as well.
         while (tokens.size > 1 && tokens.last() == "US") tokens.removeAt(tokens.lastIndex)
 
-        val key = tokens.take(MAX_TOKENS).joinToString(" ")
+        // "LINCOLN LINCOLN" (store name then city) says nothing twice.
+        val deduped = tokens.filterIndexed { i, t -> i == 0 || t != tokens[i - 1] }
+        val key = deduped.take(MAX_TOKENS).joinToString(" ")
         return key.ifEmpty { description.uppercase().filter { it.isLetterOrDigit() || it == ' ' }.trim().take(40).ifEmpty { "UNKNOWN" } }
     }
 

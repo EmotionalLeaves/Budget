@@ -73,6 +73,8 @@ data class Settings(
     val historyOldest: Long? = null,
     /** The bank has no older history (two empty steps in a row) for the current setting. */
     val historyDone: Boolean = false,
+    /** Accounts Sprout hid as a copy of another; never hidden again if you show them yourself. */
+    val dedupedAccounts: Set<String> = emptySet(),
 )
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -117,6 +119,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
             catalogVersion = p[CATALOG_VERSION] ?: 0,
             historyOldest = p[HISTORY_OLDEST],
             historyDone = p[HISTORY_DONE] ?: false,
+            dedupedAccounts = p[DEDUPED_ACCOUNTS] ?: emptySet(),
         )
     }
 
@@ -141,6 +144,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         }
         it[HISTORY_DEFAULT_UPGRADED] = true
     }
+    suspend fun addDedupedAccount(id: String) = dataStore.edit { it[DEDUPED_ACCOUNTS] = (it[DEDUPED_ACCOUNTS] ?: emptySet()) + id }
     suspend fun setHistoryProgress(oldest: Long, done: Boolean) = dataStore.edit {
         it[HISTORY_OLDEST] = oldest
         it[HISTORY_DONE] = done
@@ -230,5 +234,6 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         val HISTORY_OLDEST = longPreferencesKey("history_oldest")
         val HISTORY_DONE = booleanPreferencesKey("history_done")
         val HISTORY_DEFAULT_UPGRADED = booleanPreferencesKey("history_default_upgraded")
+        val DEDUPED_ACCOUNTS = androidx.datastore.preferences.core.stringSetPreferencesKey("deduped_accounts")
     }
 }

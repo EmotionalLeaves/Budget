@@ -200,8 +200,9 @@ fun TransactionDetailSheet(transactionId: String, onDismiss: () -> Unit, onMessa
             }
             androidx.compose.animation.AnimatedVisibility(changing) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SwitchRow("Always use this for $merchant", always) { always = it }
-                    CategoryGrid(categories, d.categoryId) { vm.pick(it, always, merchant); changing = false }
+                    val realPlace = !com.emotionalleaves.sprout.domain.categorize.MerchantNormalizer.isGeneric(d.merchantKey)
+                    if (realPlace) SwitchRow("Always use this for $merchant", always) { always = it }
+                    CategoryGrid(categories, d.categoryId) { vm.pick(it, always && realPlace, merchant); changing = false }
                     if (d.categorySource == com.emotionalleaves.sprout.domain.categorize.CategorySource.USER ||
                         d.categorySource == com.emotionalleaves.sprout.domain.categorize.CategorySource.IMPORT) {
                         TextButton(onClick = { vm.letSproutDecide(); changing = false }) { Text("Let Sprout decide") }

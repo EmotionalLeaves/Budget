@@ -103,6 +103,43 @@ class SyncRepository(
         return pairs.size
     }
 
+    /**
+     * Hides bank accounts stored twice (a bank connected again gets new ids, so every transaction appeared twice),
+     * keeping the copy that still syncs. Your categories and notes on the hidden copy carry over to matching
+     * transactions in the kept one. Returns how many accounts were hidden. An account you un-hide stays visible.
+     */
+    suspend fun hideDuplicateAccounts(): Int = withContext(Dispatchers.IO) {
+        val s = settings.current()
+        val accounts = db.accounts().getAll().filter { it.source == AccountSource.SIMPLEFIN && !it.hidden && it.id !in s.dedupedAccounts }
+        if (accounts.size < 2) return@withContext 0
+        val rows = db.transactions().sigRows()
+        fun sig(r: com.emotionalleaves.sprout.data.db.SigRow) =
+            com.emotionalleaves.sprout.domain.sync.DuplicateAccounts.signature(r.occurredAt, r.amountMinor, r.description)
+        val byAccount = rows.groupBy { it.accountId }
+        val pairs = com.emotionalleaves.sprout.domain.sync.DuplicateAccounts.find(
+            accounts.map { com.emotionalleaves.sprout.domain.sync.DuplicateAccounts.Account(it.id, it.label, it.lastSyncedAt ?: 0, byAccount[it.id]?.size ?: 0) },
+            byAccount.mapValues { (_, l) -> l.map(::sig).toSet() },
+        )
+        if (pairs.isEmpty()) return@withContext 0
+        val now = clock.instant().epochSecond
+        db.withTransaction {
+            for ((dup, keep) in pairs) {
+                val keepBySig = byAccount[keep].orEmpty().associateBy(::sig)
+                for (r in byAccount[dup].orEmpty()) {
+                    val k = keepBySig[sig(r)] ?: continue
+                    if (r.categorySource == CategorySource.USER && k.categorySource != CategorySource.USER) {
+                        db.transactions().setCategory(k.id, r.categoryId, CategorySource.USER, now)
+                    }
+                    if (!r.note.isNullOrBlank() && k.note.isNullOrBlank()) db.transactions().setNote(k.id, r.note, now)
+                }
+                db.accounts().setHidden(dup, true)
+                db.accounts().setIncludeInTotals(dup, false)
+            }
+        }
+        pairs.forEach { settings.addDedupedAccount(it.first) }
+        pairs.size
+    }
+
     suspend fun sync(trigger: SyncTrigger): SyncRunResult = withContext(Dispatchers.IO) {
         mutex.withLock {
             pendingOutflows.clear()
@@ -163,6 +200,7 @@ class SyncRepository(
                 if (result is SyncRunResult.Done && result.result != SyncResult.FAILED && history.oldest != null) {
                     settings.setHistoryProgress(history.oldest, history.done)
                 }
+                runCatching { hideDuplicateAccounts() }
                 result
             }
             is FetchResult.AuthFailed -> {

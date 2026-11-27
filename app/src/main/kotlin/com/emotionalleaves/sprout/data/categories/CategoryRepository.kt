@@ -82,7 +82,8 @@ class CategoryRepository(private val db: SproutDatabase, private val clock: Cloc
             }
             val now = now()
             var others = 0
-            if (alwaysForMerchant) {
+            // "Use this for all" only makes sense for a real place, never for bank wording like "VISA DEBIT".
+            if (alwaysForMerchant && !com.emotionalleaves.sprout.domain.categorize.MerchantNormalizer.isGeneric(tx.merchantKey)) {
                 upsertRule(RuleType.EXACT, tx.merchantKey, categoryId, RuleOrigin.USER_CORRECTION, now)
                 val updated = db.transactions().applyMerchantRule(tx.merchantKey, categoryId, now)
                 // The tapped one was included above unless it was already USER; it becomes USER next.
@@ -183,6 +184,17 @@ class CategoryRepository(private val db: SproutDatabase, private val clock: Cloc
                         colorArgb = c.colorArgb.toInt(), sortOrder = ++order, archived = false)
                 })
             }
+            if (fromVersion < 4) {
+                // 2.27.0: better merchant names. Re-read every description, and drop "always" rules that were made
+                // for bank wording ("VISA DEBIT") instead of a place: they swept up unrelated purchases.
+                for (row in db.transactions().keyRows()) {
+                    val key = com.emotionalleaves.sprout.domain.categorize.MerchantNormalizer.normalize(row.description)
+                    if (key != row.merchantKey) db.transactions().setMerchantKey(row.id, key)
+                }
+                db.merchantRules().getAll()
+                    .filter { it.matchType == RuleType.EXACT && com.emotionalleaves.sprout.domain.categorize.MerchantNormalizer.isGeneric(it.pattern) }
+                    .forEach { db.merchantRules().delete(it.id) }
+            }
             reapplyRulesLocked()
         }
     }
@@ -268,7 +280,7 @@ class CategoryRepository(private val db: SproutDatabase, private val clock: Cloc
 
     companion object {
         /** Bump when the built-in merchant list changes so existing history is re-sorted once on update. */
-        const val CATALOG_VERSION = 3
+        const val CATALOG_VERSION = 4
 
         /** Colors offered for new categories (Material 600 shades). */
         val PALETTE: List<Int> = listOf(

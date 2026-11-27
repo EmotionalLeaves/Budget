@@ -121,11 +121,13 @@ class MainActivity : ComponentActivity() {
         setContent {
             val look by settings.settings.collectAsState(initial = initial)
             SproutTheme(themeMode = look.themeMode, dynamicColor = look.dynamicColor) {
-                Surface(Modifier.fillMaxSize()) {
-                    if (locked.value) {
-                        LockScreen(onUnlock = ::requestUnlock)
-                    } else {
-                        SproutRoot(deepLink.value) { deepLink.value = null }
+                com.emotionalleaves.sprout.ui.common.UniformScale {
+                    Surface(Modifier.fillMaxSize()) {
+                        if (locked.value) {
+                            LockScreen(onUnlock = ::requestUnlock)
+                        } else {
+                            SproutRoot(deepLink.value) { deepLink.value = null }
+                        }
                     }
                 }
             }
