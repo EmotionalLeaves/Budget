@@ -204,13 +204,8 @@ fun YearScreen(onBack: () -> Unit, onCategory: (Long) -> Unit) {
         var perRow by com.emotionalleaves.sprout.ui.common.rememberViewPref("year-shade-per-row", false, { it.toString() }, { it.toBooleanStrictOrNull() })
         LazyColumn {
             item {
-                androidx.compose.material3.SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
-                    listOf("By amount" to false, "Within each category" to true).forEachIndexed { i, (label, v) ->
-                        SegmentedButton(perRow == v, { perRow = v }, androidx.compose.material3.SegmentedButtonDefaults.itemShape(i, 2)) {
-                            Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        }
-                    }
-                }
+                com.emotionalleaves.sprout.ui.common.ChoiceRow(listOf("By amount", "Within each category"), if (perRow) 1 else 0,
+                    { perRow = it == 1 }, Modifier.padding(vertical = 4.dp))
             }
             item {
                 Text(if (perRow) "Darker = a bigger month for that category. Scroll sideways for every month; tap a row to open the category."

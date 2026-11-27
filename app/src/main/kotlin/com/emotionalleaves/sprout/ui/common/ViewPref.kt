@@ -48,22 +48,25 @@ fun <T : Any> rememberViewPref(key: String, default: T, encode: (T) -> String, d
 }
 
 /**
- * A single choice among a few short labels: one segmented row at normal text sizes, scrollable chips with
+ * A single choice among a few short labels: one segmented row at normal text sizes, wrapping chips with
  * large text, so no label is ever cut off ("Mont").
  */
 @Composable
-fun ChoiceRow(labels: List<String>, selected: Int, onSelect: (Int) -> Unit, modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier) {
+fun ChoiceRow(labels: List<String>, selected: Int, onSelect: (Int) -> Unit, modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier,
+              inset: androidx.compose.ui.unit.Dp = 16.dp) {
     if (androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.3f) {
-        androidx.compose.foundation.lazy.LazyRow(modifier, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp),
+        // Wrap rather than scroll: every choice stays visible, even inside a card.
+        @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+        androidx.compose.foundation.layout.FlowRow(modifier.fillMaxWidth().padding(horizontal = inset),
             horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
-            items(labels.size) { i ->
+            labels.forEachIndexed { i, l ->
                 androidx.compose.material3.FilterChip(selected = i == selected, onClick = { onSelect(i) },
-                    label = { androidx.compose.material3.Text(labels[i], maxLines = 1) },
+                    label = { androidx.compose.material3.Text(l, maxLines = 1) },
                     modifier = androidx.compose.ui.Modifier.heightIn(min = 48.dp))
             }
         }
     } else {
-        androidx.compose.material3.SingleChoiceSegmentedButtonRow(modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+        androidx.compose.material3.SingleChoiceSegmentedButtonRow(modifier.fillMaxWidth().padding(horizontal = inset)) {
             // Four or more segments: no check mark and smaller text, so every label fits.
             val tight = labels.size >= 4
             labels.forEachIndexed { i, l ->

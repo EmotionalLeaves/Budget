@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.78.0] - 2026-11-27
+
+Round 78: no cut-off choices.
+
+### Polish
+- With large text, choice switches (Stats tabs, Reports range, Year view shading, Debt plan's Least interest / Quick wins) wrap onto a second line instead of scrolling or cutting words, so every option stays visible.
+
 ## [2.77.0] - 2026-11-27
 
 Round 77: one switch style everywhere.

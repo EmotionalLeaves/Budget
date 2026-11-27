@@ -115,13 +115,10 @@ fun DebtScreen(onBack: () -> Unit) {
                         label = { Text("Total I can pay each month") }, prefix = { Text("$") }, singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth(),
                     )
-                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                        Strategy.entries.forEachIndexed { i, s ->
-                            SegmentedButton(strategy == s, { strategy = s }, SegmentedButtonDefaults.itemShape(i, 2)) {
-                                Text(if (s == Strategy.AVALANCHE) "Least interest" else "Quick wins")
-                            }
-                        }
-                    }
+                    com.emotionalleaves.sprout.ui.common.ChoiceRow(
+                        Strategy.entries.map { if (it == Strategy.AVALANCHE) "Least interest" else "Quick wins" },
+                        Strategy.entries.indexOf(strategy), { strategy = Strategy.entries[it] }, inset = 0.dp,
+                    )
                     Text(
                         if (strategy == Strategy.AVALANCHE) "Extra money goes to the highest interest rate first." else "Extra money goes to the smallest balance first.",
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
