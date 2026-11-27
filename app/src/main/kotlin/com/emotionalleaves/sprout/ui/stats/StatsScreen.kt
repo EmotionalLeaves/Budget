@@ -182,7 +182,9 @@ fun StatsScreen(onBack: () -> Unit, onMerchant: (String) -> Unit = {}) {
                 "Stats fill in from your synced or imported transactions.",
                 icon = androidx.compose.material.icons.Icons.Rounded.BarChart,
             ) {
-                if (period != StatsPeriod.YEAR && period != StatsPeriod.ALL) {
+                val hasData = com.emotionalleaves.sprout.ui.common.rememberHasData()
+                if (hasData == false) com.emotionalleaves.sprout.ui.common.GetDataActions()
+                else if (hasData == true && period != StatsPeriod.YEAR && period != StatsPeriod.ALL) {
                     androidx.compose.material3.OutlinedButton(onClick = { period = StatsPeriod.YEAR }) { Text("Look at 12 months") }
                 }
             }

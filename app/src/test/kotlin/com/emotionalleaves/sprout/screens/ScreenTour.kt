@@ -253,6 +253,15 @@ class ScreenTour {
                 runCatching { tap("Activity"); shot("o-04-empty-activity") }
                 runCatching { tap("Budgets"); shot("o-05-empty-budgets") }
                 runCatching { tap("Bills"); shot("o-06-empty-bills") }
+                // Every tool with no data at all: each should explain itself, never show a blank page.
+                for ((label, name) in listOf("Stats" to "o-10-stats", "Reports" to "o-11-reports", "Net worth" to "o-12-networth", "Year view" to "o-13-year",
+                    "Tags" to "o-14-tags", "Goals" to "o-15-goals", "Debt plan" to "o-16-debt", "Challenges" to "o-17-challenges", "Year in review" to "o-18-review")) {
+                    runCatching {
+                        tap("More")
+                        rule.onAllNodes(androidx.compose.ui.test.hasScrollAction())[0].performScrollToNode(androidx.compose.ui.test.hasText(label))
+                        tap(label); Thread.sleep(400); settle(); shot(name); back()
+                    }
+                }
             }
             return
         }

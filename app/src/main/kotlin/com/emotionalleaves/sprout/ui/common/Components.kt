@@ -244,3 +244,25 @@ fun EmptyState(
         }
     }
 }
+
+/** True once Sprout has any transaction at all; null while checking. */
+@Composable
+fun rememberHasData(): Boolean? {
+    val c = appContainer()
+    return rememberLoaded(Unit) { runCatching { c.db.budgets().firstOccurredAt() != null }.getOrNull() }
+}
+
+/**
+ * The way forward from an empty tool when there's no data anywhere yet: connect a bank or import a CSV.
+ * Shows nothing when there is data (then the empty state is about the period, not the app).
+ */
+@Composable
+fun GetDataActions() {
+    if (rememberHasData() != false) return
+    val navigate = LocalNavigate.current
+    androidx.compose.foundation.layout.Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+        androidx.compose.material3.Button(onClick = { navigate("connect") }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Connect a bank") }
+        androidx.compose.material3.TextButton(onClick = { navigate("import") }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Import a CSV") }
+    }
+}

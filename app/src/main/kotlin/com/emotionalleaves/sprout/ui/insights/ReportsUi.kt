@@ -207,7 +207,7 @@ fun ReportsScreen(onBack: () -> Unit) {
         val totalIn = rep.incomeByMonth.sum()
         val totalOut = rep.spendingByMonth.sum()
         if (totalIn == 0L && totalOut == 0L) {
-            EmptyState("Nothing in this range", "Reports fill in as transactions sync or import.")
+            EmptyState("Nothing in this range", "Reports fill in as transactions sync or import.") { com.emotionalleaves.sprout.ui.common.GetDataActions() }
             return@Column
         }
         val sc = LocalSproutColors.current
@@ -283,7 +283,7 @@ fun YearInReviewScreen(onBack: () -> Unit) {
         )
         val r = y ?: run { com.emotionalleaves.sprout.ui.common.LoadingSkeleton(); return@Column }
         if (r.spentMinor == 0L && r.incomeMinor == 0L) {
-            EmptyState("No data for $year", "Year in review fills in from your synced or imported transactions.")
+            EmptyState("No data for $year", "Year in review fills in from your synced or imported transactions.") { com.emotionalleaves.sprout.ui.common.GetDataActions() }
             return@Column
         }
         val sc = LocalSproutColors.current

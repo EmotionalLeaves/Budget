@@ -117,7 +117,7 @@ fun NetWorthScreen(onBack: () -> Unit) {
         TopAppBar(windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0), title = { Text("Net worth") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } })
         val s = series ?: run { com.emotionalleaves.sprout.ui.common.LoadingSkeleton(); return@Column }
         if (s.size < 2) {
-            EmptyState("Not enough history yet", "Net worth over time appears once Sprout has a month or two of your transactions.")
+            EmptyState("Not enough history yet", "Net worth over time appears once Sprout has a month or two of your transactions.") { com.emotionalleaves.sprout.ui.common.GetDataActions() }
             return@Column
         }
         val now = s.last().second
@@ -185,7 +185,7 @@ fun YearScreen(onBack: () -> Unit, onCategory: (Long) -> Unit) {
         TopAppBar(windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0), title = { Text("Year view") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } })
         val (months, rows) = data ?: run { com.emotionalleaves.sprout.ui.common.LoadingSkeleton(); return@Column }
         if (rows.isEmpty()) {
-            EmptyState("Nothing to show yet", "Your spending by month appears here after your first sync or CSV import.")
+            EmptyState("Nothing to show yet", "Your spending by month appears here after your first sync or CSV import.") { com.emotionalleaves.sprout.ui.common.GetDataActions() }
             return@Column
         }
         val totals = months.indices.map { i -> rows.sumOf { it.byMonth[i] } }

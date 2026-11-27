@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.81.0] - 2026-11-27
+
+Round 81: empty tools point the way.
+
+### Polish
+- Before you have any transactions, Stats, Reports, Net worth, Year view and Year in review offer **Connect a bank** and **Import a CSV** right on their empty screens, instead of only saying there's nothing yet. Stats only offers "Look at 12 months" when there's data to look at.
+
 ## [2.80.0] - 2026-11-27
 
 Round 80: log cash in one tap from your home screen.
