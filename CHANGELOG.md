@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.84.0] - 2026-11-27
+
+Round 84: more from Places.
+
+### Polish
+- **Stats → Places** shows each place's share of your spending ("61% of spending"), drops the pointless "$950 each on average" for a single visit, and can **Show all** (up to 30 places) instead of only the top 8.
+
 ## [2.83.0] - 2026-11-27
 
 Round 83: how this week is going.

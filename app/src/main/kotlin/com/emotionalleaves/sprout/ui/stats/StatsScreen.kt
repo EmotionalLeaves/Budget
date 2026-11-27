@@ -134,7 +134,7 @@ fun StatsScreen(onBack: () -> Unit, onMerchant: (String) -> Unit = {}) {
             val firstDay = c.db.budgets().firstOccurredAt()?.let { java.time.Instant.ofEpochSecond(it).atZone(zone).toLocalDate() }
             // Averages and no-spend days count only from your first transaction, not from before Sprout had data.
             val effStart = firstDay?.takeIf { it > start && it < end } ?: start
-            val now = SpendingStats.summarize(rows, effStart, end, today, zone)
+            val now = SpendingStats.summarize(rows, effStart, end, today, zone, top = 30)
             // The previous period, compared like for like: the same number of days into it.
             val before = prevStart?.let { ps ->
                 val prevToday = ps.plusDays((now.days - 1).toLong().coerceAtLeast(0))
@@ -447,7 +447,9 @@ private fun androidx.compose.foundation.lazy.LazyListScope.patterns(d: StatsData
 private fun androidx.compose.foundation.lazy.LazyListScope.places(d: StatsData, onMerchant: (String) -> Unit) {
     item {
         var byVisits by rememberSaveable { mutableStateOf(false) }
-        val list = if (byVisits) d.now.topByVisits else d.now.topByTotal
+        var showAll by rememberSaveable { mutableStateOf(false) }
+        val full = if (byVisits) d.now.topByVisits else d.now.topByTotal
+        val list = if (showAll) full else full.take(8)
         Card {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Label("Top places", Modifier.weight(1f))
@@ -465,9 +467,16 @@ private fun androidx.compose.foundation.lazy.LazyListScope.places(d: StatsData, 
                         Text(merchantName(p.merchantKey), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text(if (byVisits) "${p.visits}×" else Money.format(p.total), style = MaterialTheme.typography.titleSmall)
                     }
-                    Text("${p.visits} ${if (p.visits == 1) "visit" else "visits"} · ${Money.format(p.perVisit)} each on average",
+                    val share = if (d.now.spent > 0) (p.total * 100 / d.now.spent).toInt() else 0
+                    Text((if (p.visits == 1) "1 visit" else "${p.visits} visits · ${Money.format(p.perVisit)} each on average") +
+                        (if (share >= 1) " · $share% of spending" else ""),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 24.dp))
                     Meter((if (byVisits) p.visits.toLong() else p.total).toFloat() / max, sc.chart[i % sc.chart.size], Modifier.padding(start = 24.dp, top = 6.dp))
+                }
+            }
+            if (full.size > 8) {
+                androidx.compose.material3.TextButton(onClick = { showAll = !showAll }, modifier = Modifier.heightIn(min = 48.dp)) {
+                    Text(if (showAll) "Show top 8" else "Show all ${full.size}")
                 }
             }
         }
