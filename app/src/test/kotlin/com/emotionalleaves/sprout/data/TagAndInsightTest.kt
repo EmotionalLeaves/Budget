@@ -229,6 +229,20 @@ class TagAndInsightTest {
         assertEquals("Trip", env.db.tags().getById(trip)!!.name)
     }
 
+    @Test fun yearReviewFunFacts() = runBlocking {
+        sync(
+            Triple("1", "RENT CO|-1000.00", at(11, 2)), Triple("2", "BEST BUY|-400.00", at(11, 3)),
+            Triple("3", "SCOOTERS COFFEE|-5.00", at(11, 10)), Triple("4", "SCOOTERS COFFEE|-6.00", at(11, 11)),
+            Triple("5", "SCOOTERS COFFEE|-5.00", at(11, 20)),
+        )
+        val y = InsightsRepository(env.db, env.clock) { zone }.yearReview(2026)
+        // Rent is a bill, not a memorable one-off.
+        assertEquals(40_000L, y.biggest?.second)
+        assertEquals(3, y.mostVisited?.second)
+        // Nov 12 to Nov 19: eight days in a row with no spending.
+        assertEquals(8, y.longestNoSpendStreak)
+    }
+
     @Test fun manualCashTransactions() = runBlocking {
         val m = com.emotionalleaves.sprout.data.manual.ManualRepository(env.db, env.clock) { zone }
         env.repo().ensureSeeded()

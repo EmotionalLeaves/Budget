@@ -218,6 +218,10 @@ class InsightsRepository(private val db: SproutDatabase, private val clock: Cloc
         val noSpendDays: Int,
         val transactions: Int,
         val byMonth: List<Pair<YearMonth, Long>>,
+        /** The place you went most often, and how many times. */
+        val mostVisited: Pair<String, Int>? = null,
+        /** The longest run of days in a row without spending. */
+        val longestNoSpendStreak: Int = 0,
     )
 
     /** A whole year in review (this year so far by default). */
@@ -246,7 +250,15 @@ class InsightsRepository(private val db: SproutDatabase, private val clock: Cloc
             incomeMinor = db.insights().income(start, end),
             topCategories = byCat.entries.sortedByDescending { it.value }.take(5).map { expense.getValue(it.key).name to it.value },
             topMerchants = db.insights().merchantTotals(start, end).take(5).map { nm(it.merchantKey) to it.total },
-            biggest = db.insights().biggestCharge(start, end)?.let { nm(it.merchantKey) to -it.amountMinor },
+            biggest = (db.insights().biggestOneOff(start, end) ?: db.insights().biggestCharge(start, end))?.let { nm(it.merchantKey) to -it.amountMinor },
+            mostVisited = db.insights().merchantTotals(start, end)
+                .filter { !com.emotionalleaves.sprout.domain.categorize.MerchantNormalizer.isGeneric(it.merchantKey) }
+                .maxByOrNull { it.count }?.takeIf { it.count >= 2 }?.let { nm(it.merchantKey) to it.count },
+            longestNoSpendStreak = firstDay?.let { f ->
+                var best = 0; var run = 0; var d = f
+                while (!d.isAfter(endDay)) { if (d in spentDays) run = 0 else { run++; if (run > best) best = run }; d = d.plusDays(1) }
+                best
+            } ?: 0,
             priciestMonth = withSpend.maxByOrNull { it.second },
             cheapestMonth = withSpend.minByOrNull { it.second },
             noSpendDays = (daysCovered - spentDays.size).coerceAtLeast(0),

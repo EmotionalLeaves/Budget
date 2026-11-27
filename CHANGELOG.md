@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.86.0] - 2026-11-27
+
+Round 86: Year in review gets fun facts.
+
+### Features
+- **Year in review** ends with "A few fun facts": your biggest one-off purchase (bills and rent don't count, so it's the memorable one), the place you went most ("Hy-Vee · 10 times") and your longest no-spend streak.
+
 ## [2.85.0] - 2026-11-27
 
 Round 85: a shorter More tab.

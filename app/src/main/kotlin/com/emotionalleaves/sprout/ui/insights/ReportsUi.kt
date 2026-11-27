@@ -324,11 +324,16 @@ fun YearInReviewScreen(onBack: () -> Unit) {
             r.biggest?.let { (n, v) ->
                 item {
                     SoftCard {
-                        Text("Biggest single purchase", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(n, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-                            Text(Money.format(v), style = MaterialTheme.typography.titleMedium)
+                        Text("A few fun facts", style = MaterialTheme.typography.titleMedium)
+                        @Composable fun Fact(label: String, value: String) {
+                            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(value, style = MaterialTheme.typography.titleSmall)
+                            }
                         }
+                        Fact("Biggest one-off purchase", "$n · ${Money.format(v)}")
+                        r.mostVisited?.let { (place, count) -> Fact("Most visited", "$place · $count times") }
+                        if (r.longestNoSpendStreak >= 2) Fact("Longest no-spend streak", "${r.longestNoSpendStreak} days")
                     }
                 }
             }
