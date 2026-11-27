@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.96.0] - 2026-11-27
+
+Round 96: reports lead somewhere too.
+
+### Polish
+- **Reports → By category:** tap a category to open it.
+
 ## [2.95.0] - 2026-11-27
 
 Round 95: trends lead somewhere.

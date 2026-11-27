@@ -168,6 +168,8 @@ class InsightsRepository(private val db: SproutDatabase, private val clock: Cloc
         val spendingByMonth: List<Long>,
         val categories: List<Pair<String, Long>>,
         val accounts: List<Pair<String, Long>>,
+        /** The category id behind each name in [categories], so a row can open its category. */
+        val categoryIds: Map<String, Long> = emptyMap(),
     )
 
     /** Reports for the last [months] months: cash flow per month, and spending by category and by account. */
@@ -203,6 +205,7 @@ class InsightsRepository(private val db: SproutDatabase, private val clock: Cloc
             spendingByMonth = list.map { spendMonth[it] ?: 0L },
             categories = byCat,
             accounts = db.insights().spendingByAccount(start, end).map { it.name to it.total },
+            categoryIds = expense.values.associate { it.name to it.id },
         )
     }
 

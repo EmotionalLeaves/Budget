@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.insights
 
+import androidx.compose.foundation.clickable
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.Canvas
@@ -152,8 +153,9 @@ private fun ReportsHero(totalIn: Long, totalOut: Long) {
 
 /** One ranked line inside a card: a color key, name, amount and a bar relative to the total. */
 @Composable
-private fun ShareRow(color: androidx.compose.ui.graphics.Color, name: String, value: Long, total: Long) {
-    Column(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+private fun ShareRow(color: androidx.compose.ui.graphics.Color, name: String, value: Long, total: Long, onClick: (() -> Unit)? = null) {
+    Column(Modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier).padding(vertical = 2.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(10.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(3.dp)).background(color))
             Spacer(Modifier.width(10.dp))
@@ -242,8 +244,10 @@ fun ReportsScreen(onBack: () -> Unit) {
                 item {
                     SoftCard {
                         val other = MaterialTheme.colorScheme.outline
+                        val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
                         rep.categories.forEachIndexed { i, (n, v) ->
-                            ShareRow(if (i < 6) sc.chart[i % sc.chart.size] else other, n, v, totalOut)
+                            ShareRow(if (i < 6) sc.chart[i % sc.chart.size] else other, n, v, totalOut,
+                                onClick = rep.categoryIds[n]?.let { id -> { navigate("category/$id") } })
                         }
                     }
                 }
