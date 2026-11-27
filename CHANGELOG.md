@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.39.0] - 2026-11-26
+
+Round 39: a safety net.
+
+### Under the hood
+- Every build now opens every main screen and every Explore tool with realistic data, and scrolls Home all the way down, before it can be released. A screen that crashes while drawing (like the goals card in 2.29) now stops the release instead of reaching your phone.
+
 ## [2.38.0] - 2026-11-26
 
 Round 38: the bill calendar.

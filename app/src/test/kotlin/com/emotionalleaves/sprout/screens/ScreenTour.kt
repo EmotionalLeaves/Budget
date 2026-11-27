@@ -184,6 +184,27 @@ class ScreenTour {
         createdAt = System.currentTimeMillis() / 1000 - 200 * 86_400,
     )
 
+    /**
+     * Runs in normal CI (no screenshots): opens every main screen and every Explore tool with realistic data and
+     * scrolls Home to the bottom, so a screen that crashes while drawing (like 2.29's goal card) fails the build.
+     */
+    @Test fun smokeEveryScreen() {
+        seed()
+        ActivityScenario.launch(MainActivity::class.java).use {
+            scenario = it
+            settle()
+            rule.onAllNodes(androidx.compose.ui.test.hasScrollAction())[0].performScrollToNode(androidx.compose.ui.test.hasText("Customize Home"))
+            settle()
+            for (tab in listOf("Activity", "Budgets", "Bills", "More")) { tap(tab); settle() }
+            for (tool in listOf("Stats", "Reports", "Goals", "Challenges", "Year in review", "Net worth", "Year view", "Tags", "Debt plan", "Sort purchases")) {
+                tap("More")
+                rule.onAllNodes(androidx.compose.ui.test.hasScrollAction())[0].performScrollToNode(androidx.compose.ui.test.hasText(tool))
+                tap(tool); settle()
+                back(); settle()
+            }
+        }
+    }
+
     /** The main screens at 200% text size (an accessibility setting people really use). Run with -Psprout.only=large. */
     @Test @Config(fontScale = 2.0f) fun tourLargeText() {
         assumeTrue(out != null && System.getProperty("sprout.only") == "large")
