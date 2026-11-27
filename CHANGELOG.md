@@ -2,6 +2,16 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.42.0] - 2026-11-26
+
+Round 42: fix a place in one tap.
+
+### New
+- **A place's page** (tap "Everything at …" on any purchase, or a place in Stats) shows its usual category with a **Change** button: pick a category and every purchase from that place moves, now and in future, with Undo. Purchases you set by hand to something else stay as they are.
+
+### Polish
+- The place's purchases sit on one grouped card.
+
 ## [2.41.0] - 2026-11-26
 
 Round 41: one word per job.

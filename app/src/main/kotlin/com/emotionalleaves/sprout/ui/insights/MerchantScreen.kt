@@ -1,5 +1,9 @@
 package com.emotionalleaves.sprout.ui.insights
 
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.layout.height
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.Arrangement
@@ -86,11 +90,75 @@ fun MerchantScreen(merchantKey: String, snackbar: androidx.compose.material3.Sna
                     }
                 }
             }
-            items(rows, key = { it.id }) { r -> TransactionItem(r, dateAsTitle = true) { openId = r.id } }
+            if (rows.isNotEmpty() && !com.emotionalleaves.sprout.domain.categorize.MerchantNormalizer.isGeneric(merchantKey)) {
+                item { MerchantCategoryCard(merchantKey, rows, snackbar) }
+            }
+            itemsIndexed(rows, key = { _, it -> it.id }) { i, r ->
+                val first = i == 0
+                val last = i == rows.lastIndex
+                val shape = androidx.compose.foundation.shape.RoundedCornerShape(
+                    topStart = if (first) 20.dp else 0.dp, topEnd = if (first) 20.dp else 0.dp,
+                    bottomStart = if (last) 20.dp else 0.dp, bottomEnd = if (last) 20.dp else 0.dp,
+                )
+                Column(Modifier.padding(horizontal = 12.dp).padding(top = if (first) 8.dp else 0.dp).clip(shape)
+                    .background(MaterialTheme.colorScheme.surfaceContainerLow)) {
+                    TransactionItem(r, dateAsTitle = true) { openId = r.id }
+                    if (!last) androidx.compose.material3.HorizontalDivider(Modifier.padding(start = 72.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                }
+            }
         }
     }
 }
 
+
+/**
+ * "Hy-Vee goes in Groceries · Change": the place's usual category, and one tap to move every purchase there
+ * (and future ones) to another, with Undo. The fastest way to fix a place that's sorted wrong.
+ */
+@Composable
+private fun MerchantCategoryCard(
+    merchantKey: String,
+    rows: List<com.emotionalleaves.sprout.data.db.TransactionRow>,
+    snackbar: androidx.compose.material3.SnackbarHostState,
+) {
+    val c = appContainer()
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var picking by remember { androidx.compose.runtime.mutableStateOf(false) }
+    val usual = rows.groupingBy { it.categoryName }.eachCount().maxByOrNull { it.value }?.key
+    val name = com.emotionalleaves.sprout.ui.common.merchantName(merchantKey)
+    SoftCard(onClick = { picking = true }) {
+        androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Category", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(usual ?: "—", style = MaterialTheme.typography.titleMedium)
+                Text("Change it here to move every purchase from $name, now and later.", style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            androidx.compose.material3.FilledTonalButton(onClick = { picking = true }) { Text("Change") }
+        }
+    }
+    if (picking) {
+        val categories by remember { c.db.categories().observeActive() }.collectAsStateWithLifecycle(emptyList())
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { picking = false },
+            title = { Text("Everything from $name goes in…") },
+            text = {
+                Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+                    com.emotionalleaves.sprout.ui.categories.CategoryGrid(categories, null) { cat ->
+                        picking = false
+                        scope.launch {
+                            val change = c.categoryRepository.recategorizeWithUndo(rows.first().id, cat.id, alwaysForMerchant = true)
+                            c.alertRepository.evaluateBudgets()
+                            scope.showUndoable(snackbar, "Moved ${change.others + 1} from $name to ${cat.name}", change.undo)
+                        }
+                    }
+                }
+            },
+            confirmButton = { androidx.compose.material3.TextButton(onClick = { picking = false }) { Text("Cancel") } },
+        )
+    }
+}
 
 /** Pin/unpin a category ("c:<id>") or merchant ("m:<key>") to the Home watchlist. */
 @Composable

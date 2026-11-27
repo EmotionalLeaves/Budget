@@ -260,10 +260,10 @@ class ScreenTour {
             if (only == "detail2") {
                 fun t(n: String, block: () -> Unit) = runCatching(block).onFailure { System.err.println("TOUR $n: " + it.toString().take(200)) }
                 t("merchant") {
-                    tap("Activity")
-                    rule.onAllNodes(androidx.compose.ui.test.hasContentDescription("Hy-Vee", substring = true))[0]
+                    tap("More"); tap("Stats"); tap("Places")
+                    rule.onAllNodes(androidx.compose.ui.test.hasText("Hy-Vee") and androidx.compose.ui.test.hasClickAction())[0]
                         .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); settle()
-                    tap("Everything at Hy-Vee"); s("50-merchant"); back()
+                    s("50-merchant"); back(); back()
                 }
                 t("select") {
                     tap("Activity")
