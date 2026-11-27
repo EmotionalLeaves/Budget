@@ -332,7 +332,7 @@ class ScreenTour {
                 fun t(n: String, block: () -> Unit) = runCatching(block).onFailure { System.err.println("TOUR $n: " + it.toString().take(200) + " @ " + it.stackTrace.firstOrNull { e -> e.className.contains("ScreenTour") }) }
                 t("sheet") { tap("Activity")
                     rule.onAllNodes(androidx.compose.ui.test.hasContentDescription("Hy-Vee", substring = true))[0]
-                        .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); settle(); s("30-tx-sheet"); back() }
+                        .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); settle(); Thread.sleep(800); settle(); s("30-tx-sheet"); back() }
                 t("add") { tap("Activity"); rule.onAllNodes(androidx.compose.ui.test.hasText("Add"), useUnmergedTree = true)[0].performClick(); settle(); s("31-add-sheet"); back() }
                 t("cat") { tap("Budgets"); tap("Groceries"); s("32-category"); back() }
                 t("backup") { tap("More"); tap("Backup and restore"); s("33-backup"); back() }

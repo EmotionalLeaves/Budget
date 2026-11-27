@@ -244,6 +244,10 @@ class TagAndInsightTest {
         val all = env.db.transactions().filteredTotals("", null, false)
         assertEquals(3, all.count); assertEquals(38_500L, all.outMinor); assertEquals(0L, all.inMinor)
         assertEquals(30_000L, env.db.transactions().filteredTotals("travel", null, false).outMinor)
+        val hyvee = env.db.backup().transactions().first { it.description == "HY-VEE #1234" }.merchantKey
+        val month = env.db.insights().merchantSpend(hyvee, at(11, 1), at(11, 30))
+        assertEquals(1, month.count); assertEquals(8_000L, month.outMinor)
+        assertEquals(0, env.db.insights().merchantSpend(hyvee, at(10, 1), at(10, 30)).count)
     }
 
     @Test fun reorderCategories() = runBlocking {

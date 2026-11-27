@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.55.0] - 2026-11-27
+
+Round 55: context on every purchase.
+
+### Features
+- **Purchase details** show how that month went at the same place: "2 visits · $148.56 at Hy-Vee in November". It's hidden for one-off places and generic bank names.
+
 ## [2.54.0] - 2026-11-27
 
 Round 54: search answers "how much?".

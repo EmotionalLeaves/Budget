@@ -96,6 +96,18 @@ class TransactionDetailViewModel(val c: AppContainer, private val id: String) : 
     fun saveNote(note: String) = viewModelScope.launch { c.categoryRepository.setNote(id, note) }
 
     /** "Part of a bill" text, when this charge belongs to a recurring charge. */
+    /** "4 visits · $312.40 at Hy-Vee in November", for the month this purchase is in; null for one-offs and generic names. */
+    suspend fun merchantMonth(merchantKey: String, occurredAt: Long, amountMinor: Long): Triple<Int, Long, String>? {
+        if (amountMinor >= 0 || merchantKey.isBlank() || com.emotionalleaves.sprout.domain.categorize.MerchantNormalizer.isGeneric(merchantKey)) return null
+        val zone = java.time.ZoneId.systemDefault()
+        val ym = java.time.YearMonth.from(java.time.Instant.ofEpochSecond(occurredAt).atZone(zone))
+        val start = ym.atDay(1).atStartOfDay(zone).toEpochSecond()
+        val end = ym.plusMonths(1).atDay(1).atStartOfDay(zone).toEpochSecond()
+        val t = runCatching { c.db.insights().merchantSpend(merchantKey, start, end) }.getOrNull() ?: return null
+        if (t.count < 2) return null
+        val month = ym.month.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.US)
+        return Triple(t.count, t.outMinor, month)
+    }
     suspend fun billText(recurringId: Long?): String? = recurringId?.let { rid ->
         c.db.recurring().getById(rid)?.takeIf { it.status != com.emotionalleaves.sprout.data.db.RecurringStatus.DISMISSED }
             ?.let { "Part of a bill: ${it.displayName} (${com.emotionalleaves.sprout.ui.bills.cadenceLabel(it.cadence).lowercase()}) — see the Bills tab" }
@@ -164,6 +176,9 @@ fun TransactionDetailSheet(transactionId: String, onDismiss: () -> Unit, onMessa
                     onClick = { onDismiss(); navigate("merchant/" + android.net.Uri.encode(d.merchantKey)) },
                     modifier = Modifier.heightIn(min = 48.dp),
                 ) { Text("Everything at $merchant ›") }
+                var monthStat by remember(d.id) { mutableStateOf<Triple<Int, Long, String>?>(null) }
+                LaunchedEffect(d.id) { monthStat = vm.merchantMonth(d.merchantKey, d.occurredAt, d.amountMinor) }
+                monthStat?.let { (n, spent, month) -> Text("$n visits · ${com.emotionalleaves.sprout.ui.common.money(spent)} at $merchant in $month", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
 
             var bill by remember(d.recurringChargeId) { mutableStateOf<String?>(null) }

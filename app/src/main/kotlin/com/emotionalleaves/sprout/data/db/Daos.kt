@@ -828,6 +828,16 @@ interface InsightDao {
     )
     suspend fun biggestCharge(start: Long, end: Long): MerchantCharge?
 
+    /** Purchases at one place in a range (positive cents), for "4 visits · $312 in November". */
+    @Query(
+        """
+        SELECT COUNT(*) AS count, COALESCE(SUM(-t.amountMinor), 0) AS outMinor, 0 AS inMinor
+        FROM transactions t JOIN accounts a ON a.id = t.accountId
+        WHERE t.merchantKey = :merchantKey AND t.amountMinor < 0 AND a.hidden = 0 AND t.occurredAt >= :start AND t.occurredAt < :end
+        """,
+    )
+    suspend fun merchantSpend(merchantKey: String, start: Long, end: Long): FilteredTotals
+
     /** Charges at a merchant, oldest first (for price-change detection). */
     @Query("SELECT -amountMinor FROM transactions WHERE merchantKey = :merchantKey AND amountMinor < 0 AND pending = 0 ORDER BY occurredAt DESC LIMIT :limit")
     suspend fun recentCharges(merchantKey: String, limit: Int = 3): List<Long>
