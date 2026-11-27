@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.insights
 
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.background
@@ -93,18 +94,31 @@ fun MerchantScreen(merchantKey: String, snackbar: androidx.compose.material3.Sna
             if (rows.isNotEmpty() && !com.emotionalleaves.sprout.domain.categorize.MerchantNormalizer.isGeneric(merchantKey)) {
                 item { MerchantCategoryCard(merchantKey, rows, snackbar) }
             }
-            itemsIndexed(rows, key = { _, it -> it.id }) { i, r ->
-                val first = i == 0
-                val last = i == rows.lastIndex
-                val shape = androidx.compose.foundation.shape.RoundedCornerShape(
-                    topStart = if (first) 20.dp else 0.dp, topEnd = if (first) 20.dp else 0.dp,
-                    bottomStart = if (last) 20.dp else 0.dp, bottomEnd = if (last) 20.dp else 0.dp,
-                )
-                Column(Modifier.padding(horizontal = 12.dp).padding(top = if (first) 8.dp else 0.dp).clip(shape)
-                    .background(MaterialTheme.colorScheme.surfaceContainerLow)) {
-                    TransactionItem(r, dateAsTitle = true) { openId = r.id }
-                    if (!last) androidx.compose.material3.HorizontalDivider(Modifier.padding(start = 72.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+            // One card per month, headed by what that month came to here.
+            val byMonth = rows.groupBy { YearMonth.from(java.time.Instant.ofEpochSecond(it.occurredAt).atZone(zone)) }
+            byMonth.forEach { (month, list) ->
+                item(key = "m-$month") {
+                    val out = list.filter { it.amountMinor < 0 }.sumOf { -it.amountMinor }
+                    Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(month.format(java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy", java.util.Locale.US)),
+                            style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                        Text("${list.size} ${if (list.size == 1) "visit" else "visits"}" + (if (out > 0) " · ${com.emotionalleaves.sprout.ui.common.money(out)}" else ""),
+                            style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                itemsIndexed(list, key = { _, it -> it.id }) { i, r ->
+                    val first = i == 0
+                    val last = i == list.lastIndex
+                    val shape = androidx.compose.foundation.shape.RoundedCornerShape(
+                        topStart = if (first) 20.dp else 0.dp, topEnd = if (first) 20.dp else 0.dp,
+                        bottomStart = if (last) 20.dp else 0.dp, bottomEnd = if (last) 20.dp else 0.dp,
+                    )
+                    Column(Modifier.padding(horizontal = 12.dp).clip(shape)
+                        .background(MaterialTheme.colorScheme.surfaceContainerLow)) {
+                        TransactionItem(r, dateAsTitle = true) { openId = r.id }
+                        if (!last) androidx.compose.material3.HorizontalDivider(Modifier.padding(start = 72.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                    }
                 }
             }
         }

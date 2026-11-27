@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.62.0] - 2026-11-27
+
+Round 62: a place's history by month.
+
+### Polish
+- **A place's page** (tap "Everything at Hy-Vee") groups purchases by month, and each month's header shows its visits and total ("November 2026 · 2 visits · $148.56").
+
 ## [2.61.0] - 2026-11-27
 
 Round 61: more undo.
