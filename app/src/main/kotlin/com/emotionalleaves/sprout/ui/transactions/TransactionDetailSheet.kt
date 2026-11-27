@@ -221,6 +221,9 @@ fun TransactionDetailSheet(transactionId: String, onDismiss: () -> Unit, onMessa
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     val realPlace = !com.emotionalleaves.sprout.domain.categorize.MerchantNormalizer.isGeneric(d.merchantKey)
                     if (realPlace) SwitchRow("Always use this for $merchant", always) { always = it }
+                    com.emotionalleaves.sprout.ui.categories.UsualCategoryChips(d.amountMinor, categories, exclude = d.categoryId) {
+                        vm.pick(it, always && realPlace, merchant); changing = false
+                    }
                     CategoryGrid(categories.orderedFor(d.amountMinor), d.categoryId) { vm.pick(it, always && realPlace, merchant); changing = false }
                     if (d.categorySource == com.emotionalleaves.sprout.domain.categorize.CategorySource.USER ||
                         d.categorySource == com.emotionalleaves.sprout.domain.categorize.CategorySource.IMPORT) {

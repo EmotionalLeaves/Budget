@@ -362,7 +362,11 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
             onDismissRequest = { quickFor = null },
             title = { Text(com.emotionalleaves.sprout.ui.common.merchantName(row.merchantKey).ifBlank { row.description }) },
             text = {
-                Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+                Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    com.emotionalleaves.sprout.ui.categories.UsualCategoryChips(row.amountMinor, categories, exclude = row.categoryId) { cat ->
+                        quickFor = null
+                        scope.launch { scope.showUndoable(snackbar, "Moved to ${cat.name}", vm.quickCategory(row.id, cat.id)) }
+                    }
                     com.emotionalleaves.sprout.ui.categories.CategoryGrid(categories.filter { !it.archived }.orderedFor(row.amountMinor), row.categoryId) { cat ->
                         quickFor = null
                         scope.launch {

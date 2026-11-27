@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.103.0] - 2026-11-27
+
+Round 103: your usual picks everywhere.
+
+### Polish
+- "Your usual" one-tap categories also appear when you change a purchase's category from its details, and when you swipe a purchase right on Activity.
+
 ## [2.102.0] - 2026-11-27
 
 Round 102: sorting with your usual picks.

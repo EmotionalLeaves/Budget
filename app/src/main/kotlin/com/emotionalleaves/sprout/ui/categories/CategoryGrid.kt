@@ -123,3 +123,38 @@ fun List<com.emotionalleaves.sprout.data.db.CategoryEntity>.orderedFor(amountMin
     )
     return sortedBy { rank[it.kind] ?: 3 } // stable: keeps your order within each kind
 }
+
+/**
+ * "Your usual": your four most-used spending categories in the last 90 days as one-tap chips, for money out.
+ * Shows nothing for money in or before there's history. [exclude] is a category already offered elsewhere.
+ */
+@androidx.compose.runtime.Composable
+fun UsualCategoryChips(amountMinor: Long, categories: List<com.emotionalleaves.sprout.data.db.CategoryEntity>, exclude: Long? = null,
+                       onPick: (com.emotionalleaves.sprout.data.db.CategoryEntity) -> Unit) {
+    if (amountMinor >= 0) return
+    val c = com.emotionalleaves.sprout.ui.common.appContainer()
+    val ids = com.emotionalleaves.sprout.ui.common.rememberLoaded(Unit) {
+        runCatching { c.db.insights().topSpendingCategories(System.currentTimeMillis() / 1000 - 90 * 86_400).map { it.categoryId } }.getOrNull()
+    } ?: return
+    val usual = ids.mapNotNull { id -> categories.firstOrNull { it.id == id } }.filter { it.id != exclude }
+    if (usual.isEmpty()) return
+    androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp)) {
+        androidx.compose.material3.Text("Your usual", style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
+            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant)
+        @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+        androidx.compose.foundation.layout.FlowRow(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp)) {
+            usual.forEach { cat ->
+                androidx.compose.material3.AssistChip(
+                    onClick = { onPick(cat) },
+                    label = { androidx.compose.material3.Text(cat.name) },
+                    leadingIcon = { androidx.compose.material3.Icon(com.emotionalleaves.sprout.ui.common.CategoryIcons.forKey(cat.iconKey), contentDescription = null,
+                        modifier = androidx.compose.ui.Modifier.size(18.dp)) },
+                    modifier = androidx.compose.ui.Modifier.heightIn(min = 48.dp),
+                )
+            }
+        }
+        androidx.compose.material3.Text("All categories", style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
+            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
