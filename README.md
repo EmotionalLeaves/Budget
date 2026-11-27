@@ -151,6 +151,10 @@ Decisions made while building, one per line:
 - Cancel reminders fire 3 days before the renewal date, whether or not general bill reminders are on, because you turned each one on yourself.
 - The screenshot tour (`ScreenTour`) is a review tool, not a test: it runs only when `-Psprout.screens=<dir>` is given.
 - The backup reminder only nudges; it never uploads anything. First nudge a week after the first account, then 30 days after each backup.
+- Stats averages, no-spend days, trends and "Usually $X" count from your first transaction, not from before Sprout had data (2.64–2.65).
+- Search dates ("last month", "october", "nov 2025") are read on the phone; a month without a year means its latest one that has started. Recent searches and remembered views (Stats period/tab, Reports range, Bills view, Home card order) are stored only in on-device settings and erased by Delete all data.
+- Undo covers deleting rules, goals, tags, auto-tag words, hand-added transactions and dismissed bills, by putting back the same rows (same ids). It lasts as long as the snackbar.
+- Category budget and Flex suggestions use the average of your last three full months, rounded up to $10.
 
 ## For developers
 
