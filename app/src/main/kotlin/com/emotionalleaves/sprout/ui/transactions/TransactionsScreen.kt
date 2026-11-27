@@ -280,7 +280,8 @@ class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initialTagId: Long? = null, initialAccountId: String? = null) {
+fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initialTagId: Long? = null, initialAccountId: String? = null,
+                       initialQuery: String? = null) {
     val vm = sproutViewModel { TransactionsViewModel(it) }
     val filter by vm.filter.collectAsStateWithLifecycle()
     val uncategorized by vm.uncategorizedCount.collectAsStateWithLifecycle()
@@ -291,7 +292,8 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
     val dayTotals by vm.dayTotals.collectAsStateWithLifecycle()
     LaunchedEffect(initialTagId) { if (initialTagId != null) vm.setTag(initialTagId) }
     LaunchedEffect(initialAccountId) { if (initialAccountId != null) vm.setAccount(initialAccountId) }
-    val scoped = initialTagId != null || initialAccountId != null
+    LaunchedEffect(initialQuery) { if (initialQuery != null) vm.setQuery(initialQuery) }
+    val scoped = initialTagId != null || initialAccountId != null || initialQuery != null
     val items = vm.pages.collectAsLazyPagingItems()
     val today by vm.today.collectAsStateWithLifecycle()
     var openId by rememberSaveable { mutableStateOf<String?>(null) }

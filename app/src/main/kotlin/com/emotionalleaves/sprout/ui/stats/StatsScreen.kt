@@ -1,5 +1,7 @@
 package com.emotionalleaves.sprout.ui.stats
 
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
@@ -682,8 +684,23 @@ private fun YearHeatmap(days: List<Long>, end: LocalDate, modifier: Modifier) {
     // Rows are Monday..Sunday; the first column starts on the Monday of the first week.
     val lead = start.dayOfWeek.value - 1
     val weeks = (lead + days.size + 6) / 7
+    val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
     Column {
-        Canvas(modifier.aspectRatio(weeks / 7f).semantics { contentDescription = "Daily spending for the past year" }) {
+        // Tap a day to see its purchases.
+        Canvas(modifier.aspectRatio(weeks / 7f).semantics { contentDescription = "Daily spending for the past year" }
+            .pointerInput(days, end) {
+                detectTapGestures { pos ->
+                    val gap = 2.dp.toPx()
+                    val cell = minOf((size.width - gap * (weeks - 1)) / weeks, (size.height - gap * 6) / 7)
+                    val col = (pos.x / (cell + gap)).toInt(); val row = (pos.y / (cell + gap)).toInt()
+                    if (row !in 0..6) return@detectTapGestures
+                    val i = col * 7 + row - lead
+                    if (i in days.indices && days[i] > 0) {
+                        val d = start.plusDays(i.toLong())
+                        navigate("search/" + android.net.Uri.encode(d.format(java.time.format.DateTimeFormatter.ofPattern("MMM d yyyy", java.util.Locale.US)).lowercase()))
+                    }
+                }
+            }) {
             val gap = 2.dp.toPx()
             val cell = minOf((size.width - gap * (weeks - 1)) / weeks, (size.height - gap * 6) / 7)
             days.forEachIndexed { i, v ->

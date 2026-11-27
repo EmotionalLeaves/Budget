@@ -67,6 +67,17 @@ data class SearchQuery(
                 if (w == "today") return DateHit(today, today, "Today", i, 1)
                 if (w == "yesterday") return DateHit(today.minusDays(1), today.minusDays(1), "Yesterday", i, 1)
                 val m = month(w) ?: continue
+                // "nov 24" or "november 24 2025": one day. A day without a year means its latest one so far.
+                val day = next?.toIntOrNull()?.takeIf { it in 1..31 }
+                if (day != null) {
+                    val y2 = lower.getOrNull(i + 2)?.toIntOrNull()?.takeIf { it in 2000..2100 }
+                    val guess = runCatching { LocalDate.of(y2 ?: today.year, m, day) }.getOrNull()
+                    if (guess != null) {
+                        val d = if (y2 == null && guess > today) runCatching { guess.minusYears(1) }.getOrNull() ?: guess else guess
+                        val label = d.format(java.time.format.DateTimeFormatter.ofPattern(if (d.year == today.year) "EEE, MMM d" else "MMM d, yyyy", java.util.Locale.US))
+                        return DateHit(d, d, label, i, if (y2 != null) 3 else 2)
+                    }
+                }
                 val year = next?.toIntOrNull()?.takeIf { it in 2000..2100 }
                 // Without a year, a month means its latest one that has started.
                 val y = year ?: if (m > today.monthValue) today.year - 1 else today.year

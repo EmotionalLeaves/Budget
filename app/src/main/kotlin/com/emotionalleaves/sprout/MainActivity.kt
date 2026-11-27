@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout
 
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.icons.rounded.Home
@@ -346,6 +347,19 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
                 androidx.compose.foundation.layout.Column(Modifier.fillMaxSize()) {
                     com.emotionalleaves.sprout.ui.tags.TagHeader(id, onBack = { nav.popBackStack() })
                     TransactionsScreen(snackbar, onReview = { nav.navigate("review") }, initialTagId = id)
+                }
+            }
+            // A ready-made search ("nov 24" from a calendar day), with a way back.
+            composable("search/{q}") { entry ->
+                val q = entry.arguments?.getString("q").orEmpty()
+                androidx.compose.foundation.layout.Column(Modifier.fillMaxSize()) {
+                    androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                        androidx.compose.material3.IconButton(onClick = { nav.popBackStack() }) {
+                            androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.AutoMirrored.Rounded.ArrowBack, "Back")
+                        }
+                        androidx.compose.material3.Text("Purchases", style = androidx.compose.material3.MaterialTheme.typography.titleLarge)
+                    }
+                    TransactionsScreen(snackbar, onReview = { nav.navigate("review") }, initialQuery = q)
                 }
             }
             composable("quick-setup") { QuickSetupScreen(onBack = { nav.popBackStack() }) }

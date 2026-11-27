@@ -46,4 +46,13 @@ class SearchQueryTest {
         assertEquals(SearchQuery("novel books"), SearchQuery.parse("novel books", today))
         assertEquals(SearchQuery("this place"), SearchQuery.parse("this place", today))
     }
+
+    @Test fun singleDays() {
+        val q = SearchQuery.parse("nov 24", today)
+        assertEquals(d(11, 24) to d(11, 24), q.fromDate to q.toDate); assertEquals("Tue, Nov 24", q.dateLabel)
+        assertEquals(d(12, 25, 2025), SearchQuery.parse("dec 25", today).fromDate) // hasn't happened this year yet
+        assertEquals(d(3, 1, 2025), SearchQuery.parse("hy-vee march 1 2025", today).let { assertEquals("hy-vee", it.text); it.fromDate })
+        // Not a day: amounts after a month still read as a month plus an amount.
+        assertEquals(d(10, 1), SearchQuery.parse("october", today).fromDate)
+    }
 }

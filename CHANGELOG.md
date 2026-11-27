@@ -2,6 +2,14 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.75.0] - 2026-11-27
+
+Round 75: tap a day, see the day.
+
+### Features
+- **Tap a day** in Home's "This month by day" calendar or in Stats → Patterns' year of days to open that day's purchases, with their total.
+- **Search by day:** "nov 24", "march 1 2025" and "hy-vee nov 24" find a single day.
+
 ## [2.74.0] - 2026-11-27
 
 Round 74: undo for dismissed bills.

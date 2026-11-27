@@ -310,6 +310,7 @@ fun SubscriptionsSummary() {
 fun SpendCalendarCard(cal: com.emotionalleaves.sprout.domain.calendar.SpendCalendar) {
     val heat = MaterialTheme.colorScheme.primary
     val ok = LocalSproutColors.current.ok
+    val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
     SoftCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("This month by day", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
@@ -327,8 +328,12 @@ fun SpendCalendarCard(cal: com.emotionalleaves.sprout.domain.calendar.SpendCalen
                     Box(Modifier.weight(1f).height(38.dp), contentAlignment = Alignment.Center) {
                         if (d != null) {
                             val a = if (cal.maxDayMinor > 0) (d.spentMinor.toFloat() / cal.maxDayMinor).coerceIn(0f, 1f) else 0f
+                            // Tap a day you spent on to see what it was.
+                            val dayQuery = d.date.format(java.time.format.DateTimeFormatter.ofPattern("MMM d yyyy", Locale.US)).lowercase()
                             Box(
-                                Modifier.fillMaxSize().clip(RoundedCornerShape(10.dp)).background(
+                                Modifier.fillMaxSize().clip(RoundedCornerShape(10.dp))
+                                    .then(if (!d.future && d.spentMinor > 0) Modifier.clickable { navigate("search/" + android.net.Uri.encode(dayQuery)) } else Modifier)
+                                    .background(
                                     when {
                                         d.future -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
                                         d.spentMinor == 0L -> ok.copy(alpha = 0.14f)

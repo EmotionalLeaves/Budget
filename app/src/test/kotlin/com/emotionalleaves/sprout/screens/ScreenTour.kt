@@ -311,6 +311,14 @@ class ScreenTour {
                     rule.onAllNodes(androidx.compose.ui.test.hasContentDescription("Clear search"))[0].performClick(); settle()
                 }
                 t("goals") { tap("More"); tap("Goals"); s("60-goals"); back() }
+                t("day") {
+                    tap("Home")
+                    rule.onAllNodes(androidx.compose.ui.test.hasScrollAction())[0]
+                        .performScrollToNode(androidx.compose.ui.test.hasText("This month by day")); settle()
+                    rule.onAllNodes(androidx.compose.ui.test.hasText("24") and androidx.compose.ui.test.hasClickAction())[0]
+                        .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); settle(); Thread.sleep(500); settle()
+                    s("71-day"); back()
+                }
                 t("customize") {
                     tap("Home")
                     rule.onAllNodes(androidx.compose.ui.test.hasScrollAction())[0]
