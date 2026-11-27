@@ -1,5 +1,8 @@
 package com.emotionalleaves.sprout.ui.categories
 
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -82,8 +85,21 @@ class ReviewViewModel(private val c: AppContainer) : ViewModel() {
 
     val learnerVersion: StateFlow<Int> = learner.map { it.exampleCount }.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
 
+    /** The last pick, so it can be taken back ("Put back"). */
+    val last = MutableStateFlow<Pair<String, suspend () -> Unit>?>(null)
+
+    fun undoLast() = viewModelScope.launch {
+        val u = last.value ?: return@launch
+        last.value = null
+        alsoSorted.value = null
+        u.second()
+        c.alertRepository.evaluateBudgets()
+        learner.value = c.categoryRepository.learner()
+    }
+
     fun pick(row: TransactionRow, category: CategoryEntity, always: Boolean) = viewModelScope.launch {
         val change = c.categoryRepository.recategorizeWithUndo(row.id, category.id, always)
+        last.value = "${com.emotionalleaves.sprout.domain.categorize.MerchantNormalizer.displayName(row.merchantKey)} → ${category.name}" to change.undo
         alsoSorted.value = (change.others + change.learned).takeIf { it > 0 }
         c.alertRepository.evaluateBudgets()
         learner.value = c.categoryRepository.learner()
@@ -146,9 +162,22 @@ fun ReviewScreen(onBack: () -> Unit) {
             Switch(checked = always, onCheckedChange = null)
         }
         val also by vm.alsoSorted.collectAsStateWithLifecycle()
-        also?.let { n ->
-            Text("✨ Also sorted $n similar ${if (n == 1) "purchase" else "purchases"} for you",
-                style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+        val last by vm.last.collectAsStateWithLifecycle()
+        last?.let { (what, _) ->
+            Row(
+                Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerLow).padding(start = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f).padding(vertical = 8.dp)) {
+                    Text(what, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    also?.let { n ->
+                        Text("✨ Also sorted $n similar ${if (n == 1) "purchase" else "purchases"}",
+                            style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+                TextButton(onClick = vm::undoLast, modifier = Modifier.heightIn(min = 48.dp)) { Text("Put back") }
+            }
         }
         val learnedFrom by vm.learnerVersion.collectAsStateWithLifecycle()
         val suggested = androidx.compose.runtime.remember(row.id, learnedFrom) { vm.suggestionFor(row) }

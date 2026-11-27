@@ -214,7 +214,7 @@ fun HomeScreen(
 
             if (on("goals") && goals.isNotEmpty()) {
                 item { com.emotionalleaves.sprout.ui.common.SectionHeader("Savings goals", "All goals", onGoals) }
-                items(goals, key = { "goal-" + it.goal.id }) { g -> com.emotionalleaves.sprout.ui.goals.GoalProgressRow(g, onGoals) }
+                items(goals, key = { "goal-" + it.goal.id }) { g -> com.emotionalleaves.sprout.ui.goals.GoalProgressRow(g, onClick = onGoals) }
             }
 
             if (on("accounts") && state.accounts.isNotEmpty()) {

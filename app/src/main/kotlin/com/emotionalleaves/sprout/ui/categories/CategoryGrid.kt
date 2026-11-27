@@ -1,5 +1,9 @@
 package com.emotionalleaves.sprout.ui.categories
 
+import androidx.compose.runtime.getValue
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.graphics.graphicsLayer
+import com.emotionalleaves.sprout.ui.common.readable
 import com.emotionalleaves.sprout.ui.common.CategoryIcons
 import androidx.compose.material3.Icon
 import androidx.compose.foundation.background
@@ -46,22 +50,29 @@ fun CategoryGrid(categories: List<CategoryEntity>, selectedId: Long?, onPick: (C
     ) {
         categories.forEach { c ->
             val selected = c.id == selectedId
+            val readable = Color(c.colorArgb).readable()
+            // A light wash of the category's own colour, so the grid reads at a glance; pressing gives a little squeeze.
+            val source = androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+            val pressed by source.collectIsPressedAsState()
+            val scale by androidx.compose.animation.core.animateFloatAsState(if (pressed) 0.94f else 1f, label = "chip")
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
+                    .graphicsLayer { scaleX = scale; scaleY = scale }
                     .heightIn(min = 48.dp)
                     .widthIn(min = 96.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
-                    .then(if (selected) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp)) else Modifier)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .background(readable.copy(alpha = if (selected) 0.28f else 0.10f))
+                    .then(if (selected) Modifier.border(2.dp, readable, RoundedCornerShape(14.dp)) else Modifier)
                     .semantics { this.selected = selected }
-                    .clickable(role = Role.Button) {
+                    .clickable(interactionSource = source, indication = androidx.compose.foundation.LocalIndication.current, role = Role.Button) {
                         haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                         onPick(c)
                     }
                     .padding(horizontal = 12.dp, vertical = 8.dp),
             ) {
-                Icon(CategoryIcons.forKey(c.iconKey), contentDescription = null, tint = Color(c.colorArgb), modifier = Modifier.size(18.dp))
+                Icon(CategoryIcons.forKey(c.iconKey), contentDescription = null, tint = readable, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
                 Text(c.name, style = MaterialTheme.typography.labelLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }

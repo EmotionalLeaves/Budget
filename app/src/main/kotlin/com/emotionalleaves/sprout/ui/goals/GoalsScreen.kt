@@ -86,7 +86,8 @@ class GoalsViewModel(private val c: AppContainer) : ViewModel() {
 private val dateFmt = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.US)
 
 @Composable
-fun GoalProgressRow(v: GoalView, footer: (@Composable () -> Unit)? = null, onClick: (() -> Unit)? = null) {
+// onClick comes before footer on purpose: a plain tap action passed positionally must never land in the composable slot.
+fun GoalProgressRow(v: GoalView, onClick: (() -> Unit)? = null, footer: (@Composable () -> Unit)? = null) {
     val p = v.progress
     val desc = "${v.goal.name}: ${Money.format(p.savedMinor)} of ${Money.format(p.targetMinor)}, ${p.percent} percent"
     androidx.compose.material3.Surface(
@@ -196,10 +197,11 @@ fun GoalsScreen(onBack: () -> Unit) {
             items(list.orEmpty(), key = { it.goal.id }) { v ->
                 GoalProgressRow(
                     v,
+                    onClick = { editing = v },
                     footer = if (v.account == null && !v.progress.reached) ({
                         TextButton(onClick = { adjusting = v }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Add money") }
                     }) else null,
-                ) { editing = v }
+                )
             }
         }
         ExtendedFloatingActionButton(

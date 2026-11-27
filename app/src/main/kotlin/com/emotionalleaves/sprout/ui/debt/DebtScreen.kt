@@ -67,7 +67,7 @@ fun DebtScreen(onBack: () -> Unit) {
     val debtAccounts = accounts.filter { (it.type == AccountType.CREDIT || it.type == AccountType.LOAN) && it.balanceMinor < 0 }
 
     Column(Modifier.fillMaxSize()) {
-        TopAppBar(title = { Text("Debt payoff plan") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } })
+        TopAppBar(windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0), title = { Text("Debt payoff plan") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } })
         if (debtAccounts.isEmpty()) {
             EmptyState("No debt to plan", "Credit cards and loans with a balance owed show up here. Nice work if that's because you owe nothing!")
             return@Column

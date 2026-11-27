@@ -72,7 +72,7 @@ fun InboxScreen(snackbar: SnackbarHostState, onBack: () -> Unit) {
         TransactionDetailSheet(id, onDismiss = { openId = null }, onMessage = { msg, undo -> scope.showUndoable(snackbar, msg, undo) })
     }
     Column(Modifier.fillMaxSize()) {
-        TopAppBar(
+        TopAppBar(windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0), 
             title = { Text("To review") },
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
             actions = {

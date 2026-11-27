@@ -58,7 +58,7 @@ fun MerchantScreen(merchantKey: String, snackbar: androidx.compose.material3.Sna
     val zone = ZoneId.systemDefault()
     val stats = remember(rows) { MerchantStats.of(rows.map { MerchantTx(it.amountMinor, it.occurredAt) }, YearMonth.now(zone), zone) }
     Column(Modifier.fillMaxSize()) {
-        TopAppBar(
+        TopAppBar(windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0), 
             title = { Text(com.emotionalleaves.sprout.ui.common.merchantName(merchantKey)) },
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
             actions = {

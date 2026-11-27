@@ -2,6 +2,20 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.33.0] - 2026-11-26
+
+Round 33: a crash fix, and sorting that's easier to undo.
+
+### Fixed
+- **Home could crash** when it showed your savings goals: the goal card's tap action was passed into the slot for its footer. Fixed, and the goal row's parameters are reordered so it can't happen again.
+- **Extra space above the title** on Year in review, Reports, Net worth, Year view, Challenges, Tags, a merchant's page, Debt plan and the review inbox: their top bars added the status-bar gap a second time.
+
+### New
+- **Review uncategorized** shows what you just did ("Carriage Park → Eating Out", plus how many similar ones were sorted) with a **Put back** button that undoes the pick and everything it sorted along with it.
+
+### Polish
+- Category buttons are tinted with each category's own colour and give a small squeeze when pressed.
+
 ## [2.32.0] - 2026-11-26
 
 Round 32: a tidier More screen.

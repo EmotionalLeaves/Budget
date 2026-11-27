@@ -194,7 +194,7 @@ fun ReportsScreen(onBack: () -> Unit) {
     Column(Modifier.fillMaxSize()) {
         val context = androidx.compose.ui.platform.LocalContext.current
         val scope = androidx.compose.runtime.rememberCoroutineScope()
-        TopAppBar(
+        TopAppBar(windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0), 
             title = { Text("Reports") },
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
             actions = {
@@ -271,7 +271,7 @@ fun YearInReviewScreen(onBack: () -> Unit) {
     var year by rememberSaveable { mutableIntStateOf(java.time.LocalDate.now().year) }
     val y = com.emotionalleaves.sprout.ui.common.rememberLoaded(year) { runCatching { c.insightsRepository.yearReview(year) }.getOrNull() }
     Column(Modifier.fillMaxSize()) {
-        TopAppBar(
+        TopAppBar(windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0), 
             title = { Text("$year in review") },
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
             actions = {
@@ -358,7 +358,7 @@ private fun CompareMonths(onBack: () -> Unit) {
     val fmt = java.time.format.DateTimeFormatter.ofPattern("MMM yyyy")
     val sc = LocalSproutColors.current
     Column(Modifier.fillMaxSize()) {
-        TopAppBar(
+        TopAppBar(windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0), 
             title = { Text("Compare months") },
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
         )

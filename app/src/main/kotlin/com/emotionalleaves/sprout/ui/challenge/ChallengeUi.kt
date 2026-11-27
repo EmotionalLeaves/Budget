@@ -95,7 +95,7 @@ fun ChallengesScreen(onBack: () -> Unit) {
     val groceries = cats.firstOrNull { it.key == DefaultCategories.GROCERIES }
     val shopping = cats.firstOrNull { it.key == DefaultCategories.SHOPPING }
     Column(Modifier.fillMaxSize()) {
-        TopAppBar(title = { Text("Challenges") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } })
+        TopAppBar(windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0), title = { Text("Challenges") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } })
         LazyColumn {
             if (progress.isEmpty()) item { EmptyState("No challenges yet", "Pick one below. Small and time-boxed works best.") }
             items(progress, key = { it.challenge.id }) { p -> ChallengeCard(p, onRemove = { scope.launch { c.challengeRepository.remove(p.challenge.id) } }) }

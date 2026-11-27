@@ -140,7 +140,7 @@ fun TagsScreen(onBack: () -> Unit, onOpen: (Long) -> Unit) {
     val applied by vm.lastApplied.collectAsStateWithLifecycle()
     var addingRule by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize()) {
-        TopAppBar(
+        TopAppBar(windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0), 
             title = { Text("Tags") },
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
             actions = { TextButton(onClick = { addingRule = true }) { Text("Auto-tag") } },
