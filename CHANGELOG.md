@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.52.0] - 2026-11-27
+
+Round 52: calm loading.
+
+### Polish
+- Stats, Reports, Net worth, Year view, Budgets, Quick setup and Sort purchases show a soft placeholder while their numbers load instead of a blank or "Adding things up…". Loads that finish in a blink show nothing, so there's no flicker.
+
 ## [2.51.0] - 2026-11-27
 
 Round 51: search by time.

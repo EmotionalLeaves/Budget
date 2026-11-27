@@ -94,7 +94,7 @@ fun QuickSetupScreen(onBack: () -> Unit) {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
             Text("Quick budget setup", style = MaterialTheme.typography.titleLarge)
         }
-        val sugg = suggestions ?: return@Column
+        val sugg = suggestions ?: run { com.emotionalleaves.sprout.ui.common.LoadingSkeleton(); return@Column }
         Text(
             if (sugg.isEmpty()) "Not enough history for suggestions yet. You can still type amounts below."
             else "Suggested from your average spending over the last 3 full months, rounded up to the next \$10. Edit anything, then save.",

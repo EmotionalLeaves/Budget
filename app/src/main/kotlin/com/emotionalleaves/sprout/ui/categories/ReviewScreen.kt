@@ -121,7 +121,7 @@ fun ReviewScreen(onBack: () -> Unit) {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
             Text("Sort purchases", style = MaterialTheme.typography.titleLarge)
         }
-        val list = queue ?: return@Column
+        val list = queue ?: run { com.emotionalleaves.sprout.ui.common.LoadingSkeleton(); return@Column }
         val row = list.firstOrNull()
         if (row == null) {
             EmptyState("All sorted", "Every purchase has a category. New ones are sorted for you as they arrive.")

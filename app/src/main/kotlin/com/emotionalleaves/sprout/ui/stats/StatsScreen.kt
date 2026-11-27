@@ -163,7 +163,7 @@ fun StatsScreen(onBack: () -> Unit, onMerchant: (String) -> Unit = {}) {
         }
         val d = data
         if (d == null) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Adding things up…", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            com.emotionalleaves.sprout.ui.common.LoadingSkeleton()
             return@Column
         }
         if (d.now.purchases == 0 && d.now.earned == 0L && d.now.spent == 0L) {

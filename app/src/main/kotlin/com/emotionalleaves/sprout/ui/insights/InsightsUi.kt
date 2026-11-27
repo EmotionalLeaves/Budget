@@ -113,7 +113,7 @@ fun NetWorthScreen(onBack: () -> Unit) {
     val series by produceState<List<Pair<java.time.LocalDate, Long>>?>(null) { value = runCatching { c.insightsRepository.netWorth(12) }.getOrDefault(emptyList()) }
     Column(Modifier.fillMaxSize()) {
         TopAppBar(windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0), title = { Text("Net worth") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } })
-        val s = series ?: return@Column
+        val s = series ?: run { com.emotionalleaves.sprout.ui.common.LoadingSkeleton(); return@Column }
         if (s.size < 2) {
             EmptyState("Not enough history yet", "Net worth over time appears once Sprout has a month or two of your transactions.")
             return@Column
@@ -177,7 +177,7 @@ fun YearScreen(onBack: () -> Unit, onCategory: (Long) -> Unit) {
     val data by produceState<Pair<List<java.time.YearMonth>, List<YearRow>>?>(null) { value = runCatching { c.insightsRepository.yearGrid(12) }.getOrNull() }
     Column(Modifier.fillMaxSize()) {
         TopAppBar(windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0), title = { Text("Year view") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } })
-        val (months, rows) = data ?: return@Column
+        val (months, rows) = data ?: run { com.emotionalleaves.sprout.ui.common.LoadingSkeleton(); return@Column }
         if (rows.isEmpty()) {
             EmptyState("Nothing to show yet", "Your spending by month appears here after your first sync or CSV import.")
             return@Column

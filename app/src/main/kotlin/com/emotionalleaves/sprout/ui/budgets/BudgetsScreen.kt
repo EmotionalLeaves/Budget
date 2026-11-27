@@ -116,7 +116,7 @@ fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit, onGoals:
             )
             IconButton(onClick = vm::next) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next month") }
         }
-        val m = data ?: return@Column
+        val m = data ?: run { com.emotionalleaves.sprout.ui.common.LoadingSkeleton(); return@Column }
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
             listOf("Per category", "Flex").forEachIndexed { i, label ->
                 SegmentedButton(mode == i, { vm.setMode(i) }, androidx.compose.material3.SegmentedButtonDefaults.itemShape(i, 2)) { Text(label) }

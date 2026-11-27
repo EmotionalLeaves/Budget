@@ -469,6 +469,22 @@ fun SkeletonBlock(height: Dp, modifier: Modifier = Modifier) {
         .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = a)))
 }
 
+/**
+ * What a screen shows while its numbers load: nothing for the first moment (most loads are instant, and a flash
+ * of grey looks worse than a blank), then a calm skeleton of a hero card and a few rows.
+ */
+@Composable
+fun LoadingSkeleton(rows: Int = 3) {
+    var show by remember { androidx.compose.runtime.mutableStateOf(false) }
+    LaunchedEffect(Unit) { kotlinx.coroutines.delay(250); show = true }
+    androidx.compose.animation.AnimatedVisibility(show, enter = androidx.compose.animation.fadeIn(tween(300))) {
+        Column(Modifier.fillMaxWidth().padding(top = 8.dp).semantics { contentDescription = "Loading" }) {
+            SkeletonBlock(160.dp)
+            repeat(rows) { SkeletonBlock(64.dp) }
+        }
+    }
+}
+
 /** Inside a [TileRow]: the modifier each tile takes (shares the row, or the full width when stacked). */
 interface TileScope { fun Modifier.tile(): Modifier }
 

@@ -205,7 +205,7 @@ fun ReportsScreen(onBack: () -> Unit) {
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
             ranges.forEachIndexed { i, (_, label) -> SegmentedButton(range == i, { range = i }, SegmentedButtonDefaults.itemShape(i, ranges.size)) { Text(label, maxLines = 1) } }
         }
-        val rep = r ?: return@Column
+        val rep = r ?: run { com.emotionalleaves.sprout.ui.common.LoadingSkeleton(); return@Column }
         val totalIn = rep.incomeByMonth.sum()
         val totalOut = rep.spendingByMonth.sum()
         if (totalIn == 0L && totalOut == 0L) {
@@ -279,7 +279,7 @@ fun YearInReviewScreen(onBack: () -> Unit) {
                 if (year < java.time.LocalDate.now().year) androidx.compose.material3.TextButton(onClick = { year += 1 }) { Text("${year + 1} ›") }
             },
         )
-        val r = y ?: return@Column
+        val r = y ?: run { com.emotionalleaves.sprout.ui.common.LoadingSkeleton(); return@Column }
         if (r.spentMinor == 0L && r.incomeMinor == 0L) {
             EmptyState("No data for $year", "Year in review fills in from your synced or imported transactions.")
             return@Column
@@ -368,7 +368,7 @@ private fun CompareMonths(onBack: () -> Unit) {
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             androidx.compose.material3.TextButton(enabled = ym < java.time.YearMonth.now(), onClick = { month = ym.plusMonths(1).toString() }) { Text("Later ›") }
         }
-        val list = rows ?: return@Column
+        val list = rows ?: run { com.emotionalleaves.sprout.ui.common.LoadingSkeleton(); return@Column }
         if (list.isEmpty()) { EmptyState("Nothing to compare", "Spending in either month shows up here."); return@Column }
         val now = list.sumOf { it.nowMinor }
         val before = list.sumOf { it.beforeMinor }

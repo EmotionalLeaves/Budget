@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.screens
 
+import androidx.compose.ui.test.performTextInput
 import android.graphics.Bitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.captureToImage
@@ -303,6 +304,12 @@ class ScreenTour {
             }
             if (only == "extras") {
                 fun t(n: String, block: () -> Unit) = runCatching(block).onFailure { System.err.println("TOUR $n: " + it.toString().take(200)) }
+                t("search") {
+                    tap("Activity")
+                    rule.onAllNodes(androidx.compose.ui.test.hasSetTextAction())[0].performTextInput(">5 this month"); settle()
+                    Thread.sleep(400); settle(); s("59-search-dates")
+                    rule.onAllNodes(androidx.compose.ui.test.hasContentDescription("Clear search"))[0].performClick(); settle()
+                }
                 t("goals") { tap("More"); tap("Goals"); s("60-goals"); back() }
                 t("stats") {
                     tap("More"); tap("Stats"); s("64-stats"); tap("Flow"); s("64b-stats-flow")
