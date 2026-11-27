@@ -9,6 +9,9 @@ Round 48: screens open the way you left them.
 ### Features
 - **Remembered views:** Stats keeps your period and tab (Overview, Flow, Patterns…), Reports keeps its range, and Bills keeps List or Calendar, even after Sprout is closed.
 
+### Polish
+- **Money health** on Home says Strong, Okay or Needs care next to the score, and labels its tip "To work on: …", so a good score with a warning no longer reads like a contradiction.
+
 ## [2.47.0] - 2026-11-26
 
 Round 47: clearer numbers on Goals and Net worth.

@@ -206,8 +206,16 @@ fun HealthCard(r: HealthScore.Result) {
             }
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                Text("Money health", style = MaterialTheme.typography.titleSmall)
-                Text(r.parts.minByOrNull { it.points * 100 / it.max }?.tip ?: "", style = MaterialTheme.typography.labelMedium,
+                // A verdict word, then the one part to work on, so a good score and a warning never read as a contradiction.
+                val verdict = if (score >= 75) "Strong" else if (score >= 45) "Okay" else "Needs care"
+                Text("Money health · $verdict", style = MaterialTheme.typography.titleSmall)
+                val weakest = r.parts.minByOrNull { it.points * 100 / it.max }
+                val note = when {
+                    weakest == null -> ""
+                    weakest.points * 100 / weakest.max >= 80 -> "Every part looks good. Tap for the breakdown."
+                    else -> "To work on: " + weakest.tip.replaceFirstChar { it.lowercase() }
+                }
+                Text(note, style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
             }
             Icon(Icons.Rounded.Favorite, contentDescription = null, tint = color)

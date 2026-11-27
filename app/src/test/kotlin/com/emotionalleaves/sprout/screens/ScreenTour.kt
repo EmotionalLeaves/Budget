@@ -291,7 +291,12 @@ class ScreenTour {
                         .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); settle()
                     s("58-review"); back()
                 }
-                t("health") { tap("Home"); tap("Money health"); s("53-health"); back() }
+                t("health") {
+                    tap("Home")
+                    rule.onAllNodes(androidx.compose.ui.test.hasText("Money health", substring = true) and androidx.compose.ui.test.hasClickAction())[0]
+                        .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); settle()
+                    s("53-health"); back()
+                }
                 t("networth") { tap("More"); tap("Net worth"); s("54-networth"); back() }
                 t("challenge") { tap("More"); tap("Challenges"); tap("No eating out"); s("55-challenge"); back() }
                 return@use
