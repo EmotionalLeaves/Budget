@@ -54,6 +54,8 @@ object BuiltInRules {
             val tier = if (category == C.P2P) BuiltInRule.TIER_PRIORITY else BuiltInRule.TIER_BRAND
             list.forEach { add(category, it, tier) }
         }
+        // Lincoln places come after the brand list (a brand's category wins if both name it) and before generic words.
+        for ((category, list) in LincolnPlaces.places) list.forEach { add(category, it, BuiltInRule.TIER_BRAND) }
         for ((category, list) in MerchantCatalog.keywords) list.forEach { add(category, it, BuiltInRule.TIER_GENERIC) }
         add(BuiltInRule(listOf("TARGET", "GROCERY"), C.GROCERIES))
         add(BuiltInRule(listOf("WALMART", "GROCERY"), C.GROCERIES))

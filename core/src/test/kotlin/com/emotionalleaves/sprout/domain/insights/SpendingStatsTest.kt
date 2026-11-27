@@ -48,4 +48,10 @@ class SpendingStatsTest {
         assertEquals(50, SpendingStats.changePercent(100, 150))
         assertEquals(null, SpendingStats.changePercent(0, 150))
     }
+
+    @Test fun heatmapAndInOut() {
+        val rows = listOf(spend(nov, 10_00), spend(nov.plusDays(2), 5_00), Row(100_00, at(nov.plusDays(1)), 9, CategoryKind.INCOME, "PAY"))
+        assertEquals(listOf(10_00L, 0L, 5_00L), SpendingStats.dailySpending(rows, nov.plusDays(2), 3, zone))
+        assertEquals(listOf(0L to 0L, 100_00L to 15_00L), SpendingStats.monthlyInOut(rows, YearMonth.of(2026, 11), 2, zone))
+    }
 }

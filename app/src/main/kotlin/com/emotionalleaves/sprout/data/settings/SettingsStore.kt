@@ -128,6 +128,19 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         if (days > (it[FIRST_SYNC_DAYS] ?: 90)) it[HISTORY_DONE] = false
         it[FIRST_SYNC_DAYS] = days
     }
+    /**
+     * Once (2.26.0): everyone still on the old 90-day default gets "Everything the bank has", so older history
+     * loads without a trip to Settings. A shorter choice made on purpose (30 days) is kept.
+     */
+    suspend fun upgradeHistoryDefaultOnce() = dataStore.edit {
+        if (it[HISTORY_DEFAULT_UPGRADED] == true) return@edit
+        val cur = it[FIRST_SYNC_DAYS] ?: 90
+        if (cur == 90) {
+            it[FIRST_SYNC_DAYS] = com.emotionalleaves.sprout.domain.sync.SyncPolicy.ALL_HISTORY_DAYS
+            it[HISTORY_DONE] = false
+        }
+        it[HISTORY_DEFAULT_UPGRADED] = true
+    }
     suspend fun setHistoryProgress(oldest: Long, done: Boolean) = dataStore.edit {
         it[HISTORY_OLDEST] = oldest
         it[HISTORY_DONE] = done
@@ -216,5 +229,6 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         val CATALOG_VERSION = intPreferencesKey("catalog_version")
         val HISTORY_OLDEST = longPreferencesKey("history_oldest")
         val HISTORY_DONE = booleanPreferencesKey("history_done")
+        val HISTORY_DEFAULT_UPGRADED = booleanPreferencesKey("history_default_upgraded")
     }
 }

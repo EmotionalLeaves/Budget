@@ -128,6 +128,35 @@ object SpendingStats {
         return out.mapValues { it.value.toList() }
     }
 
+    /** Spending per day for the [days] days ending [today] (oldest first), for the year heatmap. */
+    fun dailySpending(rows: List<Row>, today: LocalDate, days: Int, zone: ZoneId): List<Long> {
+        val first = today.minusDays((days - 1).toLong())
+        val out = LongArray(days)
+        for (r in rows) {
+            if (r.kind != CategoryKind.EXPENSE) continue
+            val i = ChronoUnit.DAYS.between(first, Instant.ofEpochSecond(r.occurredAt).atZone(zone).toLocalDate()).toInt()
+            if (i in 0 until days) out[i] += -r.amountMinor
+        }
+        return out.toList()
+    }
+
+    /** Money in (income) and out (spending) per month for the [months] months ending [lastMonth], oldest first. */
+    fun monthlyInOut(rows: List<Row>, lastMonth: java.time.YearMonth, months: Int, zone: ZoneId): List<Pair<Long, Long>> {
+        val first = lastMonth.minusMonths((months - 1).toLong())
+        val inc = LongArray(months)
+        val out = LongArray(months)
+        for (r in rows) {
+            val i = ChronoUnit.MONTHS.between(first, java.time.YearMonth.from(Instant.ofEpochSecond(r.occurredAt).atZone(zone))).toInt()
+            if (i !in 0 until months) continue
+            when (r.kind) {
+                CategoryKind.INCOME -> inc[i] += r.amountMinor
+                CategoryKind.EXPENSE -> out[i] += -r.amountMinor
+                CategoryKind.TRANSFER -> Unit
+            }
+        }
+        return (0 until months).map { inc[it] to out[it] }
+    }
+
     /** "+12%" style change from [before] to [now]; null when there's nothing to compare with. */
     fun changePercent(before: Long, now: Long): Int? = if (before == 0L) null else ((now - before) * 100 / abs(before)).toInt()
 }

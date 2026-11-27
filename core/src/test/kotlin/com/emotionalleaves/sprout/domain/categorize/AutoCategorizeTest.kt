@@ -85,6 +85,11 @@ class AutoCategorizeTest {
         "CITY OF LINCOLN PUBLIC WORKS" to C.UTILITIES,
         "SUNSET MINI MART" to C.GAS,
         "STARLITE LANES" to C.ENTERTAINMENT,
+        "SQ *MILL COFFEE HAYMARKET" to C.EATING_OUT,
+        "TST* YIA YIAS PIZZA" to C.EATING_OUT,
+        "PUMP & PANTRY #12" to C.GAS,
+        "GOMEZ ART SUPPLY" to C.HOBBIES,
+        "ZOO BAR LINCOLN NE" to C.EATING_OUT,
         "FS *SOFTWARETOOL" to C.SUBSCRIPTIONS,
     )
 
@@ -201,5 +206,13 @@ class AutoCategorizeTest {
         // ...but one pick doesn't override a brand the list knows.
         val w = LearnedCategorizer.train(listOf(LearnedCategorizer.Example("NETFLIX.COM", "NETFLIX", 42)))
         assertEquals(CategorySource.BUILT_IN, CategoryResolver(emptyList(), ids, w).resolve("NETFLIX.COM", "NETFLIX", -1599).source)
+    }
+
+    @Test fun everyLincolnPlaceSortsToItsOwnCategory() {
+        val brands = MerchantCatalog.merchants.flatMap { (_, l) -> l }.map { BuiltInRules.haystack(it) }.toSet()
+        val wrong = LincolnPlaces.places.flatMap { (cat, names) -> names.map { cat to it } }
+            .filter { (cat, name) -> name !in brands && BuiltInRules.match("$name #12 LINCOLN NE", "")?.categoryKey != cat }
+            .map { (cat, name) -> "$name: want $cat, got ${BuiltInRules.match("$name #12 LINCOLN NE", "")?.categoryKey}" }
+        assertTrue(wrong.size.toString() + "\n" + wrong.joinToString("\n"), wrong.isEmpty())
     }
 }

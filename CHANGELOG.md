@@ -2,6 +2,15 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.26.0] - 2026-11-26
+
+Round 26: Lincoln, all of it.
+
+### New
+- **About 2,000 Lincoln businesses recognized by name**, from restaurants, coffee shops and bars (Lazlo's, Yia Yia's, the Mill, Zoo Bar…) to salons, gyms, clinics, dentists, vets, auto shops, apartment complexes, hotels, venues and stores. Collected from public Lincoln business listings (Downtown Lincoln and Haymarket directories, the malls, local guides). Your history is re-sorted once to pick them up.
+- **Older history loads by itself.** If you were on the old 90-day setting, Sprout switches to "Everything the bank has" and fetches older months a few at a time over the next syncs (Force sync speeds it up).
+- **Stats got two more views**: a whole year of days as a heatmap (Patterns), and money in vs. out for each of the last 12 months (Trends).
+
 ## [2.25.0] - 2026-11-26
 
 Round 25: Stats.

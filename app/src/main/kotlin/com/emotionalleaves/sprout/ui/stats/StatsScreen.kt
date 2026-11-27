@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -70,6 +71,9 @@ import java.time.format.TextStyle
 import java.util.Locale
 import kotlin.math.abs
 
+/** 53 weeks, so the heatmap always shows a full year of columns. */
+private const val HEAT_DAYS = 53 * 7
+
 /** The time range the Stats screen looks at. */
 enum class StatsPeriod(val label: String) { THIS_MONTH("This month"), LAST_MONTH("Last month"), THREE_MONTHS("3 months"), YEAR("12 months"), ALL("All time") }
 
@@ -83,6 +87,10 @@ private class StatsData(
     val categories: Map<Long, Pair<String, Int>>,
     val inProgress: Boolean,
     val daysInPeriod: Int,
+    /** Last 371 days (53 full weeks), oldest first, ending today. */
+    val heat: List<Long>,
+    val heatEnd: LocalDate,
+    val inOut: List<Pair<Long, Long>>,
 )
 
 /** Stats: numbers and views of your spending beyond budgets: patterns, places and trends. */
@@ -113,7 +121,7 @@ fun StatsScreen(onBack: () -> Unit, onMerchant: (String) -> Unit = {}) {
                 StatsPeriod.THREE_MONTHS -> YearMonth.from(start).minusMonths(3).atDay(1)
                 else -> YearMonth.from(start).minusMonths(12).atDay(1)
             }
-            val loadFrom = minOf(prevStart ?: start, month.minusMonths(11).atDay(1))
+            val loadFrom = minOf(prevStart ?: start, month.minusMonths(11).atDay(1), today.minusDays(HEAT_DAYS.toLong()))
             val rows = c.db.budgets().statsRows(loadFrom.atStartOfDay(zone).toEpochSecond(), end.atStartOfDay(zone).toEpochSecond())
                 .map { SpendingStats.Row(it.amountMinor, it.occurredAt, it.categoryId, it.kind, it.merchantKey) }
             val now = SpendingStats.summarize(rows, start, end, today, zone)
@@ -130,6 +138,9 @@ fun StatsScreen(onBack: () -> Unit, onMerchant: (String) -> Unit = {}) {
                 categories = c.db.categories().getAll().associate { it.id to (it.name to it.colorArgb) },
                 inProgress = today < end && today >= start,
                 daysInPeriod = span.toInt(),
+                heat = SpendingStats.dailySpending(rows, today, HEAT_DAYS, zone),
+                heatEnd = today,
+                inOut = SpendingStats.monthlyInOut(rows, month, 12, zone),
             )
         }.getOrNull()
     }
@@ -258,6 +269,15 @@ private fun androidx.compose.foundation.lazy.LazyListScope.patterns(d: StatsData
     val s = d.now
     item {
         Card {
+            Label("Your year, day by day")
+            val active = d.heat.count { it > 0 }
+            Text("You spent something on $active of the last ${d.heat.size} days", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(12.dp))
+            YearHeatmap(d.heat, d.heatEnd, Modifier.fillMaxWidth())
+        }
+    }
+    item {
+        Card {
             Label("By day of the week")
             s.busiestWeekday?.let { Text("You spend most on ${it.getDisplayName(TextStyle.FULL, Locale.getDefault())}s", style = MaterialTheme.typography.titleMedium) }
             Spacer(Modifier.height(12.dp))
@@ -326,6 +346,20 @@ private fun androidx.compose.foundation.lazy.LazyListScope.places(d: StatsData, 
 
 private fun androidx.compose.foundation.lazy.LazyListScope.trends(d: StatsData) {
     val rows = d.trends.entries.filter { it.value.sum() > 0 && d.categories.containsKey(it.key) }.sortedByDescending { it.value.sum() }
+    item {
+        Card {
+            Label("Money in vs. out, by month")
+            val kept = d.inOut.sumOf { it.first - it.second }
+            Text(if (kept >= 0) "You kept ${Money.format(kept)} over 12 months" else "You spent ${Money.format(-kept)} more than came in over 12 months",
+                style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(12.dp))
+            InOutBars(d.inOut, d.trendMonths)
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(top = 8.dp)) {
+                LegendDot(LocalSproutColors.current.income, "In")
+                LegendDot(LocalSproutColors.current.chart.let { it[2 % it.size] }, "Out")
+            }
+        }
+    }
     item {
         Card {
             Label("12 months by category")
@@ -497,5 +531,83 @@ private fun Spark(values: List<Long>, color: Color, modifier: Modifier) {
         drawPath(fill, Brush.verticalGradient(listOf(color.copy(alpha = 0.25f), Color.Transparent)))
         drawPath(p, color, style = Stroke(4f, cap = StrokeCap.Round))
         drawCircle(color, 6f, Offset(x(values.size - 1), y(values.last())))
+    }
+}
+
+/** A GitHub-style grid: one square per day, a column per week, darker = more spent. */
+@Composable
+private fun YearHeatmap(days: List<Long>, end: LocalDate, modifier: Modifier) {
+    val sc = LocalSproutColors.current
+    val base = sc.chart.first()
+    val empty = MaterialTheme.colorScheme.surfaceContainerHighest
+    // Quartiles of spending days, so one huge rent day doesn't wash out everything else.
+    val sorted = days.filter { it > 0 }.sorted()
+    fun q(p: Double) = if (sorted.isEmpty()) 0L else sorted[((sorted.size - 1) * p).toInt()]
+    val cuts = listOf(q(0.25), q(0.5), q(0.75))
+    val start = end.minusDays((days.size - 1).toLong())
+    // Rows are Monday..Sunday; the first column starts on the Monday of the first week.
+    val lead = start.dayOfWeek.value - 1
+    val weeks = (lead + days.size + 6) / 7
+    Column {
+        Canvas(modifier.aspectRatio(weeks / 7f).semantics { contentDescription = "Daily spending for the past year" }) {
+            val gap = 2.dp.toPx()
+            val cell = minOf((size.width - gap * (weeks - 1)) / weeks, (size.height - gap * 6) / 7)
+            days.forEachIndexed { i, v ->
+                val slot = i + lead
+                val col = slot / 7
+                val row = slot % 7
+                val level = when {
+                    v <= 0 -> -1
+                    v <= cuts[0] -> 0
+                    v <= cuts[1] -> 1
+                    v <= cuts[2] -> 2
+                    else -> 3
+                }
+                val color = if (level < 0) empty else base.copy(alpha = listOf(0.3f, 0.5f, 0.75f, 1f)[level])
+                drawRoundRect(color, Offset(col * (cell + gap), row * (cell + gap)), Size(cell, cell), CornerRadius(cell * 0.25f, cell * 0.25f))
+            }
+        }
+        Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(start.month.getDisplayName(TextStyle.SHORT, Locale.getDefault()) + " " + start.year, style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+            Text("Less ", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            listOf(0.3f, 0.5f, 0.75f, 1f).forEach { a ->
+                Box(Modifier.padding(horizontal = 1.dp).size(10.dp).clip(RoundedCornerShape(2.dp)).background(base.copy(alpha = a)))
+            }
+            Text(" More", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+/** Paired bars per month: money in (income colour) next to money out. */
+@Composable
+private fun InOutBars(values: List<Pair<Long, Long>>, months: List<YearMonth>) {
+    val sc = LocalSproutColors.current
+    val inC = sc.income
+    val outC = sc.chart[2 % sc.chart.size]
+    val max = values.maxOfOrNull { maxOf(it.first, it.second) }?.coerceAtLeast(1) ?: 1
+    val grow by animateFloatAsState(1f, tween(700), label = "inout")
+    Column {
+        Canvas(Modifier.fillMaxWidth().height(140.dp).semantics {
+            contentDescription = months.zip(values).joinToString { (m, v) -> "${m.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())}: in ${Money.format(v.first)}, out ${Money.format(v.second)}" }
+        }) {
+            val n = values.size
+            val slot = size.width / n
+            val w = slot * 0.32f
+            val r = minOf(w / 2, 6.dp.toPx())
+            values.forEachIndexed { i, (a, b) ->
+                val x0 = i * slot + slot * 0.14f
+                val ha = size.height * (a.toFloat() / max) * grow
+                val hb = size.height * (b.toFloat() / max) * grow
+                drawRoundRect(inC, Offset(x0, size.height - ha), Size(w, ha.coerceAtLeast(2f)), CornerRadius(r, r))
+                drawRoundRect(outC, Offset(x0 + w + slot * 0.04f, size.height - hb), Size(w, hb.coerceAtLeast(2f)), CornerRadius(r, r))
+            }
+        }
+        Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {
+            months.forEach { m ->
+                Text(m.month.getDisplayName(TextStyle.NARROW, Locale.getDefault()), Modifier.weight(1f), style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            }
+        }
     }
 }

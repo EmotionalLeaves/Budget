@@ -100,6 +100,7 @@ class SproutApp : Application() {
         container.notifier.createChannels()
         container.appScope.launch {
             container.syncRepository.ensureSeeded()
+            runCatching { container.settings.upgradeHistoryDefaultOnce() }
             runCatching {
                 val v = container.settings.current().catalogVersion
                 if (v < com.emotionalleaves.sprout.data.categories.CategoryRepository.CATALOG_VERSION) {

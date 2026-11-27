@@ -268,7 +268,7 @@ class CategoryRepository(private val db: SproutDatabase, private val clock: Cloc
 
     companion object {
         /** Bump when the built-in merchant list changes so existing history is re-sorted once on update. */
-        const val CATALOG_VERSION = 2
+        const val CATALOG_VERSION = 3
 
         /** Colors offered for new categories (Material 600 shades). */
         val PALETTE: List<Int> = listOf(

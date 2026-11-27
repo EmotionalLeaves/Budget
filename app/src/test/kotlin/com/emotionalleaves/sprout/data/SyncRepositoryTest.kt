@@ -248,4 +248,12 @@ class SyncRepositoryTest {
         repeat(10) { env.repo().sync(SyncTrigger.FORCED) }
         assertTrue(env.db.syncLog().requestsSince(0) <= SyncPolicy.FORCED_REQUEST_BUDGET)
     }
+
+    @Test fun oldNinetyDayDefaultBecomesEverythingOnce() = runBlocking {
+        env.settings.upgradeHistoryDefaultOnce()
+        assertEquals(SyncPolicy.ALL_HISTORY_DAYS, env.settings.current().firstSyncDays)
+        env.settings.setFirstSyncDays(30)
+        env.settings.upgradeHistoryDefaultOnce()
+        assertEquals(30, env.settings.current().firstSyncDays)
+    }
 }
