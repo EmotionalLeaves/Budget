@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.common
 
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.ui.input.pointer.pointerInput
@@ -315,11 +316,20 @@ fun BarChart(values: List<Long>, labels: List<String>, color: Color, modifier: M
     val grid = MaterialTheme.colorScheme.outlineVariant
     val tm = rememberTextMeasurer()
     val valueStyle = MaterialTheme.typography.labelMedium.copy(color = highlight.readable(), fontWeight = FontWeight.Bold)
-    val lastText = money(values.lastOrNull() ?: 0L, whole = true)
+    // Tap a bar to read its amount; tap it again to go back to the latest one.
+    var selected by remember(values) { androidx.compose.runtime.mutableStateOf<Int?>(null) }
+    val active = (selected ?: values.lastIndex).coerceAtLeast(0)
+    val texts = values.map { money(it, whole = true) }
+    val lastText = texts.getOrElse(active) { money(0L, whole = true) }
     val hl = highlight.readable()
     val base = color.readable()
     Column(modifier.semantics { contentDescription = desc }) {
-        Canvas(Modifier.fillMaxWidth().height(140.dp)) {
+        Canvas(Modifier.fillMaxWidth().height(140.dp).pointerInput(values) {
+            detectTapGestures { pos ->
+                val i = (pos.x / (size.width.toFloat() / values.size.coerceAtLeast(1))).toInt().coerceIn(0, values.lastIndex)
+                selected = if (i == active && selected != null || i == values.lastIndex && selected == null) null else i
+            }
+        }) {
             val measured = tm.measure(lastText, valueStyle)
             val top = measured.size.height + 6.dp.toPx()
             val chartH = size.height - top
@@ -332,7 +342,7 @@ fun BarChart(values: List<Long>, labels: List<String>, color: Color, modifier: M
                 val h = (chartH * (v.toFloat() / max) * progress.value).coerceAtLeast(3f)
                 val x = i * slot + (slot - bw) / 2
                 val y = size.height - h
-                val last = i == values.lastIndex
+                val last = i == active
                 val brush = if (last) Brush.verticalGradient(listOf(hl, hl.copy(alpha = 0.72f)), y, size.height)
                 else Brush.verticalGradient(listOf(base.copy(alpha = 0.42f), base.copy(alpha = 0.16f)), y, size.height)
                 topRoundedBar(x, y, bw, size.height, brush)
@@ -349,7 +359,7 @@ fun BarChart(values: List<Long>, labels: List<String>, color: Color, modifier: M
         }
         Row(Modifier.fillMaxWidth().padding(top = 6.dp)) {
             labels.forEachIndexed { i, l ->
-                val last = i == labels.lastIndex
+                val last = i == active
                 Text(
                     l, Modifier.weight(1f), style = MaterialTheme.typography.labelSmall,
                     color = if (last) hl else MaterialTheme.colorScheme.onSurfaceVariant,

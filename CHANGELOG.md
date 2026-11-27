@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.68.0] - 2026-11-27
+
+Round 68: every bar chart answers a tap.
+
+### Features
+- **Tap a bar** in any month bar chart (Home's last 6 months, a category, a place, Reports) to see that month's amount and highlight it. Tap it again to go back to the latest month.
+
 ## [2.67.0] - 2026-11-27
 
 Round 67: read the net worth chart with your finger.
