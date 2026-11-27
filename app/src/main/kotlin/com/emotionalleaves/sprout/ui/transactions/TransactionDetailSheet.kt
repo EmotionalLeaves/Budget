@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.transactions
 
+import com.emotionalleaves.sprout.ui.categories.orderedFor
 import androidx.compose.material.icons.rounded.CallSplit
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.clip
@@ -220,7 +221,7 @@ fun TransactionDetailSheet(transactionId: String, onDismiss: () -> Unit, onMessa
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     val realPlace = !com.emotionalleaves.sprout.domain.categorize.MerchantNormalizer.isGeneric(d.merchantKey)
                     if (realPlace) SwitchRow("Always use this for $merchant", always) { always = it }
-                    CategoryGrid(categories, d.categoryId) { vm.pick(it, always && realPlace, merchant); changing = false }
+                    CategoryGrid(categories.orderedFor(d.amountMinor), d.categoryId) { vm.pick(it, always && realPlace, merchant); changing = false }
                     if (d.categorySource == com.emotionalleaves.sprout.domain.categorize.CategorySource.USER ||
                         d.categorySource == com.emotionalleaves.sprout.domain.categorize.CategorySource.IMPORT) {
                         TextButton(onClick = { vm.letSproutDecide(); changing = false }) { Text("Let Sprout decide") }

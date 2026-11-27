@@ -166,6 +166,10 @@ class ScreenTour {
         add(0, "DOORDASH*THAI BASIL", -2_845, "cc")
         add(1, "MICHAELS STORES 9921", -3_418, "cc")
         add(1, "VENMO PAYMENT SAM", -2_000)
+        // A few places Sprout can't know, so "Sort purchases" has something to show.
+        add(2, "ZQX BLOOM STUDIO 44", -2_600, "cc")
+        add(9, "ZQX BLOOM STUDIO 44", -1_850, "cc")
+        add(5, "PAYPAL *NCL", -2_795, "cc")
         c.db.transactions().upsert(txs)
         fun b(key: String, amt: Long) = idByKey[key]?.let { CategoryBudgetEntity(it, amt, now) }
         listOfNotNull(b("groceries", 40_000), b("eating_out", 12_000), b("shopping", 15_000), b("gas", 8_000), b("entertainment", 5_000))
@@ -363,6 +367,11 @@ class ScreenTour {
                     rule.onAllNodes(androidx.compose.ui.test.hasText("\$205") and androidx.compose.ui.test.hasClickAction())[0]
                         .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); settle(); Thread.sleep(400); settle()
                     s("73-year-cell"); back(); back()
+                }
+                t("sort") {
+                    tap("More")
+                    rule.onAllNodes(androidx.compose.ui.test.hasScrollAction())[0].performScrollToNode(androidx.compose.ui.test.hasText("Sort purchases"))
+                    tap("Sort purchases"); Thread.sleep(400); settle(); s("74-sort"); back()
                 }
                 t("customize") {
                     tap("Home")

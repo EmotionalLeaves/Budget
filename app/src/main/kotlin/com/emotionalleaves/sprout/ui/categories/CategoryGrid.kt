@@ -106,3 +106,20 @@ fun Labeled(label: String, content: @Composable () -> Unit) {
         content()
     }
 }
+
+/**
+ * Categories in the order that fits a transaction: for money out, spending categories first and Income last;
+ * for money in, Income first. Your own order is kept inside each group.
+ */
+fun List<com.emotionalleaves.sprout.data.db.CategoryEntity>.orderedFor(amountMinor: Long): List<com.emotionalleaves.sprout.data.db.CategoryEntity> {
+    val rank = if (amountMinor < 0) mapOf(
+        com.emotionalleaves.sprout.domain.categorize.CategoryKind.EXPENSE to 0,
+        com.emotionalleaves.sprout.domain.categorize.CategoryKind.TRANSFER to 1,
+        com.emotionalleaves.sprout.domain.categorize.CategoryKind.INCOME to 2,
+    ) else mapOf(
+        com.emotionalleaves.sprout.domain.categorize.CategoryKind.INCOME to 0,
+        com.emotionalleaves.sprout.domain.categorize.CategoryKind.TRANSFER to 1,
+        com.emotionalleaves.sprout.domain.categorize.CategoryKind.EXPENSE to 2,
+    )
+    return sortedBy { rank[it.kind] ?: 3 } // stable: keeps your order within each kind
+}

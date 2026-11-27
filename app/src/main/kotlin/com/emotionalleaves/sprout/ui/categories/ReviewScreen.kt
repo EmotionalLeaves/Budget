@@ -193,7 +193,7 @@ fun ReviewScreen(onBack: () -> Unit) {
                 Text("Looks like ${suggested.name}", style = MaterialTheme.typography.titleSmall)
             }
         }
-        CategoryGrid(categories.filter { it.key != DefaultCategories.UNCATEGORIZED }, null) { vm.pick(row, it, always && realPlace) }
+        CategoryGrid(categories.filter { it.key != DefaultCategories.UNCATEGORIZED }.orderedFor(row.amountMinor), null) { vm.pick(row, it, always && realPlace) }
         OutlinedButton(onClick = { vm.skip(row) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Skip for now") }
     }
 }

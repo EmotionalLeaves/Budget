@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.101.0] - 2026-11-27
+
+Round 101: the right categories first.
+
+### Polish
+- When you sort or change a purchase, spending categories come first and **Income** moves to the end, so the likely choices are at the top. For money coming in it's the other way round. Your own category order is kept within each group.
+
 ## [2.100.0] - 2026-11-27
 
 Round 100: money in next to money out.

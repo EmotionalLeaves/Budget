@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.transactions
 
+import com.emotionalleaves.sprout.ui.categories.orderedFor
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.filled.History
@@ -362,7 +363,7 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
             title = { Text(com.emotionalleaves.sprout.ui.common.merchantName(row.merchantKey).ifBlank { row.description }) },
             text = {
                 Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
-                    com.emotionalleaves.sprout.ui.categories.CategoryGrid(categories.filter { !it.archived }, row.categoryId) { cat ->
+                    com.emotionalleaves.sprout.ui.categories.CategoryGrid(categories.filter { !it.archived }.orderedFor(row.amountMinor), row.categoryId) { cat ->
                         quickFor = null
                         scope.launch {
                             val undo = vm.quickCategory(row.id, cat.id)
