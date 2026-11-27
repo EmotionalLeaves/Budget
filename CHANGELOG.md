@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.109.0] - 2026-11-27
+
+Round 109: less stacking on Activity.
+
+### Polish
+- "New since you last looked" and "purchases need a category" now share one card, each line with its own button, so the list starts higher up.
+
 ## [2.108.0] - 2026-11-27
 
 Round 108: safer challenges.

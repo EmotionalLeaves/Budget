@@ -499,12 +499,17 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
             com.emotionalleaves.sprout.ui.common.OneTimeTip("activity-swipe",
                 "Swipe a purchase right to change its category, left to leave it out of budgets. Long-press to select several.")
         }
-        if (inbox > 0 && !scoped && filter.query.isBlank() && selected.isEmpty()) {
+        val showInbox = inbox > 0 && !scoped && filter.query.isBlank() && selected.isEmpty()
+        val sortLine = "$uncategorized ${if (uncategorized == 1) "purchase needs" else "purchases need"} a category"
+        if (showInbox && uncategorized > 0 && !scoped) {
+            // Two to-dos share one card instead of stacking two banners above the list.
+            Banner("$inbox new since you last looked\n$sortLine", actionLabel = "Check", onAction = { navigate("inbox") },
+                warning = false, secondLabel = "Sort", onSecond = onReview)
+        } else if (showInbox) {
             Banner("$inbox new since you last looked", actionLabel = "Check", onAction = { navigate("inbox") }, warning = false)
-        }
-        if (uncategorized > 0 && !scoped) {
+        } else if (uncategorized > 0 && !scoped) {
             Banner(
-                "$uncategorized ${if (uncategorized == 1) "purchase needs" else "purchases need"} a category",
+                sortLine,
                 actionLabel = "Sort",
                 onAction = onReview,
                 warning = false,

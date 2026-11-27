@@ -78,6 +78,8 @@ fun Banner(
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
     warning: Boolean = true,
+    secondLabel: String? = null,
+    onSecond: (() -> Unit)? = null,
 ) {
     val container = if (warning) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceContainerLow
     val content = if (warning) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurface
@@ -93,9 +95,24 @@ fun Banner(
                 Icon(androidx.compose.material.icons.Icons.Rounded.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             }
             Spacer(Modifier.width(12.dp))
-            Text(message, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-            if (actionLabel != null && onAction != null) {
-                androidx.compose.material3.FilledTonalButton(onClick = onAction, modifier = Modifier.heightIn(min = 40.dp)) { Text(actionLabel) }
+            if (secondLabel != null && onSecond != null) {
+                // Two actions: one per line of the message, each button beside the line it acts on.
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    val lines = message.split('\n')
+                    listOf(actionLabel to onAction, secondLabel to onSecond).forEachIndexed { i, (label, act) ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(lines.getOrElse(i) { "" }, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                            if (label != null && act != null) {
+                                androidx.compose.material3.FilledTonalButton(onClick = act, modifier = Modifier.heightIn(min = 40.dp)) { Text(label) }
+                            }
+                        }
+                    }
+                }
+            } else {
+                Text(message, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                if (actionLabel != null && onAction != null) {
+                    androidx.compose.material3.FilledTonalButton(onClick = onAction, modifier = Modifier.heightIn(min = 40.dp)) { Text(actionLabel) }
+                }
             }
         }
     }
