@@ -329,6 +329,8 @@ private fun BillCalendar(vm: BillsViewModel) {
                 Icon(androidx.compose.material.icons.Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next month")
             }
         }
+        Column(Modifier.padding(horizontal = 4.dp).fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(24.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerLow).padding(8.dp)) {
         Row(Modifier.fillMaxWidth()) {
             listOf("S", "M", "T", "W", "T", "F", "S").forEach {
                 Text(it, Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
@@ -374,8 +376,10 @@ private fun BillCalendar(vm: BillsViewModel) {
                                 )
                             }
                             if (dayBills.isNotEmpty()) {
-                                Text(Money.formatWhole(total), style = MaterialTheme.typography.labelSmall,
-                                    color = if (dayBills.all { it.paid }) LocalSproutColors.current.ok else MaterialTheme.colorScheme.tertiary)
+                                val c = if (dayBills.all { it.paid }) LocalSproutColors.current.ok else MaterialTheme.colorScheme.tertiary
+                                Text(Money.formatWhole(total), style = MaterialTheme.typography.labelSmall, color = c, maxLines = 1,
+                                    modifier = Modifier.padding(top = 2.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(6.dp))
+                                        .background(c.copy(alpha = 0.14f)).padding(horizontal = 4.dp, vertical = 1.dp))
                             }
                             if (payByDay[day] != null) {
                                 Text("+" + Money.formatWhole(payByDay.getValue(day).sumOf { it.amountMinor }), style = MaterialTheme.typography.labelSmall,
@@ -386,14 +390,21 @@ private fun BillCalendar(vm: BillsViewModel) {
                 }
             }
         }
+        }
         val shown = selected?.let { byDay[it].orEmpty() } ?: bills
-        Text(
-            selected?.format(DateTimeFormatter.ofPattern("EEEE, MMM d", Locale.US)) ?: "All bills this month",
-            style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(start = 8.dp, top = 12.dp),
-        )
-        if (shown.isEmpty()) Text("No bills.", Modifier.padding(8.dp))
+        Row(Modifier.padding(start = 12.dp, end = 12.dp, top = 16.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                selected?.format(DateTimeFormatter.ofPattern("EEEE, MMM d", Locale.US)) ?: "All bills this month",
+                style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f),
+            )
+            val paid = shown.count { it.paid }
+            Text("$paid paid · ${shown.size - paid} due", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        if (shown.isEmpty()) Text("No bills.", Modifier.padding(12.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (shown.isNotEmpty()) Column(Modifier.padding(horizontal = 4.dp).fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(24.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerLow).padding(vertical = 4.dp)) {
         shown.forEach { b ->
-            Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     if (b.paid) Icons.Filled.CheckCircle else Icons.Filled.Schedule, contentDescription = if (b.paid) "Paid" else "Due",
                     tint = if (b.paid) LocalSproutColors.current.ok else MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(20.dp),
@@ -406,7 +417,9 @@ private fun BillCalendar(vm: BillsViewModel) {
                 Text(Money.format(b.amountMinor), color = if (b.paid) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface)
             }
         }
-        Text("Total this month: ${Money.format(bills.sumOf { it.amountMinor })}", Modifier.padding(8.dp), style = MaterialTheme.typography.labelLarge)
+        }
+        Text("Total this month: ${Money.format(bills.sumOf { it.amountMinor })}", Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            style = MaterialTheme.typography.labelLarge)
         if (pays.isNotEmpty()) {
             Text("Expected paydays", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(start = 8.dp, top = 8.dp))
             pays.forEach { p ->

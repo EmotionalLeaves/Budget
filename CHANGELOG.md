@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.38.0] - 2026-11-26
+
+Round 38: the bill calendar.
+
+### Polish
+- **Bills → Calendar**: the month sits on its own card, bill days carry a small coloured pill with the amount (green when paid, accent when still due), and the list below is one grouped card with a "10 paid · 2 due" summary.
+
 ## [2.37.0] - 2026-11-26
 
 Round 37: Debt plan you can see.
