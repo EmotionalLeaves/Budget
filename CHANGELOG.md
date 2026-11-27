@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.49.0] - 2026-11-26
+
+Round 49: Year view that shows patterns, not just rent.
+
+### Features
+- **Year view** has a new switch: **By amount** (as before) or **Within each category**, which shades each row against its own biggest month, so an expensive month of eating out stands out even next to rent. Sprout remembers which one you picked.
+
 ## [2.48.0] - 2026-11-26
 
 Round 48: screens open the way you left them.

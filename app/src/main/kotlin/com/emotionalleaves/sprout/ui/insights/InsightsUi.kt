@@ -1,5 +1,7 @@
 package com.emotionalleaves.sprout.ui.insights
 
+import androidx.compose.runtime.setValue
+import androidx.compose.material3.SegmentedButton
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.material.icons.automirrored.rounded.TrendingDown
 import androidx.compose.material.icons.automirrored.rounded.TrendingUp
@@ -191,9 +193,22 @@ fun YearScreen(onBack: () -> Unit, onCategory: (Long) -> Unit) {
             }
         }
         val heat = MaterialTheme.colorScheme.primary
+        // "Each category" shades every row against its own biggest month, so a pricey month for a small category
+        // stands out instead of everything looking pale next to rent.
+        var perRow by com.emotionalleaves.sprout.ui.common.rememberViewPref("year-shade-per-row", false, { it.toString() }, { it.toBooleanStrictOrNull() })
         LazyColumn {
             item {
-                Text("Darker = more spent. Scroll sideways for every month; tap a row to open the category.",
+                androidx.compose.material3.SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+                    listOf("By amount" to false, "Within each category" to true).forEachIndexed { i, (label, v) ->
+                        SegmentedButton(perRow == v, { perRow = v }, androidx.compose.material3.SegmentedButtonDefaults.itemShape(i, 2)) {
+                            Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                }
+            }
+            item {
+                Text(if (perRow) "Darker = a bigger month for that category. Scroll sideways for every month; tap a row to open the category."
+                    else "Darker = more spent. Scroll sideways for every month; tap a row to open the category.",
                     Modifier.padding(horizontal = 20.dp, vertical = 8.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             item {
@@ -214,8 +229,9 @@ fun YearScreen(onBack: () -> Unit, onCategory: (Long) -> Unit) {
                         Text(r.name.replace("-", "-\u200B"), style = MaterialTheme.typography.labelMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
                     Row(Modifier.horizontalScroll(scroll)) {
+                        val scale = if (perRow) r.byMonth.max().coerceAtLeast(1) else maxCell
                         r.byMonth.forEach { v ->
-                            val a = (v.toFloat() / maxCell).coerceIn(0f, 1f)
+                            val a = (v.toFloat() / scale).coerceIn(0f, 1f)
                             Box(
                                 Modifier.width(60.dp).height(36.dp).padding(horizontal = 2.dp).clip(RoundedCornerShape(8.dp))
                                     .background(heat.copy(alpha = 0.06f + 0.7f * a)),
