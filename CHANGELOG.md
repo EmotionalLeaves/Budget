@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.93.0] - 2026-11-27
+
+Round 93: know a bill before you edit it.
+
+### Polish
+- **Editing a bill** shows its recent charges under the amount ("Last 5 charges: all $15.49", or each one newest first when the price moved), so a price change is obvious before you type a new amount.
+
 ## [2.92.0] - 2026-11-27
 
 Round 92: cash, day by day.

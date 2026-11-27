@@ -155,6 +155,8 @@ Decisions made while building, one per line:
 - Search dates ("last month", "october", "nov 2025") are read on the phone; a month without a year means its latest one that has started. Recent searches and remembered views (Stats period/tab, Reports range, Bills view, Home card order) are stored only in on-device settings and erased by Delete all data.
 - Undo covers deleting rules, goals, tags, auto-tag words, hand-added transactions and dismissed bills, by putting back the same rows (same ids). It lasts as long as the snackbar.
 - Category budget and Flex suggestions use the average of your last three full months, rounded up to $10.
+- "This week" compares spending since Monday with the average of up to 8 earlier full weeks (after your first transaction) at the same weekday; it needs two such weeks.
+- "Cash to month end" spreads everyday spending evenly over the remaining days, so the daily line is an estimate; bills and paychecks land on their expected dates.
 
 ## For developers
 

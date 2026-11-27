@@ -311,6 +311,7 @@ fun BillsScreen() {
             onRemove = { editing = null; scope.launch { scope.showUndoable(snackbar, "Dismissed ${r.displayName}", vm.dismiss(r.id)) } },
             cancelReminder = r.id in cancelIds,
             onCancelReminder = { vm.setCancel(r.id, it) },
+            merchantKey = r.merchantKey,
         )
     }
     if (adding) {
@@ -549,6 +550,8 @@ private fun BillDialog(
     onRemove: (() -> Unit)?,
     cancelReminder: Boolean? = null,
     onCancelReminder: (Boolean) -> Unit = {},
+    /** The bill's place, to show its last few charges; null for a new bill. */
+    merchantKey: String? = null,
 ) {
     var name by remember { mutableStateOf(initialName) }
     var amountText by remember { mutableStateOf(initialAmount?.let { Money.format(it).removePrefix("$").replace(",", "") } ?: "") }
@@ -571,6 +574,18 @@ private fun BillDialog(
                     singleLine = true, isError = amountText.isNotBlank() && amount == null,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth()
                 )
+                // Recent charges, newest first, so a changed price is obvious before you edit the amount.
+                if (merchantKey != null) {
+                    val c = com.emotionalleaves.sprout.ui.common.appContainer()
+                    val recent = com.emotionalleaves.sprout.ui.common.rememberLoaded(merchantKey) {
+                        runCatching { c.db.insights().recentCharges(merchantKey, 6) }.getOrNull()
+                    }
+                    if (!recent.isNullOrEmpty()) {
+                        Text(if (recent.distinct().size == 1) "Last ${recent.size} charge${if (recent.size == 1) "" else "s"}: ${if (recent.size > 1) "all " else ""}${Money.format(recent.first())}"
+                            else "Recent charges, newest first: " + recent.joinToString(" · ") { Money.format(it) },
+                            style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
                 Text("How often", style = MaterialTheme.typography.labelLarge)
                 // Chips instead of a column of radios: the whole choice fits in two short rows.
                 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
