@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.36.0] - 2026-11-26
+
+Round 36: category pages.
+
+### Polish
+- A category's page shows the last 6 months on a proper chart card (this month highlighted, a dashed line for what's usual, "Usually $201 a month"), places as a ranked list with visits, share of the category and a bar, and its transactions on one grouped card.
+
 ## [2.35.0] - 2026-11-26
 
 Round 35: shortcuts.

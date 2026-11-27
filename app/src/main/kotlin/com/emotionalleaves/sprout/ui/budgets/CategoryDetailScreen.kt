@@ -1,5 +1,9 @@
 package com.emotionalleaves.sprout.ui.budgets
 
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
+import androidx.compose.foundation.lazy.itemsIndexed
+import com.emotionalleaves.sprout.ui.common.readable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.size
 import com.emotionalleaves.sprout.ui.common.showUndoable
@@ -185,16 +189,46 @@ fun CategoryDetailScreen(categoryId: Long, snackbar: SnackbarHostState, onBack: 
         }
         if (history.isNotEmpty()) {
             item { SectionTitle("Last 6 months") }
-            item { HistoryChart(history, category?.colorArgb?.let { Color(it) } ?: MaterialTheme.colorScheme.primary) }
+            item {
+                val col = category?.colorArgb?.let { Color(it) } ?: MaterialTheme.colorScheme.primary
+                val spent = history.map { it.second }.filter { it > 0 }
+                com.emotionalleaves.sprout.ui.common.SoftCard {
+                    Text(if (spent.isEmpty()) "Nothing yet" else "Usually ${Money.formatWhole(spent.sum() / spent.size)} a month",
+                        style = MaterialTheme.typography.titleSmall)
+                    androidx.compose.foundation.layout.Spacer(Modifier.height(12.dp))
+                    com.emotionalleaves.sprout.ui.common.BarChart(
+                        values = history.map { it.second }, labels = history.map { it.first.format(shortMonth) },
+                        color = col.copy(alpha = 0.45f), highlight = col,
+                        average = if (spent.isEmpty()) null else spent.sum() / spent.size,
+                    )
+                }
+            }
         }
         if (merchants.isNotEmpty()) {
             item { SectionTitle("By merchant") }
-            items(merchants, key = { "m-" + it.merchantKey }) { m ->
+            item {
                 val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
-                Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable { navigate("merchant/" + android.net.Uri.encode(m.merchantKey)) }
-                    .padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(com.emotionalleaves.sprout.ui.common.merchantName(m.merchantKey) + " (${m.count})", Modifier.weight(1f))
-                    Text(Money.format(maxOf(0, -m.total)))
+                val readable = (category?.colorArgb?.let { Color(it) } ?: MaterialTheme.colorScheme.primary).readable()
+                val biggest = merchants.maxOf { maxOf(0, -it.total) }.coerceAtLeast(1)
+                val total = merchants.sumOf { maxOf(0, -it.total) }.coerceAtLeast(1)
+                com.emotionalleaves.sprout.ui.common.SoftCard {
+                    merchants.forEach { m ->
+                        val amt = maxOf(0, -m.total)
+                        Column(Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+                            .clickable { navigate("merchant/" + android.net.Uri.encode(m.merchantKey)) }.padding(vertical = 8.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(com.emotionalleaves.sprout.ui.common.merchantName(m.merchantKey), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f), maxLines = 1)
+                                Text(Money.format(amt), style = MaterialTheme.typography.titleSmall)
+                            }
+                            Text("${m.count} ${if (m.count == 1) "visit" else "visits"} · ${amt * 100 / total}% of this category",
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            androidx.compose.foundation.layout.Box(Modifier.padding(top = 6.dp).fillMaxWidth().height(6.dp)
+                                .clip(androidx.compose.foundation.shape.RoundedCornerShape(3.dp)).background(MaterialTheme.colorScheme.surfaceContainerHighest)) {
+                                androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth(amt.toFloat() / biggest).height(6.dp)
+                                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(3.dp)).background(readable))
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -208,40 +242,19 @@ fun CategoryDetailScreen(categoryId: Long, snackbar: SnackbarHostState, onBack: 
             }
         }
         item { SectionTitle("Transactions") }
-        items(txs, key = { "t-" + it.id }) { row ->
-            TransactionItem(row, showDate = true) { openId = row.id }
-            HorizontalDivider(Modifier.padding(start = 16.dp))
+        itemsIndexed(txs, key = { _, it -> "t-" + it.id }) { i, row ->
+            val first = i == 0
+            val last = i == txs.lastIndex
+            val shape = androidx.compose.foundation.shape.RoundedCornerShape(
+                topStart = if (first) 20.dp else 0.dp, topEnd = if (first) 20.dp else 0.dp,
+                bottomStart = if (last) 20.dp else 0.dp, bottomEnd = if (last) 20.dp else 0.dp,
+            )
+            Column(Modifier.padding(horizontal = 12.dp).clip(shape).background(MaterialTheme.colorScheme.surfaceContainerLow)) {
+                TransactionItem(row, showDate = true) { openId = row.id }
+                if (!last) HorizontalDivider(Modifier.padding(start = 72.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+            }
         }
     }
 }
 
 /** A simple bar chart drawn with Canvas. TalkBack reads every month's amount. */
-@Composable
-private fun HistoryChart(history: List<Pair<YearMonth, Long>>, barColor: Color) {
-    val max = history.maxOf { it.second }.coerceAtLeast(1)
-    val description = history.joinToString("; ") { (m, v) -> "${m.format(shortMonth)} ${Money.formatWhole(v)}" }
-    Column(Modifier.padding(horizontal = 16.dp).semantics(mergeDescendants = true) { contentDescription = "Spending by month: $description" }) {
-        Canvas(Modifier.fillMaxWidth().height(120.dp)) {
-            val n = history.size
-            val slot = size.width / n
-            val barW = slot * 0.6f
-            history.forEachIndexed { i, (_, v) ->
-                val h = (v.toFloat() / max) * size.height
-                drawRoundRect(
-                    color = barColor,
-                    topLeft = Offset(i * slot + (slot - barW) / 2, size.height - h),
-                    size = Size(barW, h),
-                    cornerRadius = CornerRadius(6f, 6f),
-                )
-            }
-        }
-        Row(Modifier.fillMaxWidth()) {
-            history.forEach { (m, v) ->
-                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(m.format(shortMonth), style = MaterialTheme.typography.labelSmall)
-                    Text(Money.formatWhole(v), style = MaterialTheme.typography.labelSmall)
-                }
-            }
-        }
-    }
-}
