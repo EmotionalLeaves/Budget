@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.43.0] - 2026-11-26
+
+Round 43: Challenges.
+
+### Polish
+- **Challenges** opens with how many you're on track with (or an invitation when you have none), and each idea shows its length as a coloured chip in its category's colour.
+
 ## [2.42.0] - 2026-11-26
 
 Round 42: fix a place in one tap.

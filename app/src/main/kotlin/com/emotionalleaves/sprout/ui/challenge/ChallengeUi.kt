@@ -1,5 +1,8 @@
 package com.emotionalleaves.sprout.ui.challenge
 
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
+import com.emotionalleaves.sprout.ui.common.readable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -47,7 +50,6 @@ import com.emotionalleaves.sprout.domain.challenge.ChallengeStatus
 import com.emotionalleaves.sprout.domain.challenge.ChallengeType
 import com.emotionalleaves.sprout.domain.challenge.HealthScore
 import com.emotionalleaves.sprout.domain.money.Money
-import com.emotionalleaves.sprout.ui.common.EmptyState
 import com.emotionalleaves.sprout.ui.common.FatProgress
 import com.emotionalleaves.sprout.ui.common.IconBadge
 import com.emotionalleaves.sprout.ui.common.ProgressRing
@@ -97,7 +99,22 @@ fun ChallengesScreen(onBack: () -> Unit) {
     Column(Modifier.fillMaxSize()) {
         TopAppBar(windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0), title = { Text("Challenges") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } })
         LazyColumn {
-            if (progress.isEmpty()) item { EmptyState("No challenges yet", "Pick one below. Small and time-boxed works best.") }
+            item {
+                val sc = LocalSproutColors.current
+                val onTrack = progress.count { it.status == com.emotionalleaves.sprout.domain.challenge.ChallengeStatus.ON_TRACK }
+                com.emotionalleaves.sprout.ui.common.HeroCard(sc.hero) {
+                    Icon(Icons.Rounded.EmojiEvents, contentDescription = null, tint = sc.onHero, modifier = Modifier.size(32.dp))
+                    Text(
+                        if (progress.isEmpty()) "Small dares, real savings" else "$onTrack of ${progress.size} on track",
+                        style = MaterialTheme.typography.headlineSmall, color = sc.onHero,
+                    )
+                    Text(
+                        if (progress.isEmpty()) "Pick one below. A week without one habit is easier than a month of budgeting it."
+                        else "Sprout checks your real purchases each day, so there's nothing to log.",
+                        style = MaterialTheme.typography.bodyMedium, color = sc.onHero.copy(alpha = 0.9f),
+                    )
+                }
+            }
             items(progress, key = { it.challenge.id }) { p -> ChallengeCard(p, onRemove = { scope.launch { c.challengeRepository.remove(p.challenge.id) } }) }
             item { com.emotionalleaves.sprout.ui.common.SectionHeader("Start one") }
             val templates = listOfNotNull(
@@ -119,16 +136,19 @@ fun ChallengesScreen(onBack: () -> Unit) {
                         }
                     }
                 }) {
+                    val catEntity = cats.firstOrNull { it.id == cat }
+                    val tint = (catEntity?.let { androidx.compose.ui.graphics.Color(it.colorArgb) } ?: MaterialTheme.colorScheme.primary).readable()
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        val catEntity = cats.firstOrNull { it.id == cat }
                         com.emotionalleaves.sprout.ui.common.IconBadge(
-                            if (catEntity != null) com.emotionalleaves.sprout.ui.common.CategoryIcons.forKey(catEntity.iconKey) else Icons.Rounded.EmojiEvents,
-                            catEntity?.let { androidx.compose.ui.graphics.Color(it.colorArgb) } ?: MaterialTheme.colorScheme.primary,
+                            if (catEntity != null) com.emotionalleaves.sprout.ui.common.CategoryIcons.forKey(catEntity.iconKey) else Icons.Rounded.EmojiEvents, tint,
                         )
-                        Column(Modifier.padding(start = 12.dp)) {
+                        Column(Modifier.weight(1f).padding(start = 12.dp)) {
                             Text(title, style = MaterialTheme.typography.titleSmall)
                             Text("Tap to start now", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
+                        Text(if (title.contains("14")) "14 days" else "7 days", style = MaterialTheme.typography.labelMedium, color = tint,
+                            modifier = Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(50)).background(tint.copy(alpha = 0.14f))
+                                .padding(horizontal = 10.dp, vertical = 4.dp))
                     }
                 }
             }
