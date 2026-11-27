@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.56.0] - 2026-11-27
+
+Round 56: a tidier Accounts list in Settings.
+
+### Polish
+- **Settings → Accounts** is one compact list instead of two switches under every account. Each row shows its type and balance, and says "Not counted in your total" or "Hidden everywhere" when that applies. Tap an account to rename it, change its type, or choose whether it counts and shows.
+
 ## [2.55.0] - 2026-11-27
 
 Round 55: context on every purchase.

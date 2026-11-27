@@ -317,18 +317,29 @@ fun SettingsScreen(
 
         if (state.accounts.isNotEmpty()) {
                 item { SectionTitle("Accounts") }
-            items(state.accounts, key = { "a-" + it.id }) { a ->
+            // One compact row per account; tap for name, type and whether it counts or shows.
+            item {
                 SettingsGroup {
-                    Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text(a.label, style = MaterialTheme.typography.titleSmall)
-                            Text(a.type.name.lowercase().replaceFirstChar { it.uppercase() } + " · " + Money.format(a.balanceMinor),
-                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    state.accounts.forEach { a ->
+                        Row(
+                            Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable { editingAccount = a }.padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text(a.label, style = MaterialTheme.typography.titleSmall)
+                                Text(a.type.name.lowercase().replaceFirstChar { it.uppercase() } + " · " + Money.format(a.balanceMinor),
+                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                val status = when {
+                                    a.hidden -> "Hidden everywhere"
+                                    !a.includeInTotals -> "Not counted in your total"
+                                    else -> null
+                                }
+                                status?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = com.emotionalleaves.sprout.ui.theme.LocalSproutColors.current.warning) }
+                            }
+                            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = "Edit ${a.label}",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        TextButton(onClick = { editingAccount = a }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Edit") }
                     }
-                    ToggleRow("Include in total balance", a.includeInTotals) { vm.setIncluded(a, it) }
-                    ToggleRow("Hide this account", a.hidden) { vm.setHidden(a, it) }
                 }
             }
         }
@@ -431,6 +442,8 @@ fun SettingsScreen(
     editingAccount?.let { a ->
         var name by remember(a.id) { mutableStateOf(a.label) }
         var type by remember(a.id) { mutableStateOf(a.type) }
+        var included by remember(a.id) { mutableStateOf(a.includeInTotals) }
+        var hidden by remember(a.id) { mutableStateOf(a.hidden) }
         AlertDialog(
             onDismissRequest = { editingAccount = null },
             title = { Text("Edit account") },
@@ -444,10 +457,17 @@ fun SettingsScreen(
                             Text(t.name.lowercase().replaceFirstChar { it.uppercase() }, Modifier.padding(start = 8.dp))
                         }
                     }
+                    ToggleRow("Include in total balance", included, "Counts toward net worth and your balance") { included = it }
+                    ToggleRow("Hide this account", hidden, "Its transactions leave every list and total") { hidden = it }
                 }
             },
             confirmButton = {
-                TextButton(onClick = { vm.rename(a, name); vm.setType(a, type); editingAccount = null }) { Text("Save") }
+                TextButton(onClick = {
+                    vm.rename(a, name); vm.setType(a, type)
+                    if (included != a.includeInTotals) vm.setIncluded(a, included)
+                    if (hidden != a.hidden) vm.setHidden(a, hidden)
+                    editingAccount = null
+                }) { Text("Save") }
             },
             dismissButton = { TextButton(onClick = { editingAccount = null }) { Text("Cancel") } },
         )
