@@ -2,6 +2,16 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.66.0] - 2026-11-27
+
+Round 66: faster month flipping.
+
+### Features
+- **Budgets:** swipe left or right anywhere to go to the next or previous month. When you're looking at another month, a **Today** button brings you back to this one.
+
+### Polish
+- The Stats summary says "since Jul 3" when your data starts partway through the period.
+
 ## [2.65.0] - 2026-11-27
 
 Round 65: honest averages.

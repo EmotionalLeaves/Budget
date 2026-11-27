@@ -1,5 +1,7 @@
 package com.emotionalleaves.sprout.ui.budgets
 
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import kotlinx.coroutines.flow.map
@@ -82,6 +84,7 @@ class BudgetsViewModel(private val c: AppContainer) : ViewModel() {
 
     fun prev() = _month.update { it.minusMonths(1) }
     fun next() = _month.update { it.plusMonths(1) }
+    fun thisMonth() = _month.update { java.time.YearMonth.from(today()) }
     fun isCurrent() = _month.value == c.budgetRepository.currentMonth()
 
     fun save(categoryId: Long, amount: Long, thisMonthOnly: Boolean, rollover: Boolean, wasOn: Boolean) =
@@ -107,7 +110,17 @@ fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit, onGoals:
     val flex by vm.flex.collectAsStateWithLifecycle()
     val today = vm.today()
 
-    Column(Modifier.fillMaxSize()) {
+    // Swipe sideways anywhere to change month, like flipping pages.
+    val swipe = with(androidx.compose.ui.platform.LocalDensity.current) { 96.dp.toPx() }
+    Column(Modifier.fillMaxSize().pointerInput(Unit) {
+        var dx = 0f
+        detectHorizontalDragGestures(
+            onDragStart = { dx = 0f },
+            onDragEnd = { if (dx > swipe) vm.prev() else if (dx < -swipe) vm.next() },
+            onHorizontalDrag = { _, amount -> dx += amount },
+        )
+    }) {
+        val onThisMonth = java.time.YearMonth.from(today) == month
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = vm::prev) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous month") }
             Text(
@@ -116,6 +129,9 @@ fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit, onGoals:
                 textAlign = TextAlign.Center,
                 modifier = Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite },
             )
+            if (!onThisMonth) {
+                TextButton(onClick = vm::thisMonth, modifier = Modifier.heightIn(min = 48.dp)) { Text("Today") }
+            }
             IconButton(onClick = vm::next) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next month") }
         }
         val m = data ?: run { com.emotionalleaves.sprout.ui.common.LoadingSkeleton(); return@Column }

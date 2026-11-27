@@ -94,6 +94,8 @@ private class StatsData(
     val inOut: List<Pair<Long, Long>>,
     /** Days of the heatmap since your first transaction (the rest is before Sprout had data). */
     val heatDataDays: Int,
+    /** Set when your data starts inside the period, so the hero can say "since Jul 3". */
+    val dataSince: LocalDate? = null,
 )
 
 /** Stats: numbers and views of your spending beyond budgets: patterns, places and trends. */
@@ -150,6 +152,7 @@ fun StatsScreen(onBack: () -> Unit, onMerchant: (String) -> Unit = {}) {
                 heat = SpendingStats.dailySpending(rows, today, HEAT_DAYS, zone),
                 heatEnd = today,
                 inOut = SpendingStats.monthlyInOut(rows, month, trendCount, zone),
+                dataSince = effStart.takeIf { it != start },
                 heatDataDays = firstDay?.let { (java.time.temporal.ChronoUnit.DAYS.between(it, today) + 1).toInt() }?.coerceIn(1, HEAT_DAYS) ?: HEAT_DAYS,
             )
         }.getOrNull()
@@ -252,7 +255,7 @@ private fun OverviewHero(d: StatsData, period: StatsPeriod) {
     val sc = LocalSproutColors.current
     Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(sc.hero).padding(20.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("Spent · ${period.label.lowercase()}", style = MaterialTheme.typography.labelLarge, color = sc.onHero.copy(alpha = 0.85f))
+            Text("Spent · ${period.label.lowercase()}" + (d.dataSince?.let { " · since " + it.format(java.time.format.DateTimeFormatter.ofPattern("MMM d", java.util.Locale.US)) } ?: ""), style = MaterialTheme.typography.labelLarge, color = sc.onHero.copy(alpha = 0.85f))
             val anim = remember { androidx.compose.animation.core.Animatable(0f) }
             androidx.compose.runtime.LaunchedEffect(s.spent) { anim.animateTo(s.spent.toFloat(), tween(800)) }
             Text(Money.format(if (anim.isRunning) kotlin.math.round(anim.value).toLong() else s.spent),
