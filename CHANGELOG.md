@@ -9,6 +9,9 @@ Round 61: more undo.
 ### Features
 - **Undo for tags:** deleting a tag can be undone, bringing back the tag, every purchase it was on, and its auto-tag words. Removing an auto-tag word can be undone too.
 
+### Polish
+- **Editing a bill:** "How often" is a short row of chips instead of five radio buttons, so the category picker sits higher.
+
 ## [2.60.0] - 2026-11-27
 
 Round 60: undo for deletes.

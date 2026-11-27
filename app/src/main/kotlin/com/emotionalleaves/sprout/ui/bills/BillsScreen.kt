@@ -558,13 +558,12 @@ private fun BillDialog(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth()
                 )
                 Text("How often", style = MaterialTheme.typography.labelLarge)
-                Cadence.entries.forEach { c ->
-                    Row(
-                        Modifier.fillMaxWidth().heightIn(min = 48.dp).selectable(cadence == c, role = Role.RadioButton) { cadence = c },
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        RadioButton(selected = cadence == c, onClick = null)
-                        Text(cadenceLabel(c), Modifier.padding(start = 8.dp))
+                // Chips instead of a column of radios: the whole choice fits in two short rows.
+                @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Cadence.entries.forEach { c ->
+                        androidx.compose.material3.FilterChip(cadence == c, { cadence = c }, label = { Text(cadenceLabel(c)) },
+                            modifier = Modifier.heightIn(min = 48.dp))
                     }
                 }
                 OutlinedButton(onClick = { picking = true }, modifier = Modifier.heightIn(min = 48.dp)) {
