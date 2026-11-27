@@ -98,8 +98,8 @@ private class StatsData(
 @Composable
 fun StatsScreen(onBack: () -> Unit, onMerchant: (String) -> Unit = {}) {
     val c = appContainer()
-    var period by rememberSaveable { mutableStateOf(StatsPeriod.THIS_MONTH) }
-    var view by rememberSaveable { mutableStateOf(StatsView.OVERVIEW) }
+    var period by com.emotionalleaves.sprout.ui.common.rememberViewPref("stats-period", StatsPeriod.THIS_MONTH, StatsPeriod.values())
+    var view by com.emotionalleaves.sprout.ui.common.rememberViewPref("stats-view", StatsView.OVERVIEW, StatsView.values())
     val zone = ZoneId.systemDefault()
     val data = rememberLoaded(period) {
         runCatching {

@@ -177,7 +177,7 @@ fun BillsScreen() {
     val categories by vm.categories.collectAsStateWithLifecycle()
     var editing by remember { mutableStateOf<RecurringRow?>(null) }
     var adding by remember { mutableStateOf(false) }
-    var calendarView by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var calendarView by com.emotionalleaves.sprout.ui.common.rememberViewPref("bills-calendar", false, { it.toString() }, { it.toBooleanStrictOrNull() })
     val context = androidx.compose.ui.platform.LocalContext.current
     val cancelIds by vm.cancelIds.collectAsStateWithLifecycle()
 

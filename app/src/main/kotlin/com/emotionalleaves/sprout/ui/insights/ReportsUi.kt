@@ -185,7 +185,7 @@ private fun LegendDot(c: androidx.compose.ui.graphics.Color, label: String) {
 @Composable
 fun ReportsScreen(onBack: () -> Unit) {
     val c = appContainer()
-    var range by rememberSaveable { mutableIntStateOf(1) }
+    var range by com.emotionalleaves.sprout.ui.common.rememberViewPref("reports-range", 1, { it.toString() }, { it.toIntOrNull()?.takeIf { n -> n in setOf(1, 3, 6, 12) } })
     val ranges = listOf(1 to "Month", 3 to "3 mo", 6 to "6 mo", 12 to "Year")
     val months = ranges[range].first.coerceAtLeast(1)
     val r = com.emotionalleaves.sprout.ui.common.rememberLoaded(months) { runCatching { c.insightsRepository.reports(maxOf(months, 1)) }.getOrNull() }

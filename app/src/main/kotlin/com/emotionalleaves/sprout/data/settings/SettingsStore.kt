@@ -150,6 +150,9 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         }
         it[HISTORY_DEFAULT_UPGRADED] = true
     }
+    /** How you last left a screen (a tab, a period, list or calendar), so it opens the same way next time. */
+    fun viewPref(key: String): Flow<String?> = dataStore.data.map { it[androidx.datastore.preferences.core.stringPreferencesKey("view_$key")] }
+    suspend fun setViewPref(key: String, value: String) = dataStore.edit { it[androidx.datastore.preferences.core.stringPreferencesKey("view_$key")] = value }
     suspend fun dismissTip(key: String) = dataStore.edit { it[DISMISSED_TIPS] = (it[DISMISSED_TIPS] ?: emptySet()) + key }
     suspend fun addDedupedAccount(id: String) = dataStore.edit { it[DEDUPED_ACCOUNTS] = (it[DEDUPED_ACCOUNTS] ?: emptySet()) + id }
     suspend fun setDedupPair(hidden: String, kept: String) = dataStore.edit {

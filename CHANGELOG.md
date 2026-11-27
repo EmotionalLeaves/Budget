@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.48.0] - 2026-11-26
+
+Round 48: screens open the way you left them.
+
+### Features
+- **Remembered views:** Stats keeps your period and tab (Overview, Flow, Patterns…), Reports keeps its range, and Bills keeps List or Calendar, even after Sprout is closed.
+
 ## [2.47.0] - 2026-11-26
 
 Round 47: clearer numbers on Goals and Net worth.
