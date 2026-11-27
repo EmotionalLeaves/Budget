@@ -12,6 +12,14 @@ class SavedSearchTest {
         assertEquals("x" to TxFilter(), TxFilter.decode(TxFilter.encode("x", TxFilter())))
     }
 
+    @Test fun moneyInAndOlderSavedSearches() {
+        val f = TxFilter(query = "payroll", incomingOnly = true)
+        assertEquals("Pay" to f, TxFilter.decode(TxFilter.encode("Pay", f)))
+        // Saved before "Money in" existed: 7 parts, still readable.
+        val old = listOf("Old", "hy-vee", "", "", "", "", "1").joinToString("\u001F")
+        assertEquals("Old" to TxFilter(query = "hy-vee", pendingOnly = true), TxFilter.decode(old))
+    }
+
     @Test fun rejectsJunk() {
         assertNull(TxFilter.decode("nope"))
         assertNull(TxFilter.decode(TxFilter.encode(" ", TxFilter()).replaceFirst(" ", "")))

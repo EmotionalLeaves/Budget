@@ -294,6 +294,7 @@ interface TransactionDao {
           AND (:categoryId IS NULL OR t.categoryId = :categoryId
                OR EXISTS (SELECT 1 FROM transaction_splits s WHERE s.transactionId = t.id AND s.categoryId = :categoryId))
           AND (:pendingOnly = 0 OR t.pending = 1)
+          AND (:incomingOnly = 0 OR t.amountMinor > 0)
           AND (:accountId IS NULL OR t.accountId = :accountId)
           AND (:tagId IS NULL OR EXISTS (SELECT 1 FROM transaction_tags tt WHERE tt.transactionId = t.id AND tt.tagId = :tagId))
           AND (:minAbs IS NULL OR ABS(t.amountMinor) >= :minAbs)
@@ -313,6 +314,7 @@ interface TransactionDao {
         tagId: Long? = null,
         fromSec: Long? = null,
         toSec: Long? = null,
+        incomingOnly: Boolean = false,
     ): PagingSource<Int, TransactionRow>
 
     /** The ids the paged list would show (same filters), for "select all". Capped so a mistake stays small. */
@@ -331,6 +333,7 @@ interface TransactionDao {
           AND (:categoryId IS NULL OR t.categoryId = :categoryId
                OR EXISTS (SELECT 1 FROM transaction_splits s WHERE s.transactionId = t.id AND s.categoryId = :categoryId))
           AND (:pendingOnly = 0 OR t.pending = 1)
+          AND (:incomingOnly = 0 OR t.amountMinor > 0)
           AND (:accountId IS NULL OR t.accountId = :accountId)
           AND (:tagId IS NULL OR EXISTS (SELECT 1 FROM transaction_tags tt WHERE tt.transactionId = t.id AND tt.tagId = :tagId))
           AND (:minAbs IS NULL OR ABS(t.amountMinor) >= :minAbs)
@@ -350,6 +353,7 @@ interface TransactionDao {
         tagId: Long? = null,
         fromSec: Long? = null,
         toSec: Long? = null,
+        incomingOnly: Boolean = false,
     ): List<String>
 
     /** How many match the current search and filters, and what they add up to (splits count whole). */
@@ -370,6 +374,7 @@ interface TransactionDao {
           AND (:categoryId IS NULL OR t.categoryId = :categoryId
                OR EXISTS (SELECT 1 FROM transaction_splits s WHERE s.transactionId = t.id AND s.categoryId = :categoryId))
           AND (:pendingOnly = 0 OR t.pending = 1)
+          AND (:incomingOnly = 0 OR t.amountMinor > 0)
           AND (:accountId IS NULL OR t.accountId = :accountId)
           AND (:tagId IS NULL OR EXISTS (SELECT 1 FROM transaction_tags tt WHERE tt.transactionId = t.id AND tt.tagId = :tagId))
           AND (:minAbs IS NULL OR ABS(t.amountMinor) >= :minAbs)
@@ -388,6 +393,7 @@ interface TransactionDao {
         tagId: Long? = null,
         fromSec: Long? = null,
         toSec: Long? = null,
+        incomingOnly: Boolean = false,
     ): FilteredTotals
 }
 

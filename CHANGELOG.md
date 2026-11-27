@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.87.0] - 2026-11-27
+
+Round 87: see what came in.
+
+### Features
+- **Money in** filter on Activity: one tap shows only money coming in (pay, refunds, transfers in), with its total. It combines with search ("money in" + "october") and can be part of a saved search. Older saved searches keep working.
+
 ## [2.86.0] - 2026-11-27
 
 Round 86: Year in review gets fun facts.

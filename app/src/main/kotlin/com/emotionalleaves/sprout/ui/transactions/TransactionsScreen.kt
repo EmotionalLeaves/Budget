@@ -96,22 +96,26 @@ data class TxFilter(
     val accountId: String? = null,
     val categoryId: Long? = null,
     val tagId: Long? = null,
+    /** Only money coming in (pay, refunds, transfers in). */
+    val incomingOnly: Boolean = false,
 ) {
     companion object {
         private const val SEP = '\u001F'
 
-        /** "Name␟query␟account␟category␟tag␟uncategorized␟pending": one saved search, stored as a string. */
+        /** "Name␟query␟account␟category␟tag␟uncategorized␟pending␟incoming": one saved search, stored as a string. */
         fun encode(name: String, f: TxFilter): String = listOf(
             name.replace(SEP, ' ').take(30), f.query.replace(SEP, ' '), f.accountId.orEmpty(), f.categoryId?.toString().orEmpty(),
             f.tagId?.toString().orEmpty(), if (f.uncategorizedOnly) "1" else "", if (f.pendingOnly) "1" else "",
+            if (f.incomingOnly) "1" else "",
         ).joinToString(SEP.toString())
 
         fun decode(s: String): Pair<String, TxFilter>? {
             val p = s.split(SEP)
-            if (p.size != 7 || p[0].isBlank()) return null
+            // Searches saved before "Money in" existed have 7 parts.
+            if (p.size !in 7..8 || p[0].isBlank()) return null
             return p[0] to TxFilter(
                 query = p[1], accountId = p[2].ifEmpty { null }, categoryId = p[3].toLongOrNull(), tagId = p[4].toLongOrNull(),
-                uncategorizedOnly = p[5] == "1", pendingOnly = p[6] == "1",
+                uncategorizedOnly = p[5] == "1", pendingOnly = p[6] == "1", incomingOnly = p.getOrNull(7) == "1",
             )
         }
     }
@@ -141,6 +145,7 @@ class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
         return c.db.transactions().filteredIds(
             query = sq.text, categoryId = if (f.uncategorizedOnly) c.db.categories().getByKey(DefaultCategories.UNCATEGORIZED)?.id ?: -1 else f.categoryId,
             pendingOnly = f.pendingOnly, accountId = f.accountId, minAbs = sq.minAbsMinor, maxAbs = sq.maxAbsMinor, tagId = f.tagId,
+            incomingOnly = f.incomingOnly,
             fromSec = sq.fromSec(), toSec = sq.toSec(),
         ).toSet()
     }
@@ -211,11 +216,12 @@ class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
     val matchTotals: StateFlow<com.emotionalleaves.sprout.data.db.FilteredTotals?> =
         combine(_filter.debounce(250), uncategorizedId) { f, uncat -> f to uncat }
             .mapLatest { (f, uncat) ->
-                if (f.query.isBlank() && !f.uncategorizedOnly && !f.pendingOnly && f.categoryId == null) return@mapLatest null
+                if (f.query.isBlank() && !f.uncategorizedOnly && !f.pendingOnly && !f.incomingOnly && f.categoryId == null) return@mapLatest null
                 val sq = com.emotionalleaves.sprout.domain.search.SearchQuery.parse(f.query)
                 runCatching {
                     c.db.transactions().filteredTotals(
                         query = sq.text, categoryId = if (f.uncategorizedOnly) uncat ?: -1 else f.categoryId, pendingOnly = f.pendingOnly,
+                        incomingOnly = f.incomingOnly,
                         accountId = f.accountId, minAbs = sq.minAbsMinor, maxAbs = sq.maxAbsMinor, tagId = f.tagId,
                         fromSec = sq.fromSec(), toSec = sq.toSec(),
                     )
@@ -232,6 +238,7 @@ class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
                     query = sq.text,
                     categoryId = if (f.uncategorizedOnly) uncat ?: -1 else f.categoryId,
                     pendingOnly = f.pendingOnly,
+                    incomingOnly = f.incomingOnly,
                     accountId = f.accountId,
                     minAbs = sq.minAbsMinor,
                     maxAbs = sq.maxAbsMinor,
@@ -248,6 +255,7 @@ class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
     fun clearFilters() { _filter.value = TxFilter(accountId = _filter.value.accountId, tagId = _filter.value.tagId) }
     fun toggleUncategorized() { _filter.value = _filter.value.copy(uncategorizedOnly = !_filter.value.uncategorizedOnly) }
     fun togglePending() { _filter.value = _filter.value.copy(pendingOnly = !_filter.value.pendingOnly) }
+    fun toggleIncoming() { _filter.value = _filter.value.copy(incomingOnly = !_filter.value.incomingOnly) }
     fun setAccount(id: String?) { _filter.value = _filter.value.copy(accountId = id) }
     fun setCategory(id: Long?) { _filter.value = _filter.value.copy(categoryId = id, uncategorizedOnly = false) }
     fun setTag(id: Long?) { _filter.value = _filter.value.copy(tagId = id) }
@@ -525,6 +533,7 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
             }
             FilterChip(filter.uncategorizedOnly, vm::toggleUncategorized, label = { Text("Uncategorized") }, modifier = Modifier.heightIn(min = 48.dp))
             FilterChip(filter.pendingOnly, vm::togglePending, label = { Text("Pending only") }, modifier = Modifier.heightIn(min = 48.dp))
+            FilterChip(filter.incomingOnly, vm::toggleIncoming, label = { Text("Money in") }, modifier = Modifier.heightIn(min = 48.dp))
             if (accounts.size > 1) {
                 PickerChip(
                     label = accounts.firstOrNull { it.id == filter.accountId }?.label ?: "Any account",
