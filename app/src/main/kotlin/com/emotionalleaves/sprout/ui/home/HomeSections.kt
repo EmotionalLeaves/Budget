@@ -544,8 +544,17 @@ fun AccountHeader(id: String, onBack: () -> Unit) {
         }
         val pts = h?.points.orEmpty()
         if (pts.size >= 2) {
+            // Drag along the line to read the balance at the end of any month.
+            var picked by androidx.compose.runtime.remember(id) { androidx.compose.runtime.mutableStateOf<Int?>(null) }
             Box(Modifier.padding(horizontal = 16.dp)) {
-                com.emotionalleaves.sprout.ui.common.LineChart(pts.map { it.second }, MaterialTheme.colorScheme.primary, Modifier.height(96.dp))
+                com.emotionalleaves.sprout.ui.common.LineChart(pts.map { it.second }, MaterialTheme.colorScheme.primary, Modifier.height(96.dp),
+                    onScrub = { picked = it })
+                picked?.let { pts.getOrNull(it) }?.let { (d, v) ->
+                    Text((if (d == pts.last().first) "Today" else d.format(java.time.format.DateTimeFormatter.ofPattern("MMM d", java.util.Locale.US))) + " · " + money(v),
+                        style = MaterialTheme.typography.labelLarge, modifier = Modifier.align(Alignment.TopStart)
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh, androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                            .padding(horizontal = 8.dp, vertical = 4.dp))
+                }
             }
         }
         if (h != null) {

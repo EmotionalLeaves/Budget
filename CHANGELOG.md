@@ -8,6 +8,7 @@ Round 67: read the net worth chart with your finger.
 
 ### Features
 - **Net worth:** touch and drag along the chart to see the value at any month. The big number and its label follow your finger, and letting go returns to today.
+- **An account's page** works the same way: drag along its balance line to read the balance at the end of any month.
 
 ## [2.66.0] - 2026-11-27
 
