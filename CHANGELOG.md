@@ -2,6 +2,15 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.46.0] - 2026-11-26
+
+Round 46: a Bills tab that reads top to bottom.
+
+### Polish
+- **Bills** now has a title and a proper List | Calendar switch at the top; the 30-day total comes first, then price changes and your repeating-charges total.
+- "To calendar" is now **Add to my calendar**, so it no longer looks like a second Calendar button.
+- Price changes get an up or down arrow and read "$87.12 → $84.12".
+
 ## [2.45.0] - 2026-11-26
 
 Round 45: empty screens that help.

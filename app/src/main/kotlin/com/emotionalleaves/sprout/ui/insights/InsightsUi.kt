@@ -1,5 +1,7 @@
 package com.emotionalleaves.sprout.ui.insights
 
+import androidx.compose.material.icons.automirrored.rounded.TrendingDown
+import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -239,11 +241,17 @@ fun SubscriptionsSummary() {
     if (s.count == 0) return
     changes.forEach { ch ->
         SoftCard {
-            Text("${ch.name} ${if (ch.up) "went up" else "went down"}", style = MaterialTheme.typography.titleSmall,
-                color = if (ch.up) LocalSproutColors.current.warning else LocalSproutColors.current.ok)
-            Text("From ${Money.format(ch.fromMinor)} to ${Money.format(ch.toMinor)} on the latest charge" +
-                if (ch.up) ". If it's not worth it any more, cancel it with the company directly." else ".",
-                style = MaterialTheme.typography.bodySmall)
+            val tone = if (ch.up) LocalSproutColors.current.warning else LocalSproutColors.current.ok
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconBadge(if (ch.up) androidx.compose.material.icons.Icons.AutoMirrored.Rounded.TrendingUp else androidx.compose.material.icons.Icons.AutoMirrored.Rounded.TrendingDown, tone)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("${ch.name} ${if (ch.up) "went up" else "went down"}", style = MaterialTheme.typography.titleSmall, color = tone)
+                    Text("${Money.format(ch.fromMinor)} → ${Money.format(ch.toMinor)} on the latest charge" +
+                        if (ch.up) ". Not worth it any more? Cancel with the company directly." else ".",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
         }
     }
     SoftCard {

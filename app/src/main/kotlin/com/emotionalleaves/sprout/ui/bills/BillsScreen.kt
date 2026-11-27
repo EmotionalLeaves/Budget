@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.bills
 
+import androidx.compose.material3.SegmentedButton
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.mapLatest
 import androidx.compose.foundation.layout.width
@@ -183,21 +184,22 @@ fun BillsScreen() {
     Box(Modifier.fillMaxSize()) {
         val list = upcoming
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 96.dp)) {
-            item { com.emotionalleaves.sprout.ui.insights.SubscriptionsSummary() }
             item {
-                @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-                androidx.compose.foundation.layout.FlowRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    androidx.compose.material3.FilterChip(!calendarView, { calendarView = false }, label = { Text("List") },
-                        modifier = Modifier.heightIn(min = 48.dp))
-                    androidx.compose.material3.FilterChip(calendarView, { calendarView = true }, label = { Text("Calendar") },
-                        modifier = Modifier.heightIn(min = 48.dp))
+                Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Bills", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
                     if (all.isNotEmpty()) {
-                        Spacer(Modifier.weight(1f))
-                        androidx.compose.material3.TextButton(onClick = { vm.exportCalendar(context) }, modifier = Modifier.align(Alignment.CenterVertically).heightIn(min = 48.dp)) {
+                        androidx.compose.material3.TextButton(onClick = { vm.exportCalendar(context) }, modifier = Modifier.heightIn(min = 48.dp)) {
                             Icon(Icons.Filled.Event, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Text("  To calendar", maxLines = 1)
+                            Text("  Add to my calendar", maxLines = 1)
                         }
+                    }
+                }
+            }
+            item {
+                androidx.compose.material3.SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    listOf("List" to false, "Calendar" to true).forEachIndexed { i, (label, cal) ->
+                        SegmentedButton(calendarView == cal, { calendarView = cal },
+                            androidx.compose.material3.SegmentedButtonDefaults.itemShape(i, 2)) { Text(label) }
                     }
                 }
             }
@@ -212,6 +214,9 @@ fun BillsScreen() {
                         "Sprout spots subscriptions and bills after a few months of history. You can also add one with the + button.",
                     )
                 }
+            }
+            if (list != null && list.isEmpty() && all.isNotEmpty()) {
+                item { com.emotionalleaves.sprout.ui.insights.SubscriptionsSummary() }
             }
             if (!list.isNullOrEmpty()) {
                 item {
@@ -233,6 +238,7 @@ fun BillsScreen() {
                         }
                     }
                 }
+                item { com.emotionalleaves.sprout.ui.insights.SubscriptionsSummary() }
                 item { SectionTitle("Upcoming") }
                 items(list, key = { "u-${it.charge.id}-${it.dueAt}" }) { u ->
                     BillRow(u.charge, dueText(u.dueAt) + if (u.charge.id in cancelIds) " · cancel reminder on" else "") { editing = u.charge }
