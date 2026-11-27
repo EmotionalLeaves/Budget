@@ -298,6 +298,8 @@ interface TransactionDao {
           AND (:tagId IS NULL OR EXISTS (SELECT 1 FROM transaction_tags tt WHERE tt.transactionId = t.id AND tt.tagId = :tagId))
           AND (:minAbs IS NULL OR ABS(t.amountMinor) >= :minAbs)
           AND (:maxAbs IS NULL OR ABS(t.amountMinor) <= :maxAbs)
+          AND (:fromSec IS NULL OR t.occurredAt >= :fromSec)
+          AND (:toSec IS NULL OR t.occurredAt < :toSec)
         ORDER BY t.occurredAt DESC, t.id DESC
         """,
     )
@@ -309,6 +311,8 @@ interface TransactionDao {
         minAbs: Long? = null,
         maxAbs: Long? = null,
         tagId: Long? = null,
+        fromSec: Long? = null,
+        toSec: Long? = null,
     ): PagingSource<Int, TransactionRow>
 
     /** The ids the paged list would show (same filters), for "select all". Capped so a mistake stays small. */
@@ -331,6 +335,8 @@ interface TransactionDao {
           AND (:tagId IS NULL OR EXISTS (SELECT 1 FROM transaction_tags tt WHERE tt.transactionId = t.id AND tt.tagId = :tagId))
           AND (:minAbs IS NULL OR ABS(t.amountMinor) >= :minAbs)
           AND (:maxAbs IS NULL OR ABS(t.amountMinor) <= :maxAbs)
+          AND (:fromSec IS NULL OR t.occurredAt >= :fromSec)
+          AND (:toSec IS NULL OR t.occurredAt < :toSec)
         ORDER BY t.occurredAt DESC LIMIT 2000
         """,
     )
@@ -342,6 +348,8 @@ interface TransactionDao {
         minAbs: Long? = null,
         maxAbs: Long? = null,
         tagId: Long? = null,
+        fromSec: Long? = null,
+        toSec: Long? = null,
     ): List<String>
 }
 

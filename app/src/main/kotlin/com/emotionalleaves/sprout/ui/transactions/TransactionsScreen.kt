@@ -1,5 +1,7 @@
 package com.emotionalleaves.sprout.ui.transactions
 
+import java.util.Locale
+import java.time.format.DateTimeFormatter
 import androidx.compose.ui.semantics.customActions
 import kotlinx.coroutines.flow.map
 import androidx.compose.ui.Alignment
@@ -110,6 +112,12 @@ data class TxFilter(
     }
 }
 
+/** Start of the search's first day, and start of the day after its last, in this phone's time zone. */
+private fun com.emotionalleaves.sprout.domain.search.SearchQuery.fromSec(): Long? =
+    fromDate?.atStartOfDay(java.time.ZoneId.systemDefault())?.toEpochSecond()
+private fun com.emotionalleaves.sprout.domain.search.SearchQuery.toSec(): Long? =
+    toDate?.plusDays(1)?.atStartOfDay(java.time.ZoneId.systemDefault())?.toEpochSecond()
+
 class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
     // ---- Several at once (selection mode). Each returns a message and an undo. ----
 
@@ -120,6 +128,7 @@ class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
         return c.db.transactions().filteredIds(
             query = sq.text, categoryId = if (f.uncategorizedOnly) c.db.categories().getByKey(DefaultCategories.UNCATEGORIZED)?.id ?: -1 else f.categoryId,
             pendingOnly = f.pendingOnly, accountId = f.accountId, minAbs = sq.minAbsMinor, maxAbs = sq.maxAbsMinor, tagId = f.tagId,
+            fromSec = sq.fromSec(), toSec = sq.toSec(),
         ).toSet()
     }
 
@@ -197,6 +206,8 @@ class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
                     minAbs = sq.minAbsMinor,
                     maxAbs = sq.maxAbsMinor,
                     tagId = f.tagId,
+                    fromSec = sq.fromSec(),
+                    toSec = sq.toSec(),
                 )
             }.flow
         }
@@ -402,6 +413,7 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
                 ),
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
             )
+            if (filter.query.isNotBlank()) SearchUnderstood(filter.query)
         }
         val inbox by remember { vm.inboxCount }.collectAsStateWithLifecycle(0)
         val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
@@ -611,5 +623,35 @@ private fun DayHeader(text: String, totals: Pair<Long, Long>? = null, floating: 
             if (out > 0) Text("−" + com.emotionalleaves.sprout.domain.money.Money.formatWhole(out), style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+    }
+}
+
+/** Says how Sprout read the search ("Last month · Oct 1 – 31 · over $50"), and once, that times can be added. */
+@Composable
+private fun SearchUnderstood(query: String) {
+    val sq = remember(query) { com.emotionalleaves.sprout.domain.search.SearchQuery.parse(query) }
+    val parts = buildList {
+        if (sq.hasDate) {
+            val f = DateTimeFormatter.ofPattern("MMM d", Locale.US)
+            val from = sq.fromDate!!; val to = sq.toDate!!
+            add(sq.dateLabel + if (from == to) "" else " · ${from.format(f)} – ${to.format(f)}")
+        }
+        val min = sq.minAbsMinor; val max = sq.maxAbsMinor
+        when {
+            min != null && max != null && min == max -> add("exactly ${com.emotionalleaves.sprout.ui.common.money(min)}")
+            min != null && max != null -> add("${com.emotionalleaves.sprout.ui.common.money(min)} to ${com.emotionalleaves.sprout.ui.common.money(max)}")
+            min != null -> add("at least ${com.emotionalleaves.sprout.ui.common.money(min)}")
+            max != null -> add("up to ${com.emotionalleaves.sprout.ui.common.money(max)}")
+        }
+        if (sq.text.isNotBlank() && (sq.hasDate || sq.isAmount)) add("\u201C${sq.text}\u201D")
+    }
+    if (parts.isNotEmpty()) {
+        Row(Modifier.padding(horizontal = 24.dp).padding(bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.Search, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+            Text("  Showing " + parts.joinToString(" · "), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+        }
+    } else {
+        com.emotionalleaves.sprout.ui.common.OneTimeTip("search-dates",
+            "Add a time to any search: \u201Clast month\u201D, \u201Coctober\u201D, \u201Cthis week\u201D. Amounts work too: >50, 20-40.")
     }
 }

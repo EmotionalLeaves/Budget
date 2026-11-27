@@ -237,6 +237,9 @@ class TagAndInsightTest {
         // "Select all" uses the same filters as the list.
         assertEquals(setOf(ids.getValue("DELTA AIR 0061")), env.db.transactions().filteredIds("travel", null, false).toSet())
         assertEquals(3, env.db.transactions().filteredIds("", null, false).size)
+        // A date range keeps only what happened inside it (the end is exclusive).
+        val dated = env.db.transactions().filteredIds("", null, false, fromSec = at(11, 6), toSec = at(11, 7))
+        assertEquals(setOf(ids.getValue("DELTA AIR 0061")), dated.toSet())
     }
 
     @Test fun reorderCategories() = runBlocking {
