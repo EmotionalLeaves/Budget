@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.transactions
 
+import kotlinx.coroutines.flow.mapLatest
 import java.util.Locale
 import java.time.format.DateTimeFormatter
 import androidx.compose.ui.semantics.customActions
@@ -200,6 +201,23 @@ class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
     val total: StateFlow<Int?> = c.db.transactions().observeCount().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /** Count and money in/out of what a search or filter matches; null when nothing narrows the list. */
+    @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
+    val matchTotals: StateFlow<com.emotionalleaves.sprout.data.db.FilteredTotals?> =
+        combine(_filter.debounce(250), uncategorizedId) { f, uncat -> f to uncat }
+            .mapLatest { (f, uncat) ->
+                if (f.query.isBlank() && !f.uncategorizedOnly && !f.pendingOnly && f.categoryId == null) return@mapLatest null
+                val sq = com.emotionalleaves.sprout.domain.search.SearchQuery.parse(f.query)
+                runCatching {
+                    c.db.transactions().filteredTotals(
+                        query = sq.text, categoryId = if (f.uncategorizedOnly) uncat ?: -1 else f.categoryId, pendingOnly = f.pendingOnly,
+                        accountId = f.accountId, minAbs = sq.minAbsMinor, maxAbs = sq.maxAbsMinor, tagId = f.tagId,
+                        fromSec = sq.fromSec(), toSec = sq.toSec(),
+                    )
+                }.getOrNull()
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
     val pages: Flow<PagingData<TransactionRow>> = combine(_filter.debounce(200), uncategorizedId) { f, uncat -> f to uncat }
@@ -423,14 +441,24 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
             )
             if (filter.query.isNotBlank()) SearchUnderstood(filter.query)
+            val totals by vm.matchTotals.collectAsStateWithLifecycle()
+            totals?.takeIf { it.count > 0 }?.let { t ->
+                val bits = buildList {
+                    add("${t.count} ${if (t.count == 1) "match" else "matches"}")
+                    if (t.outMinor > 0) add("${com.emotionalleaves.sprout.ui.common.money(t.outMinor)} out")
+                    if (t.inMinor > 0) add("${com.emotionalleaves.sprout.ui.common.money(t.inMinor)} in")
+                }
+                Text(bits.joinToString(" · "), Modifier.padding(horizontal = 24.dp).padding(bottom = 4.dp),
+                    style = MaterialTheme.typography.titleSmall)
+            }
         }
         val inbox by remember { vm.inboxCount }.collectAsStateWithLifecycle(0)
         val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
-        if (!scoped && selected.isEmpty() && (total ?: 0) > 0) {
+        if (!scoped && selected.isEmpty() && (total ?: 0) > 0 && filter.query.isBlank()) {
             com.emotionalleaves.sprout.ui.common.OneTimeTip("activity-swipe",
                 "Swipe a purchase right to change its category, left to leave it out of budgets. Long-press to select several.")
         }
-        if (inbox > 0 && !scoped) {
+        if (inbox > 0 && !scoped && filter.query.isBlank()) {
             Banner("$inbox new since you last looked", actionLabel = "Check", onAction = { navigate("inbox") }, warning = false)
         }
         if (uncategorized > 0 && !scoped) {

@@ -240,6 +240,10 @@ class TagAndInsightTest {
         // A date range keeps only what happened inside it (the end is exclusive).
         val dated = env.db.transactions().filteredIds("", null, false, fromSec = at(11, 6), toSec = at(11, 7))
         assertEquals(setOf(ids.getValue("DELTA AIR 0061")), dated.toSet())
+        // The totals line adds up exactly what the list shows.
+        val all = env.db.transactions().filteredTotals("", null, false)
+        assertEquals(3, all.count); assertEquals(38_500L, all.outMinor); assertEquals(0L, all.inMinor)
+        assertEquals(30_000L, env.db.transactions().filteredTotals("travel", null, false).outMinor)
     }
 
     @Test fun reorderCategories() = runBlocking {

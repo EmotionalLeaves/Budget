@@ -2,6 +2,16 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.54.0] - 2026-11-27
+
+Round 54: search answers "how much?".
+
+### Features
+- **Search totals:** any search or filter on Activity shows how many purchases match and what they add up to ("19 matches · $1,561.15 out · $4,250.00 in"). "hy-vee last month" now tells you exactly what you spent there.
+
+### Polish
+- While you search, the swipe tip and the "new since you last looked" banner step aside so results come first.
+
 ## [2.53.0] - 2026-11-27
 
 Round 53: pull to sync on Activity.
