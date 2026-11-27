@@ -323,7 +323,14 @@ fun TransactionDetailSheet(transactionId: String, onDismiss: () -> Unit, onMessa
                         dismissButton = { TextButton(onClick = { editingManual = false }) { Text("Cancel") } },
                     )
                 }
-                TextButton(onClick = { scope.launch { vm.c.manualRepository.delete(d.id); vm.c.alertRepository.evaluateBudgets(); onDismiss() } },
+                TextButton(onClick = {
+                    scope.launch {
+                        val undo = vm.c.manualRepository.deleteWithUndo(d.id)
+                        vm.c.alertRepository.evaluateBudgets()
+                        onDismiss()
+                        onMessage("Transaction deleted", undo?.let { u -> { u(); vm.c.alertRepository.evaluateBudgets() } })
+                    }
+                },
                     modifier = Modifier.heightIn(min = 48.dp)) { Text("Delete this transaction", color = MaterialTheme.colorScheme.error) }
             }
             Text(" ", Modifier.heightIn(min = 16.dp))

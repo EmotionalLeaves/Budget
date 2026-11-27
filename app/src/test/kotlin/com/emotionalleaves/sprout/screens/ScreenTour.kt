@@ -311,6 +311,12 @@ class ScreenTour {
                     rule.onAllNodes(androidx.compose.ui.test.hasContentDescription("Clear search"))[0].performClick(); settle()
                 }
                 t("goals") { tap("More"); tap("Goals"); s("60-goals"); back() }
+                t("customize") {
+                    tap("Home")
+                    rule.onAllNodes(androidx.compose.ui.test.hasScrollAction())[0]
+                        .performScrollToNode(androidx.compose.ui.test.hasText("Customize Home")); settle()
+                    tap("Customize Home"); s("70-customize-home"); back()
+                }
                 t("quick") { tap("Budgets"); tap("Quick setup"); s("69-quick-setup"); back() }
                 t("stats") {
                     tap("More"); tap("Stats"); s("64-stats"); tap("Flow"); s("64b-stats-flow")

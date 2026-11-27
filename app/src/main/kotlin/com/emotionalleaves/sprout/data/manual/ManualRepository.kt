@@ -78,6 +78,32 @@ class ManualRepository(private val db: SproutDatabase, private val clock: Clock,
     }
 
     /** Deletes a transaction you added by hand (never a synced one). Returns false if it isn't manual. */
+    /**
+     * Deletes a hand-added transaction and returns an undo that puts it back with its split, tags and note,
+     * or null when it isn't one you added (bank transactions can't be deleted).
+     */
+    suspend fun deleteWithUndo(transactionId: String): (suspend () -> Unit)? = withContext(Dispatchers.IO) {
+        if (!isManual(transactionId)) return@withContext null
+        val tx = db.transactions().getById(transactionId) ?: return@withContext null
+        val splits = db.splits().getFor(transactionId)
+        val tagIds = db.tags().tagIdsFor(transactionId)
+        if (!delete(transactionId)) return@withContext null
+        val undo: suspend () -> Unit = {
+            withContext(Dispatchers.IO) {
+                db.withTransaction {
+                    if (db.transactions().getById(tx.id) == null && db.accounts().getByIds(listOf(tx.accountId)).isNotEmpty()) {
+                        db.transactions().upsert(listOf(tx))
+                        if (splits.isNotEmpty()) db.splits().insert(splits.map { it.copy(id = 0) })
+                        val liveTags = tagIds.filter { db.tags().getById(it) != null }
+                        liveTags.forEach { db.tags().attach(com.emotionalleaves.sprout.data.db.TransactionTagEntity(tx.id, it)) }
+                        db.accounts().recomputeManualBalance(tx.accountId, clock.instant().epochSecond)
+                    }
+                }
+            }
+        }
+        undo
+    }
+
     suspend fun delete(transactionId: String): Boolean = withContext(Dispatchers.IO) {
         if (!isManual(transactionId)) return@withContext false
         val tx = db.transactions().getById(transactionId) ?: return@withContext false

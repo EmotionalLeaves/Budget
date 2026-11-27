@@ -241,6 +241,15 @@ class TagAndInsightTest {
         val tx = env.db.transactions().getById(id)!!
         assertEquals("tomatoes", tx.note)
         assertTrue(tx.reviewedAt != null)
+        val trip = TagRepository(env.db, env.clock).getOrCreate("Market")!!
+        env.db.tags().attach(com.emotionalleaves.sprout.data.db.TransactionTagEntity(id, trip))
+        val undo = m.deleteWithUndo(id)!!
+        assertEquals(5_000L, env.db.accounts().getAll().single { it.id == cash }.balanceMinor)
+        // Undo brings it back with its note, tag and the balance.
+        undo()
+        assertEquals("tomatoes", env.db.transactions().getById(id)!!.note)
+        assertEquals(listOf(trip), env.db.tags().tagIdsFor(id))
+        assertEquals(3_750L, env.db.accounts().getAll().single { it.id == cash }.balanceMinor)
         assertTrue(m.delete(id))
         assertEquals(5_000L, env.db.accounts().getAll().single { it.id == cash }.balanceMinor)
         // Synced transactions can't be deleted here.

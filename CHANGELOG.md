@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.73.0] - 2026-11-27
+
+Round 73: undo for deleted cash purchases.
+
+### Features
+- **Deleting a transaction you added by hand** shows "Transaction deleted · Undo". Undo puts it back with its note, tags and split, and fixes the cash balance.
+
 ## [2.72.0] - 2026-11-27
 
 Round 72: your Home, your order.
