@@ -1,5 +1,11 @@
 package com.emotionalleaves.sprout.ui.home
 
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Event
+import androidx.compose.material.icons.rounded.Savings
 import com.emotionalleaves.sprout.ui.common.showUndoable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -172,6 +178,7 @@ fun HomeScreen(
                         },
                     )
                 }
+                if (!state.connected) item { WhatYouGet() }
                 return@LazyColumn
             }
 
@@ -330,3 +337,26 @@ private fun SyncStatusLine(state: HomeState, now: Long) {
     }
 }
 
+/** On an empty Home: what Sprout will do once your data's in, so a first look isn't just a blank page. */
+@Composable
+private fun WhatYouGet() {
+    val sc = com.emotionalleaves.sprout.ui.theme.LocalSproutColors.current
+    com.emotionalleaves.sprout.ui.common.SoftCard {
+        Text("Once your money's in", style = MaterialTheme.typography.titleSmall)
+        Spacer(Modifier.height(4.dp))
+        listOf(
+            Triple(androidx.compose.material.icons.Icons.Rounded.Savings, "What's safe to spend", "Today, after bills and budgets are covered."),
+            Triple(androidx.compose.material.icons.Icons.Rounded.Event, "Bills found for you", "Subscriptions and repeating charges, with what's due next."),
+            Triple(androidx.compose.material.icons.Icons.Rounded.AutoAwesome, "Purchases sorted for you", "Thousands of stores and Lincoln places known, and it learns your picks."),
+        ).forEach { (icon, title, body) ->
+            Row(Modifier.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                com.emotionalleaves.sprout.ui.common.IconBadge(icon, sc.ok, 36.dp)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(title, style = MaterialTheme.typography.bodyMedium)
+                    Text(body, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+    }
+}

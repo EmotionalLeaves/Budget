@@ -8,6 +8,7 @@ Round 53: pull to sync on Activity.
 
 ### Features
 - **Activity** now syncs when you pull down on the list, same as Home. If Sprout synced a moment ago it tells you how fresh the data is; pull again to sync anyway.
+- **Empty Home** shows what you'll get once your money's in (safe to spend, bills found for you, purchases sorted for you), instead of a mostly blank page.
 
 ## [2.52.0] - 2026-11-27
 
