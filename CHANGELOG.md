@@ -2,6 +2,18 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.28.0] - 2026-11-26
+
+Round 28: a richer look.
+
+### Polish
+- **Hero cards** on Home, Budgets, Bills, Reports and Goals have layered gradients with soft rings, an animated progress ring, and pill badges ("5 days left", "Next: Target · Dec 3").
+- **Bills**: a 30-day timeline of what's coming in the hero, and date tiles tinted by category on every bill.
+- **Reports**: a cash-flow chart with gradient bars, a scale and gridlines, and a cleaner category donut.
+- **Goals**: one summary hero ("Saved toward goals", overall %) above progress rings for each goal.
+- **Home**: a tidier review card and stat tiles, and a money-health ring.
+- The Auto-sort card's numbers line up evenly.
+
 ## [2.27.0] - 2026-11-26
 
 Round 27: fixes from your real transactions.

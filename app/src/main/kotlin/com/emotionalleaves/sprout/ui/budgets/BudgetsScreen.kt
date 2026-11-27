@@ -4,6 +4,11 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import kotlinx.coroutines.flow.map
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -159,9 +164,24 @@ fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit, onGoals:
             if (m.totalBudgetMinor > 0) item {
                 val bills = m.safeToSpend?.upcomingUnbudgeted?.sumOf { it.amountMinor } ?: 0L
                 com.emotionalleaves.sprout.ui.common.SoftCard {
-                    Text("Your month costs ${Money.formatWhole(m.totalBudgetMinor + bills)}", style = MaterialTheme.typography.titleSmall)
-                    Text("Budgets ${Money.formatWhole(m.totalBudgetMinor)}" + (if (bills > 0) " + bills outside budgets ${Money.formatWhole(bills)}" else "") +
-                        " — what a normal month takes.", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        com.emotionalleaves.sprout.ui.common.IconBadge(androidx.compose.material.icons.Icons.Rounded.CalendarMonth, MaterialTheme.colorScheme.secondary)
+                        Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                            Text("Your month costs ${Money.formatWhole(m.totalBudgetMinor + bills)}", style = MaterialTheme.typography.titleSmall)
+                            Text("Budgets ${Money.formatWhole(m.totalBudgetMinor)}" + (if (bills > 0) " + bills outside budgets ${Money.formatWhole(bills)}" else "") +
+                                " — what a normal month takes.", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    if (bills > 0) {
+                        // Budgets vs bills, as one split bar.
+                        val f = m.totalBudgetMinor.toFloat() / (m.totalBudgetMinor + bills)
+                        Row(Modifier.fillMaxWidth().height(8.dp), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(3.dp)) {
+                            androidx.compose.foundation.layout.Box(Modifier.weight(f.coerceAtLeast(0.02f)).fillMaxHeight()
+                                .clip(androidx.compose.foundation.shape.RoundedCornerShape(50)).background(MaterialTheme.colorScheme.primary))
+                            androidx.compose.foundation.layout.Box(Modifier.weight((1f - f).coerceAtLeast(0.02f)).fillMaxHeight()
+                                .clip(androidx.compose.foundation.shape.RoundedCornerShape(50)).background(MaterialTheme.colorScheme.tertiary))
+                        }
+                    }
                 }
             }
             item {

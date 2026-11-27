@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -121,10 +122,10 @@ private fun AutoSortCard(vm: ManageCategoriesViewModel) {
         }
         if (stats != null) {
             Spacer(Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                AutoStat(fmt.format(stats.builtIn + stats.learned), "sorted for you", Modifier.weight(1f))
-                AutoStat(fmt.format(stats.picks), "your picks it learns from", Modifier.weight(1f))
-                AutoStat(fmt.format(stats.left), "left to sort", Modifier.weight(1f))
+            Row(Modifier.height(androidx.compose.foundation.layout.IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                AutoStat(fmt.format(stats.builtIn + stats.learned), "sorted for you", Modifier.weight(1f).fillMaxHeight())
+                AutoStat(fmt.format(stats.picks), "picks learned", Modifier.weight(1f).fillMaxHeight())
+                AutoStat(fmt.format(stats.left), "left to sort", Modifier.weight(1f).fillMaxHeight())
             }
         }
         Spacer(Modifier.height(8.dp))

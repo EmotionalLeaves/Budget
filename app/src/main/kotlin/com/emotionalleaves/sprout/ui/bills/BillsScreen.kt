@@ -7,6 +7,16 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import com.emotionalleaves.sprout.ui.common.readable
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material.icons.filled.Event
@@ -175,17 +185,18 @@ fun BillsScreen() {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 96.dp)) {
             item { com.emotionalleaves.sprout.ui.insights.SubscriptionsSummary() }
             item {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically) {
+                @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                androidx.compose.foundation.layout.FlowRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     androidx.compose.material3.FilterChip(!calendarView, { calendarView = false }, label = { Text("List") },
                         modifier = Modifier.heightIn(min = 48.dp))
                     androidx.compose.material3.FilterChip(calendarView, { calendarView = true }, label = { Text("Calendar") },
                         modifier = Modifier.heightIn(min = 48.dp))
                     if (all.isNotEmpty()) {
                         Spacer(Modifier.weight(1f))
-                        androidx.compose.material3.TextButton(onClick = { vm.exportCalendar(context) }, modifier = Modifier.heightIn(min = 48.dp)) {
+                        androidx.compose.material3.TextButton(onClick = { vm.exportCalendar(context) }, modifier = Modifier.align(Alignment.CenterVertically).heightIn(min = 48.dp)) {
                             Icon(Icons.Filled.Event, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Text("  To calendar")
+                            Text("  To calendar", maxLines = 1)
                         }
                     }
                 }
@@ -207,14 +218,19 @@ fun BillsScreen() {
                     com.emotionalleaves.sprout.ui.common.HeroCard(LocalSproutColors.current.hero) {
                         val white = LocalSproutColors.current.onHero
                         Text("Bills in the next 30 days", style = MaterialTheme.typography.labelLarge, color = white.copy(alpha = 0.8f))
-                        Text(com.emotionalleaves.sprout.ui.common.money(list.sumOf { it.charge.typicalAmountMinor }),
+                        Text(com.emotionalleaves.sprout.ui.common.animatedMoney(list.sumOf { it.charge.typicalAmountMinor }),
                             style = MaterialTheme.typography.displaySmall, color = white)
                         val remaining = thisMonth.filter { !it.matchedThisMonth }.sumOf { it.amountMinor }
                         Text(
-                            "${list.size} bill${if (list.size == 1) "" else "s"} · " +
-                                if (remaining > 0) "${com.emotionalleaves.sprout.ui.common.money(remaining)} still due this month" else "nothing else due this month",
+                            if (remaining > 0) "${com.emotionalleaves.sprout.ui.common.money(remaining)} still due this month" else "Nothing else due this month",
                             style = MaterialTheme.typography.bodyMedium, color = white.copy(alpha = 0.85f),
                         )
+                        BillTimeline(list, vm.today(), white)
+                        @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                        androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            com.emotionalleaves.sprout.ui.common.HeroPill("${list.size} bill${if (list.size == 1) "" else "s"}", white, Icons.Filled.Event)
+                            list.firstOrNull()?.let { com.emotionalleaves.sprout.ui.common.HeroPill("Next: ${it.charge.displayName} · ${dueText(it.dueAt).substringAfter(", ")}", white.copy(alpha = 0.9f)) }
+                        }
                     }
                 }
                 item { SectionTitle("Upcoming") }
@@ -225,11 +241,15 @@ fun BillsScreen() {
             val paid = thisMonth.filter { it.matchedThisMonth }
             if (paid.isNotEmpty()) {
                 item { SectionTitle("Paid this month") }
-                items(paid, key = { "p-${it.name}-${it.dueAt}" }) { p ->
-                    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.CheckCircle, contentDescription = "Paid", tint = LocalSproutColors.current.ok)
-                        Text("${p.name} · Paid ✓", Modifier.weight(1f).padding(start = 8.dp))
-                        Text(Money.format(p.amountMinor))
+                item {
+                    com.emotionalleaves.sprout.ui.common.SoftCard {
+                        paid.forEach { p ->
+                            Row(Modifier.fillMaxWidth().heightIn(min = 44.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Filled.CheckCircle, contentDescription = "Paid", tint = LocalSproutColors.current.ok)
+                                Text("${p.name} · Paid ✓", Modifier.weight(1f).padding(start = 10.dp), style = MaterialTheme.typography.bodyMedium)
+                                Text(Money.format(p.amountMinor), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
                     }
                 }
             }
@@ -401,37 +421,82 @@ private fun BillCalendar(vm: BillsViewModel) {
 
 @Composable
 private fun BillRow(r: RecurringRow, subtitle: String, onClick: () -> Unit) {
-    val due = Instant.ofEpochSecond(r.nextDueAt).atZone(ZoneId.systemDefault()).toLocalDate()
     androidx.compose.material3.Surface(
         shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surfaceContainerLow,
+        border = com.emotionalleaves.sprout.ui.common.cardBorder(),
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
     ) {
         Row(
             Modifier.clickable(onClick = onClick).heightIn(min = 64.dp).padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Date badge: month over day number.
-            Column(
-                Modifier.width(48.dp).padding(vertical = 4.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(due.month.getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.US).uppercase(),
-                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                Text(due.dayOfMonth.toString(), style = MaterialTheme.typography.titleLarge)
-            }
+            DateBadge(r.nextDueAt, Color(r.categoryColor))
             androidx.compose.foundation.layout.Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(r.displayName, style = MaterialTheme.typography.titleSmall)
+                @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(r.displayName, style = MaterialTheme.typography.titleSmall, modifier = Modifier.align(Alignment.CenterVertically))
                     if (r.status == RecurringStatus.DETECTED) {
-                        Text("Suggested", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
+                        Text("Suggested", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary, maxLines = 1,
+                            modifier = Modifier.align(Alignment.CenterVertically))
                     }
                 }
                 Text(subtitle, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 CategoryChip(r.categoryName, r.categoryColor)
             }
-            Text(Money.format(r.typicalAmountMinor), style = MaterialTheme.typography.titleSmall)
+            Text(Money.format(r.typicalAmountMinor), style = MaterialTheme.typography.titleMedium)
+        }
+    }
+}
+
+/** A calendar-page badge: month over day number, tinted with the bill's category color. */
+@Composable
+fun DateBadge(epoch: Long, tint: Color = MaterialTheme.colorScheme.primary) {
+    val due = Instant.ofEpochSecond(epoch).atZone(ZoneId.systemDefault()).toLocalDate()
+    val t = if (tint.alpha == 0f) MaterialTheme.colorScheme.primary else tint.readable()
+    Column(
+        Modifier.widthIn(min = 48.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
+            .background(Brush.verticalGradient(listOf(t.copy(alpha = 0.20f), t.copy(alpha = 0.08f))))
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(due.month.getDisplayName(java.time.format.TextStyle.SHORT, Locale.US).uppercase(),
+            style = MaterialTheme.typography.labelSmall, color = t, maxLines = 1)
+        Text(due.dayOfMonth.toString(), style = MaterialTheme.typography.titleLarge, maxLines = 1)
+    }
+}
+
+/**
+ * The next 30 days as a line, with a dot for each bill: bigger dots cost more. Decorative; the list below has the details.
+ */
+@Composable
+private fun BillTimeline(bills: List<UpcomingBill>, today: LocalDate, color: Color) {
+    val zone = ZoneId.systemDefault()
+    val days = bills.map { java.time.temporal.ChronoUnit.DAYS.between(today, Instant.ofEpochSecond(it.dueAt).atZone(zone).toLocalDate()).coerceIn(0, 30) }
+    val max = bills.maxOfOrNull { kotlin.math.abs(it.charge.typicalAmountMinor) }?.coerceAtLeast(1) ?: 1
+    Column(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 2.dp).clearAndSetSemantics { }) {
+        androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(28.dp)) {
+            val y = size.height / 2
+            val pad = 8.dp.toPx()
+            val w = size.width - 2 * pad
+            drawLine(color.copy(alpha = 0.25f), Offset(pad, y), Offset(size.width - pad, y), strokeWidth = 2.dp.toPx(), cap = StrokeCap.Round)
+            // Week ticks.
+            for (k in 0..4) {
+                val x = pad + w * (k * 7f / 30f)
+                drawLine(color.copy(alpha = 0.3f), Offset(x, y - 4.dp.toPx()), Offset(x, y + 4.dp.toPx()), strokeWidth = 1.dp.toPx())
+            }
+            bills.forEachIndexed { i, b ->
+                val x = pad + w * days[i] / 30f
+                val r = (3.5f + 6.5f * kotlin.math.sqrt(kotlin.math.abs(b.charge.typicalAmountMinor).toFloat() / max)).dp.toPx()
+                drawCircle(color.copy(alpha = 0.18f), r + 3.dp.toPx(), Offset(x, y))
+                drawCircle(color, r, Offset(x, y))
+            }
+            drawCircle(color, 4.dp.toPx(), Offset(pad, y), style = Stroke(2.dp.toPx()))
+        }
+        Row(Modifier.fillMaxWidth()) {
+            Text("Today", Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, color = color.copy(alpha = 0.75f))
+            Text("30 days", style = MaterialTheme.typography.labelSmall, color = color.copy(alpha = 0.75f))
         }
     }
 }

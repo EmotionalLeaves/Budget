@@ -92,6 +92,7 @@ fun CategoryBudgetRow(line: CategoryLine, onEdit: (() -> Unit)? = null, pace: St
     Surface(
         shape = RoundedCornerShape(22.dp),
         color = MaterialTheme.colorScheme.surfaceContainerLow,
+        border = com.emotionalleaves.sprout.ui.common.cardBorder(),
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 5.dp),
     ) {
         Column(

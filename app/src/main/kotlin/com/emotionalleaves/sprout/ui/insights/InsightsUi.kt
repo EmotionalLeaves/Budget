@@ -250,11 +250,14 @@ fun SubscriptionsSummary() {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconBadge(Icons.Rounded.AutoAwesome, MaterialTheme.colorScheme.secondary)
             Spacer(Modifier.width(12.dp))
+            // At large text sizes the monthly amount moves under the title, so the title keeps its width.
+            val large = androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.3f
             Column(Modifier.weight(1f)) {
                 Text("${s.count} repeating charges", style = MaterialTheme.typography.titleSmall)
                 Text("≈ ${Money.formatWhole(s.yearlyMinor)} a year", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (large) Text("${Money.formatWhole(s.monthlyMinor)}/mo", style = MaterialTheme.typography.titleMedium)
             }
-            Text("${Money.formatWhole(s.monthlyMinor)}/mo", style = MaterialTheme.typography.titleMedium)
+            if (!large) Text("${Money.formatWhole(s.monthlyMinor)}/mo", style = MaterialTheme.typography.titleMedium)
         }
     }
 }

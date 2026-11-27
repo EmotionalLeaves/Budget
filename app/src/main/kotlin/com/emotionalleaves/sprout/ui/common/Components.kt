@@ -200,20 +200,40 @@ fun TransactionItem(
 }
 
 @Composable
-fun EmptyState(title: String, body: String, action: (@Composable () -> Unit)? = null) {
+fun EmptyState(
+    title: String,
+    body: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector = androidx.compose.material.icons.Icons.Rounded.Spa,
+    action: (@Composable () -> Unit)? = null,
+) {
+    val primary = MaterialTheme.colorScheme.primary
+    val container = MaterialTheme.colorScheme.primaryContainer
+    val second = MaterialTheme.colorScheme.secondaryContainer
     Column(
-        Modifier.fillMaxWidth().padding(32.dp),
+        Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Box(
-            Modifier.size(88.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(androidx.compose.material.icons.Icons.Rounded.Spa, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(44.dp))
+        // Layered halo: two faint rings around a gradient disc.
+        Box(Modifier.size(136.dp), contentAlignment = Alignment.Center) {
+            androidx.compose.foundation.Canvas(Modifier.size(136.dp)) {
+                drawCircle(container.copy(alpha = 0.25f))
+                drawCircle(primary.copy(alpha = 0.12f), style = androidx.compose.ui.graphics.drawscope.Stroke(1.dp.toPx()))
+                drawCircle(container.copy(alpha = 0.45f), size.minDimension * 0.39f)
+            }
+            Box(
+                Modifier.size(84.dp).clip(CircleShape)
+                    .background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(container, second))),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(icon, contentDescription = null, tint = primary, modifier = Modifier.size(42.dp))
+            }
         }
         Text(title, style = MaterialTheme.typography.titleLarge, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         Text(body, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-        action?.invoke()
+        if (action != null) {
+            Spacer(Modifier.size(4.dp))
+            action()
+        }
     }
 }

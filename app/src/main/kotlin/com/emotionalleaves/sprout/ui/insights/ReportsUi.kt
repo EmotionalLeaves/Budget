@@ -3,6 +3,10 @@ package com.emotionalleaves.sprout.ui.insights
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.drawText
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -59,31 +63,110 @@ import java.util.Locale
 private val mShort = DateTimeFormatter.ofPattern("MMM", Locale.US)
 private val mLong = DateTimeFormatter.ofPattern("MMMM", Locale.US)
 
-/** Income (green) next to spending (primary) for each month. */
+/** Income next to spending for each month, on a faint grid with the top value marked. */
 @Composable
 private fun CashFlowChart(income: List<Long>, spending: List<Long>, labels: List<String>) {
     val inc = LocalSproutColors.current.income
     val sp = MaterialTheme.colorScheme.tertiary
+    val grid = MaterialTheme.colorScheme.outlineVariant
     val max = (income + spending).maxOrNull()?.coerceAtLeast(1) ?: 1
     val desc = labels.indices.joinToString(", ") { "${labels[it]}: in ${Money.formatWhole(income[it])}, out ${Money.formatWhole(spending[it])}" }
+    val progress = androidx.compose.runtime.remember(income, spending) { androidx.compose.animation.core.Animatable(0f) }
+    androidx.compose.runtime.LaunchedEffect(income, spending) {
+        progress.animateTo(1f, androidx.compose.animation.core.tween(850, easing = androidx.compose.animation.core.FastOutSlowInEasing))
+    }
+    val tm = androidx.compose.ui.text.rememberTextMeasurer()
+    val axisStyle = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+    val maxLabel = Money.formatWhole(max)
     Column(Modifier.semantics { contentDescription = desc }) {
-        Canvas(Modifier.fillMaxWidth().height(150.dp)) {
+        Canvas(Modifier.fillMaxWidth().height(170.dp)) {
+            val axis = tm.measure(maxLabel, axisStyle)
+            val top = axis.size.height + 4.dp.toPx()
+            val chartH = size.height - top
+            // Guides at the top, two thirds and one third, with the top value written above the first.
+            for (k in 0..2) {
+                val y = top + chartH * k / 3f
+                drawLine(grid.copy(alpha = 0.7f), Offset(0f, y), Offset(size.width, y), 1.dp.toPx(),
+                    pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 5.dp.toPx())))
+            }
+            drawText(axis, topLeft = Offset(0f, 0f))
+            drawLine(grid, Offset(0f, size.height), Offset(size.width, size.height), 1.dp.toPx())
             val n = labels.size.coerceAtLeast(1)
             val slot = size.width / n
-            val bw = slot * 0.32f
+            val bw = (slot * 0.3f).coerceAtMost(36.dp.toPx())
+            val gap = 4.dp.toPx()
             labels.indices.forEach { i ->
-                val x = i * slot + slot * 0.16f
-                val hi = size.height * income[i] / max
-                val hs = size.height * spending[i] / max
-                drawRoundRect(inc, Offset(x, size.height - hi), Size(bw, hi.coerceAtLeast(2f)), CornerRadius(bw / 3, bw / 3))
-                drawRoundRect(sp, Offset(x + bw + 2f, size.height - hs), Size(bw, hs.coerceAtLeast(2f)), CornerRadius(bw / 3, bw / 3))
+                val x = i * slot + (slot - 2 * bw - gap) / 2
+                val hi = (chartH * income[i] / max * progress.value).coerceAtLeast(2f)
+                val hs = (chartH * spending[i] / max * progress.value).coerceAtLeast(2f)
+                bar(x, size.height - hi, bw, size.height, androidx.compose.ui.graphics.Brush.verticalGradient(listOf(inc, inc.copy(alpha = 0.6f)), size.height - hi, size.height))
+                bar(x + bw + gap, size.height - hs, bw, size.height, androidx.compose.ui.graphics.Brush.verticalGradient(listOf(sp, sp.copy(alpha = 0.6f)), size.height - hs, size.height))
             }
         }
-        Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {
-            labels.forEach { Text(it, Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall) }
+        Row(Modifier.fillMaxWidth().padding(top = 6.dp)) {
+            labels.forEach { Text(it, Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1) }
         }
-        Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             LegendDot(inc, "Came in"); LegendDot(sp, "Spent")
+        }
+    }
+}
+
+/** A bar with rounded top corners sitting flat on the baseline. */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.bar(x: Float, top: Float, w: Float, bottom: Float, brush: androidx.compose.ui.graphics.Brush) {
+    val r = (w / 3).coerceAtMost(bottom - top)
+    drawPath(androidx.compose.ui.graphics.Path().apply {
+        addRoundRect(androidx.compose.ui.geometry.RoundRect(androidx.compose.ui.geometry.Rect(x, top, x + w, bottom),
+            CornerRadius(r, r), CornerRadius(r, r), CornerRadius.Zero, CornerRadius.Zero))
+    }, brush)
+}
+
+/** Reports' hero: what you kept, with what came in and went out underneath and a split bar between them. */
+@Composable
+private fun ReportsHero(totalIn: Long, totalOut: Long) {
+    val sc = LocalSproutColors.current
+    val on = sc.onHero
+    val net = totalIn - totalOut
+    com.emotionalleaves.sprout.ui.common.HeroCard(sc.hero) {
+        Text(if (net >= 0) "Kept" else "Spent more than came in", style = MaterialTheme.typography.labelLarge, color = on.copy(alpha = 0.8f))
+        Text((if (net >= 0) "" else "−") + com.emotionalleaves.sprout.ui.common.animatedMoney(kotlin.math.abs(net), whole = true),
+            style = MaterialTheme.typography.displayMedium, color = if (net >= 0) on else androidx.compose.ui.graphics.Color(0xFFFFB4A9), maxLines = 1)
+        if (totalIn > 0) com.emotionalleaves.sprout.ui.common.HeroPill("${net * 100 / totalIn}% of income", on)
+        Spacer(Modifier.height(10.dp))
+        // In vs out as one bar: the bright part is what was spent.
+        val f = if (totalIn + totalOut > 0) totalOut.toFloat() / maxOf(totalIn, totalOut) else 0f
+        com.emotionalleaves.sprout.ui.common.FatProgress(f, on, track = on.copy(alpha = 0.18f), height = 8.dp)
+        com.emotionalleaves.sprout.ui.common.TileRow(Modifier.padding(top = 4.dp)) {
+            Column(Modifier.tile()) {
+                Text("Came in", style = MaterialTheme.typography.labelMedium, color = on.copy(alpha = 0.8f))
+                Text(Money.formatWhole(totalIn), style = MaterialTheme.typography.titleLarge, color = on, maxLines = 1)
+            }
+            Column(Modifier.tile()) {
+                Text("Spent", style = MaterialTheme.typography.labelMedium, color = on.copy(alpha = 0.8f))
+                Text(Money.formatWhole(totalOut), style = MaterialTheme.typography.titleLarge, color = on, maxLines = 1)
+            }
+        }
+    }
+}
+
+/** One ranked line inside a card: a color key, name, amount and a bar relative to the total. */
+@Composable
+private fun ShareRow(color: androidx.compose.ui.graphics.Color, name: String, value: Long, total: Long) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(10.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(3.dp)).background(color))
+            Spacer(Modifier.width(10.dp))
+            Text(name, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, maxLines = 2,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            Spacer(Modifier.width(8.dp))
+            Text(Money.format(value), style = MaterialTheme.typography.labelLarge)
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            FatProgress(value.toFloat() / total.coerceAtLeast(1), color, Modifier.weight(1f), height = 6.dp)
+            val pct = value * 100 / total.coerceAtLeast(1)
+            Text(if (pct == 0L && value > 0) "<1%" else "$pct%", Modifier.widthIn(min = 40.dp), textAlign = TextAlign.End,
+                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -131,15 +214,7 @@ fun ReportsScreen(onBack: () -> Unit) {
         }
         val sc = LocalSproutColors.current
         LazyColumn {
-            item {
-                com.emotionalleaves.sprout.ui.common.TileRow(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
-                    StatTile("Came in", Money.formatWhole(totalIn), Modifier.tile())
-                    StatTile("Spent", Money.formatWhole(totalOut), Modifier.tile())
-                    val net = totalIn - totalOut
-                    StatTile("Kept", (if (net >= 0) "" else "−") + Money.formatWhole(kotlin.math.abs(net)), Modifier.tile(),
-                        note = if (totalIn > 0) "${net * 100 / totalIn}% of income" else null, noteColor = if (net >= 0) sc.ok else sc.danger)
-                }
-            }
+            item { ReportsHero(totalIn, totalOut) }
             if (rep.months.size > 1) item {
                 SoftCard {
                     Text("Cash flow", style = MaterialTheme.typography.titleMedium)
@@ -155,25 +230,31 @@ fun ReportsScreen(onBack: () -> Unit) {
                         val slices = top.mapIndexed { i, (n, v) -> Slice(n, v, sc.chart[i % sc.chart.size]) } +
                             (if (rest > 0) listOf(Slice("Other", rest, MaterialTheme.colorScheme.outline)) else emptyList())
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            DonutChart(slices, Modifier.size(130.dp)) { Text(Money.formatWhole(totalOut), style = MaterialTheme.typography.titleSmall) }
+                            DonutChart(slices, Modifier.size(136.dp)) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(Money.formatWhole(totalOut), style = MaterialTheme.typography.titleSmall)
+                                    Text("spent", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
                             Spacer(Modifier.width(16.dp))
                             Column(Modifier.weight(1f)) { slices.forEach { LegendRow(it.color, it.label, Money.formatWhole(it.value)) } }
                         }
                     }
                 }
-                items(rep.categories, key = { "rc-" + it.first }) { (n, v) ->
-                    Column(Modifier.padding(horizontal = 24.dp, vertical = 6.dp)) {
-                        Row { Text(n, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium); Text(Money.format(v), style = MaterialTheme.typography.labelLarge) }
-                        FatProgress(v.toFloat() / totalOut.coerceAtLeast(1), MaterialTheme.colorScheme.primary, height = 6.dp)
+                item {
+                    SoftCard {
+                        val other = MaterialTheme.colorScheme.outline
+                        rep.categories.forEachIndexed { i, (n, v) ->
+                            ShareRow(if (i < 6) sc.chart[i % sc.chart.size] else other, n, v, totalOut)
+                        }
                     }
                 }
             }
             if (rep.accounts.size > 1) {
                 item { SectionHeader("By account") }
-                items(rep.accounts, key = { "ra-" + it.first }) { (n, v) ->
-                    Column(Modifier.padding(horizontal = 24.dp, vertical = 6.dp)) {
-                        Row { Text(n, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium); Text(Money.format(v), style = MaterialTheme.typography.labelLarge) }
-                        FatProgress(v.toFloat() / totalOut.coerceAtLeast(1), MaterialTheme.colorScheme.secondary, height = 6.dp)
+                item {
+                    SoftCard {
+                        rep.accounts.forEach { (n, v) -> ShareRow(MaterialTheme.colorScheme.secondary, n, v, totalOut) }
                     }
                 }
             }
@@ -208,13 +289,18 @@ fun YearInReviewScreen(onBack: () -> Unit) {
             item {
                 com.emotionalleaves.sprout.ui.common.HeroCard(sc.hero) {
                     Text("You spent", style = MaterialTheme.typography.labelLarge, color = sc.onHero.copy(alpha = 0.8f))
-                    Text(Money.formatWhole(r.spentMinor), style = MaterialTheme.typography.displayMedium, color = sc.onHero)
+                    Text(com.emotionalleaves.sprout.ui.common.animatedMoney(r.spentMinor, whole = true), style = MaterialTheme.typography.displayMedium, color = sc.onHero, maxLines = 1)
                     if (r.incomeMinor > 0) {
                         val kept = r.incomeMinor - r.spentMinor
                         Text(if (kept >= 0) "and kept ${Money.formatWhole(kept)} of ${Money.formatWhole(r.incomeMinor)} that came in"
                             else "${Money.formatWhole(-kept)} more than came in", style = MaterialTheme.typography.bodyLarge, color = sc.onHero)
                     }
-                    Text("${r.transactions} transactions · ${r.noSpendDays} no-spend days", style = MaterialTheme.typography.bodySmall, color = sc.onHero.copy(alpha = 0.85f))
+                    @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                    androidx.compose.foundation.layout.FlowRow(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        com.emotionalleaves.sprout.ui.common.HeroPill("${r.transactions} transactions", sc.onHero)
+                        com.emotionalleaves.sprout.ui.common.HeroPill("${r.noSpendDays} no-spend days", sc.onHero)
+                    }
                 }
             }
             item {
@@ -338,7 +424,15 @@ private fun RankedCard(rows: List<Pair<String, Long>>) {
     SoftCard {
         rows.forEachIndexed { i, (n, v) ->
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("${i + 1}", Modifier.width(24.dp), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                Box(
+                    Modifier.size(28.dp).clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(if (i == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("${i + 1}", style = MaterialTheme.typography.labelLarge,
+                        color = if (i == 0) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer)
+                }
+                Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Row {
                         Text(n, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge, maxLines = 1,

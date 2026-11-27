@@ -27,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountBalance
 import androidx.compose.material.icons.rounded.CreditCard
 import androidx.compose.material.icons.rounded.Savings
+import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.TrendingDown
 import androidx.compose.material.icons.rounded.TrendingUp
 import androidx.compose.material.icons.rounded.Visibility
@@ -122,8 +123,18 @@ fun SafeToSpendHero(m: BudgetMonth?, netWorthMinor: Long, onSetBudget: () -> Uni
             ) { Text("Set up budgets") }
         } else {
             val used = if (m.totalBudgetMinor > 0) m.totalSpentBudgetedMinor.toFloat() / m.totalBudgetMinor else 0f
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            HeroRow(ring = { ringSize ->
+                ProgressRing(
+                    used, color = c.onHero, track = c.onHero.copy(alpha = 0.18f), overColor = Color(0xFFFFB4A9),
+                    modifier = Modifier.size(ringSize), stroke = 12.dp,
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("${(used * 100).toInt().coerceAtMost(999)}%", style = MaterialTheme.typography.titleLarge, color = c.onHero)
+                        Text("used", style = MaterialTheme.typography.labelSmall, color = c.onHero.copy(alpha = 0.8f))
+                    }
+                }
+            }) {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text("Safe to spend", style = MaterialTheme.typography.labelLarge, color = c.onHero.copy(alpha = 0.8f))
                     Text(
                         com.emotionalleaves.sprout.ui.common.animatedMoney(safe.amountMinor),
@@ -133,22 +144,39 @@ fun SafeToSpendHero(m: BudgetMonth?, netWorthMinor: Long, onSetBudget: () -> Uni
                     )
                     safe.perDayMinor?.let { Text("≈ ${money(it)} a day", style = MaterialTheme.typography.titleMedium, color = c.onHero) }
                     safe.daysRemaining?.let {
-                        Text("$it day${if (it == 1) "" else "s"} left · tap for details", style = MaterialTheme.typography.bodySmall, color = c.onHero.copy(alpha = 0.8f))
-                    }
-                }
-                ProgressRing(
-                    used, color = c.onHero, track = c.onHero.copy(alpha = 0.22f), overColor = Color(0xFFFFB4A9),
-                    modifier = Modifier.size(104.dp), stroke = 11.dp,
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("${(used * 100).toInt().coerceAtMost(999)}%", style = MaterialTheme.typography.titleLarge, color = c.onHero)
-                        Text("used", style = MaterialTheme.typography.labelSmall, color = c.onHero.copy(alpha = 0.8f))
+                        @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                        androidx.compose.foundation.layout.FlowRow(
+                            Modifier.padding(top = 6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            com.emotionalleaves.sprout.ui.common.HeroPill("$it day${if (it == 1) "" else "s"} left", c.onHero, Icons.Rounded.Schedule)
+                            com.emotionalleaves.sprout.ui.common.HeroPill("Tap for details", c.onHero.copy(alpha = 0.85f))
+                        }
                     }
                 }
             }
         }
     }
     if (breakdown && m != null) SafeToSpendBreakdown(m) { breakdown = false }
+}
+
+/**
+ * Hero layout: the numbers on the left and a ring on the right. At large text sizes the ring moves below,
+ * so a big amount never gets cut off.
+ */
+@Composable
+fun HeroRow(ring: @Composable (ringSize: androidx.compose.ui.unit.Dp) -> Unit, content: @Composable () -> Unit) {
+    val large = androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.3f
+    if (large) {
+        // Bigger ring too, so its own large text fits inside.
+        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) { content(); ring(150.dp) }
+    } else {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(1f)) { content() }
+            Spacer(Modifier.width(12.dp))
+            ring(108.dp)
+        }
+    }
 }
 
 /** Three quick numbers: net worth, spent this month (vs last month), month-end cash. */
@@ -208,9 +236,13 @@ fun MonthsCard(months: List<Pair<YearMonth, Long>>) {
     SoftCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Last 6 months", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-            if (avg > 0) Text("avg ${money(avg, whole = true)}", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (avg > 0) {
+                Box(Modifier.size(width = 14.dp, height = 2.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.75f)))
+                Spacer(Modifier.width(6.dp))
+                Text("avg ${money(avg, whole = true)}", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
-        BarChart(months.map { it.second }, months.map { it.first.format(shortMonth) }, MaterialTheme.colorScheme.primary)
+        BarChart(months.map { it.second }, months.map { it.first.format(shortMonth) }, MaterialTheme.colorScheme.primary, average = avg.takeIf { it > 0 })
     }
 }
 
@@ -219,9 +251,10 @@ fun MonthsCard(months: List<Pair<YearMonth, Long>>) {
 fun BillsStrip(bills: List<UpcomingBill>, onSeeAll: () -> Unit) {
     LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         items(bills, key = { "${it.charge.id}-${it.dueAt}" }) { b ->
-            Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = Modifier.width(156.dp).clickable(onClick = onSeeAll)) {
+            Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceContainerLow,
+                border = com.emotionalleaves.sprout.ui.common.cardBorder(), modifier = Modifier.width(156.dp).clickable(onClick = onSeeAll)) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    IconBadge(CategoryIcons.forKey(null), MaterialTheme.colorScheme.secondary, 34.dp)
+                    com.emotionalleaves.sprout.ui.bills.DateBadge(b.dueAt)
                     Text(b.charge.displayName, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(money(b.charge.typicalAmountMinor), style = MaterialTheme.typography.titleMedium)
                     Text(com.emotionalleaves.sprout.ui.bills.dueText(b.dueAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -294,15 +327,21 @@ fun FlexHero(fx: com.emotionalleaves.sprout.data.budget.FlexState) {
     val m = fx.month
     val used = if (m.flexBudgetMinor > 0) m.flexSpentMinor.toFloat() / m.flexBudgetMinor else 0f
     HeroCard(c.hero) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        HeroRow(ring = { ringSize ->
+            ProgressRing(used, color = c.onHero, track = c.onHero.copy(alpha = 0.18f), overColor = Color(0xFFFFB4A9), modifier = Modifier.size(ringSize), stroke = 12.dp) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("${(used * 100).toInt().coerceAtMost(999)}%", style = MaterialTheme.typography.titleLarge, color = c.onHero)
+                    Text("used", style = MaterialTheme.typography.labelSmall, color = c.onHero.copy(alpha = 0.8f))
+                }
+            }
+        }) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text("Safe to spend · Flex", style = MaterialTheme.typography.labelLarge, color = c.onHero.copy(alpha = 0.8f))
                 Text(com.emotionalleaves.sprout.ui.common.animatedMoney(m.safeMinor), style = MaterialTheme.typography.displayMedium, color = if (m.safeMinor < 0) Color(0xFFFFB4A9) else c.onHero, maxLines = 1)
                 m.perDayMinor?.let { Text("≈ ${money(it)} a day", style = MaterialTheme.typography.titleMedium, color = c.onHero) }
-                Text("${money(m.flexSpentMinor)} of ${money(m.flexBudgetMinor)} flex spent", style = MaterialTheme.typography.bodySmall, color = c.onHero.copy(alpha = 0.8f))
-            }
-            ProgressRing(used, color = c.onHero, track = c.onHero.copy(alpha = 0.22f), overColor = Color(0xFFFFB4A9), modifier = Modifier.size(104.dp), stroke = 11.dp) {
-                Text("${(used * 100).toInt().coerceAtMost(999)}%", style = MaterialTheme.typography.titleLarge, color = c.onHero)
+                Box(Modifier.padding(top = 6.dp)) {
+                    com.emotionalleaves.sprout.ui.common.HeroPill("${money(m.flexSpentMinor, whole = true)} of ${money(m.flexBudgetMinor, whole = true)} spent", c.onHero)
+                }
             }
         }
     }
@@ -337,6 +376,7 @@ fun WatchStrip(items: List<Triple<String, String, Long>>, navigate: (String) -> 
     LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         items(items, key = { it.first }) { (key, name, total) ->
             Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceContainerLow,
+                border = com.emotionalleaves.sprout.ui.common.cardBorder(),
                 modifier = Modifier.width(150.dp).clickable {
                     if (key.startsWith("c:")) navigate("category/" + key.drop(2)) else navigate("merchant/" + android.net.Uri.encode(key.drop(2)))
                 }) {

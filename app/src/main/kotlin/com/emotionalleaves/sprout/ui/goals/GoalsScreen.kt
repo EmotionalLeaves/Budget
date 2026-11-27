@@ -23,6 +23,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.rounded.Savings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.DatePicker
@@ -90,6 +92,7 @@ fun GoalProgressRow(v: GoalView, footer: (@Composable () -> Unit)? = null, onCli
     androidx.compose.material3.Surface(
         shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp),
         color = MaterialTheme.colorScheme.surfaceContainerLow,
+        border = com.emotionalleaves.sprout.ui.common.cardBorder(),
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 5.dp),
     ) { Column {
     Column(
@@ -98,19 +101,23 @@ fun GoalProgressRow(v: GoalView, footer: (@Composable () -> Unit)? = null, onCli
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
+            val ringColor = if (p.reached) com.emotionalleaves.sprout.ui.theme.LocalSproutColors.current.ok else MaterialTheme.colorScheme.primary
             com.emotionalleaves.sprout.ui.common.ProgressRing(
-                p.percent / 100f, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.surfaceVariant,
-                Modifier.size(52.dp), stroke = 6.dp,
-            ) { Text(if (p.reached) "✓" else "${p.percent}%", style = MaterialTheme.typography.labelMedium) }
+                p.percent / 100f, ringColor, MaterialTheme.colorScheme.surfaceVariant,
+                Modifier.size(56.dp), stroke = 7.dp,
+            ) {
+                if (p.reached) Icon(Icons.Filled.Check, contentDescription = null, tint = ringColor, modifier = Modifier.size(24.dp))
+                else Text("${p.percent}%", style = MaterialTheme.typography.labelMedium)
+            }
             androidx.compose.foundation.layout.Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
                 Text(v.goal.name, style = MaterialTheme.typography.titleSmall)
                 Text(if (p.reached) "Reached!" else "${Money.format(p.remainingMinor)} to go", style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    color = if (p.reached) com.emotionalleaves.sprout.ui.theme.LocalSproutColors.current.ok else MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         Text("${Money.format(p.savedMinor)} of ${Money.format(p.targetMinor)}" + (v.account?.let { " · from ${it.label}" } ?: ""),
-            style = MaterialTheme.typography.labelSmall)
+            style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         when {
             p.overdue -> Text("Target date passed — ${Money.format(p.remainingMinor)} to go", style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.error)
@@ -120,6 +127,43 @@ fun GoalProgressRow(v: GoalView, footer: (@Composable () -> Unit)? = null, onCli
     }
     footer?.let { Box(Modifier.padding(start = 8.dp, bottom = 6.dp)) { it() } }
     } }
+}
+
+/** All goals at a glance: what's saved so far, and one ring for how far along they are together. */
+@Composable
+private fun GoalsHero(list: List<GoalView>) {
+    val sc = com.emotionalleaves.sprout.ui.theme.LocalSproutColors.current
+    val target = list.sumOf { it.progress.targetMinor }
+    // A goal saved past its target counts as done, not as extra progress on the others.
+    val toward = list.sumOf { minOf(it.progress.savedMinor, it.progress.targetMinor).coerceAtLeast(0) }
+    val overall = if (target > 0) toward.toFloat() / target else 0f
+    val reached = list.count { it.progress.reached }
+    com.emotionalleaves.sprout.ui.common.HeroCard(sc.hero) {
+        com.emotionalleaves.sprout.ui.home.HeroRow(ring = { ringSize ->
+            com.emotionalleaves.sprout.ui.common.ProgressRing(
+                overall, sc.onHero, sc.onHero.copy(alpha = 0.18f), Modifier.size(ringSize), stroke = 11.dp,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("${(overall * 100).toInt()}%", style = MaterialTheme.typography.titleLarge, color = sc.onHero)
+                    Text("overall", style = MaterialTheme.typography.labelSmall, color = sc.onHero.copy(alpha = 0.8f))
+                }
+            }
+        }) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text("Saved toward goals", style = MaterialTheme.typography.labelLarge, color = sc.onHero.copy(alpha = 0.8f))
+                Text(com.emotionalleaves.sprout.ui.common.animatedMoney(toward, whole = true), style = MaterialTheme.typography.displaySmall,
+                    color = sc.onHero, maxLines = 1)
+                Text("of ${com.emotionalleaves.sprout.ui.common.money(target, whole = true)} in targets", style = MaterialTheme.typography.bodyMedium,
+                    color = sc.onHero.copy(alpha = 0.85f))
+                @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                androidx.compose.foundation.layout.FlowRow(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    com.emotionalleaves.sprout.ui.common.HeroPill("${list.size} goal${if (list.size == 1) "" else "s"}", sc.onHero)
+                    if (reached > 0) com.emotionalleaves.sprout.ui.common.HeroPill("$reached reached", sc.onHero, Icons.Filled.Check)
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -140,9 +184,11 @@ fun GoalsScreen(onBack: () -> Unit) {
                 }
             }
             val list = goals
+            if (!list.isNullOrEmpty()) item { GoalsHero(list) }
             if (list != null && list.isEmpty()) {
                 item {
-                    EmptyState("No goals yet", "Saving for something? Add a goal and Sprout shows how much to put aside each month.") {
+                    EmptyState("No goals yet", "Saving for something? Add a goal and Sprout shows how much to put aside each month.",
+                        icon = androidx.compose.material.icons.Icons.Rounded.Savings) {
                         androidx.compose.material3.Button(onClick = { adding = true }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Add your first goal") }
                     }
                 }
