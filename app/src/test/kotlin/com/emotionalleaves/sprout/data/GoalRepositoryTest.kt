@@ -49,7 +49,10 @@ class GoalRepositoryTest {
 
     @Test fun deleteRemoves() = runBlocking {
         val id = goals.save(null, "Trip", 10_000, null, null, 0)
-        goals.delete(id)
+        val undo = goals.delete(id)
         assertTrue(goals.observe().first().isEmpty())
+        undo()
+        val back = goals.observe().first().single()
+        assertEquals(id, back.goal.id); assertEquals("Trip", back.goal.name); assertEquals(10_000L, back.goal.targetMinor)
     }
 }

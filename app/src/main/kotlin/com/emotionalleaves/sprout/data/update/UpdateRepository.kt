@@ -267,7 +267,7 @@ class UpdateRepository(
     }
 
     /** True when Android lets Sprout open the installer; otherwise send the user to the one-time setting. */
-    fun canInstall(): Boolean = Build.VERSION.SDK_INT < Build.VERSION_CODES.O || context.packageManager.canRequestPackageInstalls()
+    fun canInstall(): Boolean = context.packageManager.canRequestPackageInstalls()
 
     fun unknownSourcesIntent(): Intent =
         Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + context.packageName))

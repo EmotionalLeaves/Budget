@@ -1,5 +1,7 @@
 package com.emotionalleaves.sprout.ui.categories
 
+import androidx.compose.foundation.layout.navigationBarsPadding
+import com.emotionalleaves.sprout.ui.common.showUndoable
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -79,7 +81,7 @@ class ManageCategoriesViewModel(private val c: AppContainer) : ViewModel() {
         viewModelScope.launch { c.categoryRepository.addContainsRule(keyword, categoryId, min, max) }
     suspend fun preview(keyword: String, min: Long?, max: Long?) = c.categoryRepository.previewContains(keyword, min, max)
     fun changeRule(ruleId: Long, categoryId: Long) = viewModelScope.launch { c.categoryRepository.changeRuleCategory(ruleId, categoryId) }
-    fun deleteRule(ruleId: Long) = viewModelScope.launch { c.categoryRepository.deleteRule(ruleId) }
+    suspend fun deleteRule(ruleId: Long): suspend () -> Unit = c.categoryRepository.deleteRule(ruleId)
 
     /** What auto-sorting has done so far, for the card at the top of Category rules. */
     data class AutoStats(val known: Int, val builtIn: Int, val learned: Int, val picks: Int, val left: Int)
@@ -294,7 +296,10 @@ fun RulesScreen(onBack: () -> Unit) {
     val categories by vm.active.collectAsStateWithLifecycle()
     var editing by remember { mutableStateOf<RuleRow?>(null) }
     var adding by remember { mutableStateOf(false) }
+    val snackbar = remember { androidx.compose.material3.SnackbarHostState() }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
 
+    Box(Modifier.fillMaxSize()) {
     Column(Modifier.fillMaxSize()) {
         ScreenHeader("Category rules", onBack) {
             IconButton(onClick = { adding = true }) { Icon(Icons.Filled.Add, contentDescription = "Add keyword rule") }
@@ -323,11 +328,18 @@ fun RulesScreen(onBack: () -> Unit) {
                         )
                         Text("→ ${r.categoryName}" + ruleAmountText(r.minAbsMinor, r.maxAbsMinor), style = MaterialTheme.typography.labelMedium)
                     }
-                    IconButton(onClick = { vm.deleteRule(r.id) }) { Icon(Icons.Filled.Delete, contentDescription = "Delete rule") }
+                    IconButton(onClick = {
+                        scope.launch {
+                            val undo = vm.deleteRule(r.id)
+                            scope.showUndoable(snackbar, "Rule deleted", undo)
+                        }
+                    }) { Icon(Icons.Filled.Delete, contentDescription = "Delete rule") }
                 }
                 HorizontalDivider(Modifier.padding(start = 16.dp))
             }
         }
+    }
+    androidx.compose.material3.SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).navigationBarsPadding())
     }
 
     editing?.let { r ->

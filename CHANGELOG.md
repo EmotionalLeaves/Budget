@@ -2,6 +2,16 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.60.0] - 2026-11-27
+
+Round 60: undo for deletes.
+
+### Features
+- **Undo** after deleting a category rule or a savings goal. The snackbar's Undo puts it back exactly as it was, and a restored rule re-sorts your purchases again.
+
+### Polish
+- The "new since you last looked" banner hides while you're selecting purchases.
+
 ## [2.59.0] - 2026-11-27
 
 Round 59: budgets that start from real numbers.

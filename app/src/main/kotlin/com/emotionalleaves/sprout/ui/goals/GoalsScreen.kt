@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.goals
 
+import com.emotionalleaves.sprout.ui.common.showUndoable
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.foundation.layout.width
@@ -80,7 +81,7 @@ class GoalsViewModel(private val c: AppContainer) : ViewModel() {
     fun save(id: Long?, name: String, target: Long, date: LocalDate?, accountId: String?, saved: Long, kind: String) =
         viewModelScope.launch { c.goalRepository.save(id, name, target, date, accountId, saved, kind) }
     fun addMoney(id: Long, amount: Long) = viewModelScope.launch { c.goalRepository.addMoney(id, amount) }
-    fun delete(id: Long) = viewModelScope.launch { c.goalRepository.delete(id) }
+    suspend fun delete(id: Long): suspend () -> Unit = c.goalRepository.delete(id)
 }
 
 private val dateFmt = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.US)
@@ -184,6 +185,8 @@ fun GoalsScreen(onBack: () -> Unit) {
     var editing by remember { mutableStateOf<GoalView?>(null) }
     var adding by remember { mutableStateOf(false) }
     var adjusting by remember { mutableStateOf<GoalView?>(null) }
+    val snackbar = remember { androidx.compose.material3.SnackbarHostState() }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
 
     Box(Modifier.fillMaxSize()) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 96.dp)) {
@@ -219,6 +222,7 @@ fun GoalsScreen(onBack: () -> Unit) {
             text = { Text("Add goal") },
             modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
         )
+        androidx.compose.material3.SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp))
     }
 
     if (adding || editing != null) {
@@ -233,7 +237,13 @@ fun GoalsScreen(onBack: () -> Unit) {
             accounts = accounts,
             onDismiss = { adding = false; editing = null },
             onSave = { name, target, date, account, saved, kind -> vm.save(g?.id, name, target, date, account, saved, kind); adding = false; editing = null },
-            onDelete = g?.let { { vm.delete(it.id); editing = null } },
+            onDelete = g?.let { goal -> {
+                editing = null
+                scope.launch {
+                    val undo = vm.delete(goal.id)
+                    scope.showUndoable(snackbar, "Deleted \u201C${goal.name}\u201D", undo)
+                }
+            } },
         )
     }
     adjusting?.let { v ->

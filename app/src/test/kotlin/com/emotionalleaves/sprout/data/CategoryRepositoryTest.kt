@@ -89,9 +89,15 @@ class CategoryRepositoryTest {
         assertEquals(cat(DefaultCategories.UNCATEGORIZED), get("1").categoryId)
         val ruleId = repo.addContainsRule("zqx vendors", cat(DefaultCategories.GROCERIES))!!
         assertEquals(cat(DefaultCategories.GROCERIES), get("1").categoryId)
-        repo.deleteRule(ruleId)
+        val undo = repo.deleteRule(ruleId)
         assertEquals(cat(DefaultCategories.UNCATEGORIZED), get("1").categoryId)
         assertEquals(CategorySource.NONE, get("1").categorySource)
+        // Undo brings the same rule back and re-sorts.
+        undo()
+        assertEquals(cat(DefaultCategories.GROCERIES), get("1").categoryId)
+        assertEquals(ruleId, env.db.merchantRules().getAll().single().id)
+        undo() // twice is harmless
+        assertEquals(1, env.db.merchantRules().getAll().size)
     }
 
     @Test fun tooShortKeywordIsRejected() = runBlocking {

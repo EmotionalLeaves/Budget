@@ -66,7 +66,13 @@ class GoalRepository(
         db.goals().update(g.copy(savedMinor = (g.savedMinor + amountMinor).coerceAtLeast(0), updatedAt = now()))
     }
 
-    suspend fun delete(id: Long) = withContext(Dispatchers.IO) { db.goals().delete(id) }
+    /** Deletes a goal; the returned undo puts it back exactly as it was. */
+    suspend fun delete(id: Long): suspend () -> Unit = withContext(Dispatchers.IO) {
+        val saved = db.goals().getAll().firstOrNull { it.id == id }
+        db.goals().delete(id)
+        val undo: suspend () -> Unit = { withContext(Dispatchers.IO) { saved?.let { db.goals().putAll(listOf(it)) } } }
+        undo
+    }
 
     companion object {
         const val KIND_SAVINGS = "SAVINGS"

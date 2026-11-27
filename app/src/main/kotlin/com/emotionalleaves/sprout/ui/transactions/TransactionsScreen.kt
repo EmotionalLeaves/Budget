@@ -458,7 +458,7 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
             com.emotionalleaves.sprout.ui.common.OneTimeTip("activity-swipe",
                 "Swipe a purchase right to change its category, left to leave it out of budgets. Long-press to select several.")
         }
-        if (inbox > 0 && !scoped && filter.query.isBlank()) {
+        if (inbox > 0 && !scoped && filter.query.isBlank() && selected.isEmpty()) {
             Banner("$inbox new since you last looked", actionLabel = "Check", onAction = { navigate("inbox") }, warning = false)
         }
         if (uncategorized > 0 && !scoped) {

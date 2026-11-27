@@ -159,11 +159,24 @@ class CategoryRepository(private val db: SproutDatabase, private val clock: Cloc
         }
     }
 
-    suspend fun deleteRule(ruleId: Long) = withContext(Dispatchers.IO) {
+    /** Deletes a rule and re-sorts. Returns an undo that puts the same rule back and re-sorts again. */
+    suspend fun deleteRule(ruleId: Long): suspend () -> Unit = withContext(Dispatchers.IO) {
+        val saved = db.merchantRules().getById(ruleId)
         db.withTransaction {
             db.merchantRules().delete(ruleId)
             reapplyRulesLocked()
         }
+        val undo: suspend () -> Unit = {
+            withContext(Dispatchers.IO) {
+                saved?.let { r ->
+                    db.withTransaction {
+                        if (db.merchantRules().getById(r.id) == null && db.merchantRules().find(r.matchType, r.pattern) == null) db.merchantRules().insert(r)
+                        reapplyRulesLocked()
+                    }
+                }
+            }
+        }
+        undo
     }
 
     /**
