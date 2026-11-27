@@ -98,6 +98,7 @@ class SproutApp : Application() {
         container = AppContainer(this)
         container.crashLog.install(BuildConfig.VERSION_NAME)
         container.notifier.createChannels()
+        com.emotionalleaves.sprout.ui.common.AppShortcuts.install(this)
         container.appScope.launch {
             container.syncRepository.ensureSeeded()
             runCatching { container.settings.upgradeHistoryDefaultOnce() }

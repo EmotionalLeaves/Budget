@@ -83,6 +83,8 @@ sealed interface DeepLink {
     data class Category(val id: Long) : DeepLink
     data class Transaction(val id: String) : DeepLink
     data object Settings : DeepLink
+    /** From a home-screen shortcut: one of AppShortcuts.ALLOWED. */
+    data class Route(val route: String) : DeepLink
 }
 
 class MainActivity : ComponentActivity() {
@@ -180,6 +182,9 @@ class MainActivity : ComponentActivity() {
             intent.hasExtra(AndroidNotifier.EXTRA_CATEGORY) -> DeepLink.Category(intent.getLongExtra(AndroidNotifier.EXTRA_CATEGORY, 0))
             intent.hasExtra(AndroidNotifier.EXTRA_TRANSACTION) -> intent.getStringExtra(AndroidNotifier.EXTRA_TRANSACTION)?.let { DeepLink.Transaction(it) }
             intent.hasExtra(AndroidNotifier.EXTRA_SETTINGS) -> DeepLink.Settings
+            intent.hasExtra(com.emotionalleaves.sprout.ui.common.AppShortcuts.EXTRA_ROUTE) ->
+                intent.getStringExtra(com.emotionalleaves.sprout.ui.common.AppShortcuts.EXTRA_ROUTE)
+                    ?.takeIf { it in com.emotionalleaves.sprout.ui.common.AppShortcuts.ALLOWED }?.let { DeepLink.Route(it) }
             else -> null
         }
     }
@@ -238,6 +243,7 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
             is DeepLink.Category -> nav.navigate("category/${deepLink.id}")
             is DeepLink.Transaction -> openTx = deepLink.id
             DeepLink.Settings -> goTab(Tab.SETTINGS)
+            is DeepLink.Route -> if (deepLink.route == "bills") goTab(Tab.BILLS) else nav.navigate(deepLink.route)
             null -> return@LaunchedEffect
         }
         onDeepLinkHandled()

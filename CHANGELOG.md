@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.35.0] - 2026-11-26
+
+Round 35: shortcuts.
+
+### New
+- **Long-press Sprout's icon** for shortcuts straight to **Sort purchases**, **Stats** and **Bills** (you can also drag them onto your home screen).
+
 ## [2.34.0] - 2026-11-26
 
 Round 34: Tags worth opening.
