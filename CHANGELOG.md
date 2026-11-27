@@ -2,6 +2,14 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.45.0] - 2026-11-26
+
+Round 45: empty screens that help.
+
+### Polish
+- **Activity with nothing in it** offers Connect a bank, Add a purchase and Import a CSV right there; a search with no results offers **Clear search and filters** (a tag's or account's page keeps its scope).
+- **Stats** for a period with nothing in it says so and offers to look at 12 months instead of showing a row of zeros.
+
 ## [2.44.0] - 2026-11-26
 
 Round 44: Compare months reads at a glance.

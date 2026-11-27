@@ -203,6 +203,8 @@ class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
         .cachedIn(viewModelScope)
 
     fun setQuery(q: String) { _filter.value = _filter.value.copy(query = q) }
+    /** Clears search and filters, keeping the account or tag a page is about. */
+    fun clearFilters() { _filter.value = TxFilter(accountId = _filter.value.accountId, tagId = _filter.value.tagId) }
     fun toggleUncategorized() { _filter.value = _filter.value.copy(uncategorizedOnly = !_filter.value.uncategorizedOnly) }
     fun togglePending() { _filter.value = _filter.value.copy(pendingOnly = !_filter.value.pendingOnly) }
     fun setAccount(id: String?) { _filter.value = _filter.value.copy(accountId = id) }
@@ -403,7 +405,7 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
         }
         val inbox by remember { vm.inboxCount }.collectAsStateWithLifecycle(0)
         val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
-        if (!scoped && selected.isEmpty()) {
+        if (!scoped && selected.isEmpty() && (total ?: 0) > 0) {
             com.emotionalleaves.sprout.ui.common.OneTimeTip("activity-swipe",
                 "Swipe a purchase right to change its category, left to leave it out of budgets. Long-press to select several.")
         }
@@ -472,10 +474,19 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
 
         if (items.itemCount == 0) {
             if (total == 0 || filter != TxFilter()) {
-                EmptyState(
-                    if (filter == TxFilter()) "No transactions yet" else "Nothing matches",
-                    if (filter == TxFilter()) "Connect a bank or import a CSV from More, or tap Add to log one yourself." else "Try a different word or filter.",
-                )
+                if (filter == TxFilter()) {
+                    EmptyState("No transactions yet", "Connect your bank to bring them in automatically, import a CSV from your bank's website, or add a cash purchase yourself.") {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            androidx.compose.material3.Button(onClick = { navigate("connect") }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Connect a bank") }
+                            androidx.compose.material3.OutlinedButton(onClick = { adding = true }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Add a purchase") }
+                            androidx.compose.material3.TextButton(onClick = { navigate("import") }) { Text("Import a CSV") }
+                        }
+                    }
+                } else {
+                    EmptyState("Nothing matches", "Try a different word, or clear the filters.") {
+                        androidx.compose.material3.OutlinedButton(onClick = { vm.clearFilters() }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Clear search and filters") }
+                    }
+                }
             }
             return@Column
         }

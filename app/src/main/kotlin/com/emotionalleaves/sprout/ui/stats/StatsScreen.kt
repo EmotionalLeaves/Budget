@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.stats
 
+import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -163,6 +164,18 @@ fun StatsScreen(onBack: () -> Unit, onMerchant: (String) -> Unit = {}) {
         val d = data
         if (d == null) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Adding things up…", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            return@Column
+        }
+        if (d.now.purchases == 0 && d.now.earned == 0L && d.now.spent == 0L) {
+            com.emotionalleaves.sprout.ui.common.EmptyState(
+                "Nothing in ${period.label.lowercase()}",
+                "Stats fill in from your synced or imported transactions.",
+                icon = androidx.compose.material.icons.Icons.Rounded.BarChart,
+            ) {
+                if (period != StatsPeriod.YEAR && period != StatsPeriod.ALL) {
+                    androidx.compose.material3.OutlinedButton(onClick = { period = StatsPeriod.YEAR }) { Text("Look at 12 months") }
+                }
+            }
             return@Column
         }
         AnimatedContent(targetState = view, label = "stats-view") { v ->
