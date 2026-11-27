@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.58.0] - 2026-11-27
+
+Round 58: Flex mode starts from your real spending.
+
+### Features
+- **Flex amount suggestion:** setting your Flex amount now offers "Use $X · your usual month", which is your average everyday (non-fixed) spending over the last three full months, rounded up to $10. One tap fills it in.
+
 ## [2.57.0] - 2026-11-27
 
 Round 57: plain words in Settings.

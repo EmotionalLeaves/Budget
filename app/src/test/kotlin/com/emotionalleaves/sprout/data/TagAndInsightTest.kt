@@ -198,6 +198,21 @@ class TagAndInsightTest {
         assertTrue(repo.watch(setOf("c:$rent", "m:TARGET")).isNotEmpty())
     }
 
+    @Test fun suggestedFlexAveragesFullMonthsOfEverydaySpending() = runBlocking {
+        sync(
+            Triple("0", "TARGET|-30.00", at(8, 31)),
+            Triple("1", "TARGET|-100.00", at(9, 15)),
+            Triple("2", "TARGET|-50.00", at(10, 15)), Triple("3", "RENT CO|-1000.00", at(10, 2)),
+        )
+        val flex = com.emotionalleaves.sprout.data.budget.FlexRepository(
+            env.db, env.settings, com.emotionalleaves.sprout.data.budget.BudgetRepository(env.db, env.clock, { zone }),
+            { kotlinx.coroutines.flow.flowOf(emptyList()) }, { kotlinx.coroutines.flow.flowOf(0L) }, { zone },
+        )
+        // September and October are full months; August only has its last day. Rent is a fixed cost, so it's left out.
+        // ($100 + $50) / 2 = $75, rounded up to $80.
+        assertEquals(8_000L, flex.suggestedFlex())
+    }
+
     @Test fun manualCashTransactions() = runBlocking {
         val m = com.emotionalleaves.sprout.data.manual.ManualRepository(env.db, env.clock) { zone }
         env.repo().ensureSeeded()

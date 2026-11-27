@@ -49,7 +49,8 @@ fun paceNote(spentMinor: Long, budgetMinor: Long?, today: LocalDate, isCurrentMo
 
 /** Flex mode: one amount for everyday spending, fixed costs expected, planned expenses set aside. */
 @Composable
-fun FlexSection(state: FlexState, today: LocalDate, isCurrent: Boolean, onSetFlex: (Long) -> Unit, onSetFixed: (Set<Long>) -> Unit) {
+fun FlexSection(state: FlexState, today: LocalDate, isCurrent: Boolean, onSetFlex: (Long) -> Unit, onSetFixed: (Set<Long>) -> Unit,
+                suggest: (suspend () -> Long?)? = null) {
     val m = state.month
     var editing by remember { mutableStateOf(false) }
     var choosing by remember { mutableStateOf(false) }
@@ -99,6 +100,15 @@ fun FlexSection(state: FlexState, today: LocalDate, isCurrent: Boolean, onSetFle
                     Text("One amount for groceries, eating out, shopping and everything else that isn't fixed.", style = MaterialTheme.typography.bodySmall)
                     OutlinedTextField(text, { text = it.take(10) }, prefix = { Text("$") }, singleLine = true, isError = text.isNotBlank() && parsed == null,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth())
+                    // One tap to start from what you actually spend.
+                    var suggestion by remember { mutableStateOf<Long?>(null) }
+                    androidx.compose.runtime.LaunchedEffect(Unit) { suggestion = suggest?.let { runCatching { it() }.getOrNull() } }
+                    suggestion?.let { amt ->
+                        androidx.compose.material3.SuggestionChip(
+                            onClick = { text = (amt / 100).toString() },
+                            label = { Text("Use ${Money.formatWhole(amt)} · your usual month") },
+                        )
+                    }
                 }
             },
             confirmButton = { TextButton(onClick = { parsed?.let(onSetFlex); editing = false }, enabled = parsed != null) { Text("Save") } },

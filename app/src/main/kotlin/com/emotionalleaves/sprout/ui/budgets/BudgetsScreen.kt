@@ -71,6 +71,7 @@ class BudgetsViewModel(private val c: AppContainer) : ViewModel() {
 
     val mode: StateFlow<Int> = c.settings.settings.map { it.budgetMode }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
     @OptIn(ExperimentalCoroutinesApi::class)
+    suspend fun suggestedFlex(): Long? = c.flexRepository.suggestedFlex()
     val flex: StateFlow<com.emotionalleaves.sprout.data.budget.FlexState?> = _month.flatMapLatest { c.flexRepository.observe(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
     fun today() = c.budgetRepository.today()
@@ -151,7 +152,7 @@ fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit, onGoals:
                         }
                     }
                 }
-                item { FlexSection(fs, today, isCurrent, vm::setFlex, vm::setFixed) }
+                item { FlexSection(fs, today, isCurrent, vm::setFlex, vm::setFixed, suggest = vm::suggestedFlex) }
                 item {
                     Text("Flex mode: no cap per category. Switch back to \"Per category\" any time; your category budgets are kept.",
                         Modifier.padding(20.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
