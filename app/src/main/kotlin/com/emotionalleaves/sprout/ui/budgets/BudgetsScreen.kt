@@ -72,6 +72,7 @@ class BudgetsViewModel(private val c: AppContainer) : ViewModel() {
     val mode: StateFlow<Int> = c.settings.settings.map { it.budgetMode }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
     @OptIn(ExperimentalCoroutinesApi::class)
     suspend fun suggestedFlex(): Long? = c.flexRepository.suggestedFlex()
+    suspend fun suggestionFor(categoryId: Long): Long? = c.budgetRepository.suggestions().firstOrNull { it.categoryId == categoryId }?.suggestedMinor
     val flex: StateFlow<com.emotionalleaves.sprout.data.budget.FlexState?> = _month.flatMapLatest { c.flexRepository.observe(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
     fun today() = c.budgetRepository.today()
@@ -250,6 +251,7 @@ fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit, onGoals:
             onDismiss = { editing = null },
             onSave = { amount, thisMonth, roll -> vm.save(line.category.id, amount, thisMonth, roll, line.rolloverOn); editing = null },
             onRemove = { thisMonth -> vm.remove(line.category.id, thisMonth); editing = null },
+            suggest = { vm.suggestionFor(line.category.id) },
         )
     }
 }

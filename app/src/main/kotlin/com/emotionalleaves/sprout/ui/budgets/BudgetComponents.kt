@@ -210,7 +210,10 @@ fun EditBudgetDialog(
     onDismiss: () -> Unit,
     onSave: (amountMinor: Long, thisMonthOnly: Boolean, rollover: Boolean) -> Unit,
     onRemove: (thisMonthOnly: Boolean) -> Unit,
+    suggest: (suspend () -> Long?)? = null,
 ) {
+    var suggestion by remember { mutableStateOf<Long?>(null) }
+    androidx.compose.runtime.LaunchedEffect(Unit) { suggestion = suggest?.let { runCatching { it() }.getOrNull() } }
     var text by remember { mutableStateOf(initialMinor?.let { (it / 100).toString() + if (it % 100 != 0L) "." + "%02d".format(it % 100) else "" } ?: "") }
     var thisMonthOnly by remember { mutableStateOf(false) }
     var roll by remember { mutableStateOf(rolloverOn) }
@@ -229,6 +232,13 @@ fun EditBudgetDialog(
                     isError = text.isNotBlank() && parsed == null,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth()
                 )
+                // A starting point from what this category really costs; hidden when it already matches.
+                suggestion?.takeIf { it != parsed }?.let { amt ->
+                    androidx.compose.material3.SuggestionChip(
+                        onClick = { text = (amt / 100).toString() },
+                        label = { Text("Use ${Money.formatWhole(amt)} · your recent months") },
+                    )
+                }
                 listOf(false to "Every month", true to "This month only").forEach { (value, label) ->
                     Row(
                         Modifier.fillMaxWidth().heightIn(min = 48.dp)

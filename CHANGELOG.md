@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.59.0] - 2026-11-27
+
+Round 59: budgets that start from real numbers.
+
+### Features
+- **Setting a category budget** offers "Use $X · your recent months", based on what that category cost over your last three full months. Tap it to fill in the amount.
+
 ## [2.58.0] - 2026-11-27
 
 Round 58: Flex mode starts from your real spending.
