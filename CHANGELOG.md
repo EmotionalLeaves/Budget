@@ -2,6 +2,14 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.105.0] - 2026-11-27
+
+Round 105: calmer Activity.
+
+### Polish
+- A search on Activity no longer flashes "Nothing matches" for a moment while results load.
+- With no transactions yet, Activity hides the filter chips (there's nothing to filter) and leads with Connect a bank, Add a purchase and Import a CSV.
+
 ## [2.104.0] - 2026-11-27
 
 Round 104: faster cash entries.

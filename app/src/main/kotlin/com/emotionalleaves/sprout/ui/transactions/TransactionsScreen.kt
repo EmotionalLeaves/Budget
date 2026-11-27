@@ -510,7 +510,8 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
                 warning = false,
             )
         }
-        Row(
+        // Filters only make sense once there's something to filter.
+        if (total != 0) Row(
             Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -564,7 +565,9 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
         }
 
         if (items.itemCount == 0) {
-            if (total == 0 || filter != TxFilter()) {
+            // While a search is still loading, show nothing rather than flashing "Nothing matches".
+            val loading = items.loadState.refresh is androidx.paging.LoadState.Loading
+            if (!loading && (total == 0 || filter != TxFilter())) {
                 if (filter == TxFilter()) {
                     EmptyState("No transactions yet", "Connect your bank to bring them in automatically, import a CSV from your bank's website, or add a cash purchase yourself.") {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
