@@ -209,6 +209,10 @@ fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit, onGoals:
                     )
                 }
             }
+            if (m.budgeted.isNotEmpty()) item {
+                com.emotionalleaves.sprout.ui.common.OneTimeTip("budgets-tap",
+                    "Tap a budget to see where its money went. The pencil changes the amount, for every month or just this one.")
+            }
             items(m.budgeted, key = { "b-" + it.category.id }) { line ->
                 CategoryBudgetRow(line, onEdit = { editing = line }, pace = paceNote(line.spentMinor, line.budgetMinor, today, isCurrent)) { onCategory(line.category.id) }
             }

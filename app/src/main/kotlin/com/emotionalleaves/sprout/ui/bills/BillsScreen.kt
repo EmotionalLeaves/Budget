@@ -240,6 +240,10 @@ fun BillsScreen() {
                 }
                 item { com.emotionalleaves.sprout.ui.insights.SubscriptionsSummary() }
                 item { SectionTitle("Upcoming") }
+                if (list.any { it.charge.status == RecurringStatus.DETECTED }) item {
+                    com.emotionalleaves.sprout.ui.common.OneTimeTip("bills-suggested",
+                        "Bills marked Suggested were spotted in your history. Tap one to confirm it, fix the amount or date, or dismiss it.")
+                }
                 items(list, key = { "u-${it.charge.id}-${it.dueAt}" }) { u ->
                     BillRow(u.charge, dueText(u.dueAt) + if (u.charge.id in cancelIds) " · cancel reminder on" else "") { editing = u.charge }
                 }

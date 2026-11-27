@@ -2,6 +2,14 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.63.0] - 2026-11-27
+
+Round 63: first-look hints.
+
+### Polish
+- One-time tips on **Budgets** (tap a budget to see where its money went; the pencil changes the amount) and **Bills** (what "Suggested" means and what you can do with it). Each disappears for good when you close it.
+- Purchase dates leave off the year when it's this year ("Tue, Nov 24").
+
 ## [2.62.0] - 2026-11-27
 
 Round 62: a place's history by month.

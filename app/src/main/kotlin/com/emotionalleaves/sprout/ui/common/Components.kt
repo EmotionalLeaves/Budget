@@ -136,8 +136,11 @@ fun TransactionItem(
 ) {
     val merchant = com.emotionalleaves.sprout.ui.common.merchantName(row.merchantKey)
     val date = remember(row.occurredAt) {
-        java.time.Instant.ofEpochSecond(row.occurredAt).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
-            .format(java.time.format.DateTimeFormatter.ofPattern(if (dateAsTitle) "EEE, MMM d, yyyy" else "MMM d"))
+        val d = java.time.Instant.ofEpochSecond(row.occurredAt).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+        // The year only when it isn't this one.
+        val sameYear = d.year == java.time.LocalDate.now().year
+        d.format(java.time.format.DateTimeFormatter.ofPattern(
+            if (dateAsTitle) (if (sameYear) "EEE, MMM d" else "EEE, MMM d, yyyy") else "MMM d", java.util.Locale.US))
     }
     val amountText = Format.amount(row.amountMinor)
     val spoken = buildString {
