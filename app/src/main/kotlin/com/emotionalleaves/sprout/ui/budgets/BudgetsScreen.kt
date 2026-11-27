@@ -2,8 +2,8 @@ package com.emotionalleaves.sprout.ui.budgets
 
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material.icons.rounded.DonutLarge
+import androidx.compose.material3.OutlinedButton
 import kotlinx.coroutines.flow.map
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.CalendarMonth
@@ -136,11 +136,30 @@ fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit, onGoals:
             IconButton(onClick = vm::next) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next month") }
         }
         val m = data ?: run { com.emotionalleaves.sprout.ui.common.LoadingSkeleton(); return@Column }
-        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
-            listOf("Per category", "Flex").forEachIndexed { i, label ->
-                SegmentedButton(mode == i, { vm.setMode(i) }, androidx.compose.material3.SegmentedButtonDefaults.itemShape(i, 2)) { Text(label) }
+        val hasData = com.emotionalleaves.sprout.ui.common.rememberHasData()
+        if (hasData == false && m.budgeted.isEmpty() && !showAll && (mode == 0 || (flex?.month?.flexBudgetMinor ?: 0L) <= 0L)) {
+            // Nothing to budget against yet: one clear way forward instead of an empty hero, a toggle and a list.
+            LazyColumn(Modifier.fillMaxSize()) {
+                item {
+                    com.emotionalleaves.sprout.ui.common.EmptyState(
+                        "Budgets start with your spending",
+                        "Once Sprout sees a month of purchases, Quick setup suggests a budget for every category in one tap. " +
+                            "You can also set budgets yourself now.",
+                        icon = androidx.compose.material.icons.Icons.Rounded.DonutLarge,
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            com.emotionalleaves.sprout.ui.common.GetDataActions()
+                            OutlinedButton(onClick = { vm.setMode(0); showAll = true }, modifier = Modifier.padding(top = 8.dp).heightIn(min = 48.dp)) {
+                                Text("Set budgets myself")
+                            }
+                        }
+                    }
+                }
             }
+            return@Column
         }
+        com.emotionalleaves.sprout.ui.common.ChoiceRow(listOf("Per category", "Flex"), mode, vm::setMode,
+            Modifier.padding(vertical = 4.dp))
         val isCurrent = java.time.YearMonth.from(today) == month
         if (mode == 1) {
             val fs = flex ?: return@Column
@@ -243,7 +262,11 @@ fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit, onGoals:
             if (idle.isNotEmpty()) {
                 item {
                     TextButton(onClick = { showAll = !showAll }, modifier = Modifier.padding(horizontal = 8.dp).heightIn(min = 48.dp)) {
-                        Text(if (showAll) "Hide categories without spending" else "Show all categories (${idle.size} more)")
+                        Text(when {
+                            showAll -> "Hide categories without spending"
+                            m.budgeted.isEmpty() && m.unbudgetedWithSpending.isEmpty() -> "Show categories (${idle.size})"
+                            else -> "Show all categories (${idle.size} more)"
+                        })
                     }
                 }
                 if (showAll) {

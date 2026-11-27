@@ -2,6 +2,15 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.106.0] - 2026-11-27
+
+Round 106: a clear start on Budgets.
+
+### Polish
+- Before any transactions arrive, Budgets shows one clear way forward (Connect a bank, Import a CSV, or Set budgets myself) instead of an empty hero, a mode toggle and a bare list.
+- The Per category / Flex switch now wraps neatly at large text sizes, like the other switches.
+- "Show all categories (21 more)" reads "Show categories (21)" when nothing is listed above it.
+
 ## [2.105.0] - 2026-11-27
 
 Round 105: calmer Activity.
