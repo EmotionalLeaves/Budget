@@ -368,7 +368,10 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
             OutlinedTextField(
                 value = filter.query,
                 onValueChange = vm::setQuery,
-                placeholder = { Text("Search, #tag, or an amount like >100", maxLines = 1) },
+                placeholder = {
+                    val big = androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.3f
+                    Text(if (big) "Search" else "Search, #tag, or an amount like >100", maxLines = 1)
+                },
                 leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
                 trailingIcon = {
                     if (filter.query.isNotEmpty()) {
@@ -400,6 +403,10 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
         }
         val inbox by remember { vm.inboxCount }.collectAsStateWithLifecycle(0)
         val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
+        if (!scoped && selected.isEmpty()) {
+            com.emotionalleaves.sprout.ui.common.OneTimeTip("activity-swipe",
+                "Swipe a purchase right to change its category, left to leave it out of budgets. Long-press to select several.")
+        }
         if (inbox > 0 && !scoped) {
             Banner("$inbox new to review", actionLabel = "Review", onAction = { navigate("inbox") }, warning = false)
         }

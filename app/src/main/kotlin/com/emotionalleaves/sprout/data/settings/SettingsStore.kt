@@ -77,6 +77,8 @@ data class Settings(
     val dedupedAccounts: Set<String> = emptySet(),
     /** "hiddenId|keptId" for each copy Sprout hid, so it can switch if the kept one stops syncing. */
     val dedupPairs: Set<String> = emptySet(),
+    /** One-time tips you've dismissed (by key). */
+    val dismissedTips: Set<String> = emptySet(),
 )
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -123,6 +125,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
             historyDone = p[HISTORY_DONE] ?: false,
             dedupedAccounts = p[DEDUPED_ACCOUNTS] ?: emptySet(),
             dedupPairs = p[DEDUP_PAIRS] ?: emptySet(),
+            dismissedTips = p[DISMISSED_TIPS] ?: emptySet(),
         )
     }
 
@@ -147,6 +150,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         }
         it[HISTORY_DEFAULT_UPGRADED] = true
     }
+    suspend fun dismissTip(key: String) = dataStore.edit { it[DISMISSED_TIPS] = (it[DISMISSED_TIPS] ?: emptySet()) + key }
     suspend fun addDedupedAccount(id: String) = dataStore.edit { it[DEDUPED_ACCOUNTS] = (it[DEDUPED_ACCOUNTS] ?: emptySet()) + id }
     suspend fun setDedupPair(hidden: String, kept: String) = dataStore.edit {
         val others = (it[DEDUP_PAIRS] ?: emptySet()).filterNot { p -> p.startsWith("$kept|") || p.startsWith("$hidden|") }
@@ -244,5 +248,6 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         val HISTORY_DEFAULT_UPGRADED = booleanPreferencesKey("history_default_upgraded")
         val DEDUPED_ACCOUNTS = androidx.datastore.preferences.core.stringSetPreferencesKey("deduped_accounts")
         val DEDUP_PAIRS = androidx.datastore.preferences.core.stringSetPreferencesKey("dedup_pairs")
+        val DISMISSED_TIPS = androidx.datastore.preferences.core.stringSetPreferencesKey("dismissed_tips")
     }
 }

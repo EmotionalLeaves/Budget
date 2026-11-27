@@ -134,6 +134,7 @@ fun ReviewScreen(onBack: () -> Unit) {
             Text("${list.size} left", style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
             if (done > 0) Text("$done done", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
         }
+        com.emotionalleaves.sprout.ui.common.OneTimeTip("review-all", "Leave \"Use this for all\" on and one tap sorts every purchase from that place. Sprout learns from each pick.", inset = 0.dp)
         com.emotionalleaves.sprout.ui.common.FatProgress(if (startCount == 0) 0f else done.toFloat() / startCount, MaterialTheme.colorScheme.primary)
         val merchant = com.emotionalleaves.sprout.ui.common.merchantName(row.merchantKey)
         val sameMerchant = list.count { it.merchantKey == row.merchantKey }

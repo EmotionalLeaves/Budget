@@ -2,6 +2,16 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.40.0] - 2026-11-26
+
+Round 40: hints for the hidden moves.
+
+### New
+- **One-time tips** where a gesture isn't obvious: Activity explains swipe right (change category), swipe left (leave out of budgets) and long-press (select several); Review explains "Use this for all". Close a tip and it never comes back.
+
+### Polish
+- With large text, the Activity search box just says "Search" instead of a cut-off hint.
+
 ## [2.39.0] - 2026-11-26
 
 Round 39: a safety net.
