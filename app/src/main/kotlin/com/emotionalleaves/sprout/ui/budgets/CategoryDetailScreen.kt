@@ -1,5 +1,7 @@
 package com.emotionalleaves.sprout.ui.budgets
 
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.background
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -126,7 +128,16 @@ fun CategoryDetailScreen(categoryId: Long, snackbar: SnackbarHostState, onBack: 
 
     openId?.let { id -> TransactionDetailSheet(id, { openId = null }) { msg, undo -> scope.showUndoable(snackbar, msg, undo) } }
 
-    LazyColumn(Modifier.fillMaxSize()) {
+    // Swipe sideways to change month, same as Budgets.
+    val swipe = with(androidx.compose.ui.platform.LocalDensity.current) { 96.dp.toPx() }
+    LazyColumn(Modifier.fillMaxSize().pointerInput(Unit) {
+        var dx = 0f
+        detectHorizontalDragGestures(
+            onDragStart = { dx = 0f },
+            onDragEnd = { if (dx > swipe) vm.prev() else if (dx < -swipe) vm.next() },
+            onHorizontalDrag = { _, amount -> dx += amount },
+        )
+    }) {
         item {
             Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }

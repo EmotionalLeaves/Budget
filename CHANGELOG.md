@@ -7,7 +7,7 @@ All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog
 Round 66: faster month flipping.
 
 ### Features
-- **Budgets:** swipe left or right anywhere to go to the next or previous month. When you're looking at another month, a **Today** button brings you back to this one.
+- **Budgets** and a category's page: swipe left or right anywhere to go to the next or previous month. When you're looking at another month, a **Today** button brings you back to this one.
 
 ### Polish
 - The Stats summary says "since Jul 3" when your data starts partway through the period.
