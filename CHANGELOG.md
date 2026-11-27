@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.104.0] - 2026-11-27
+
+Round 104: faster cash entries.
+
+### Polish
+- **Add a transaction** offers "Your usual" categories as one-tap chips until a category is picked or guessed from the name.
+
 ## [2.103.0] - 2026-11-27
 
 Round 103: your usual picks everywhere.

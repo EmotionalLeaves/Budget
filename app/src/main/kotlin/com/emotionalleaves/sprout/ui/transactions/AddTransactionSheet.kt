@@ -100,6 +100,11 @@ fun AddTransactionSheet(onDismiss: () -> Unit, onAdded: (String) -> Unit) {
                     Text("Guessed from the name · tap to change", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                 }
             }
+            if (categoryId == null) {
+                com.emotionalleaves.sprout.ui.categories.UsualCategoryChips(if (spending) -1 else 1, categories) {
+                    categoryId = it.id; pickedByHand = true; guessed = false
+                }
+            }
             CategoryGrid(categories.filter { (it.kind == CategoryKind.EXPENSE) == spending || it.kind == CategoryKind.TRANSFER }, categoryId) {
                 categoryId = it.id; pickedByHand = true; guessed = false
             }
