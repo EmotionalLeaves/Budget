@@ -166,6 +166,12 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val weekPace: StateFlow<com.emotionalleaves.sprout.domain.insights.WeekPace?> =
+        combine(c.budgetRepository.todayFlow(), c.db.transactions().observeCount()) { _, _ -> Unit }
+            .mapLatest { runCatching { c.insightsRepository.weekPace() }.getOrNull() }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val challenges: StateFlow<List<com.emotionalleaves.sprout.domain.challenge.ChallengeProgress>> =
         combine(c.challengeRepository.challenges, c.db.transactions().observeCount(), c.budgetRepository.todayFlow()) { _, _, _ -> Unit }
             .mapLatest { runCatching { c.challengeRepository.progress() }.getOrDefault(emptyList()) }

@@ -16,10 +16,10 @@ class HomeOrderTest {
     }
 
     @Test fun cardsAddedLaterSlotInAfterTheirDefaultNeighbour() {
-        // An older saved order that doesn't know "health" yet.
-        val saved = all.filter { it != "health" }
+        // An older saved order that doesn't know "week" yet.
+        val saved = all.filter { it != "week" }
         val out = orderedHomeCards(saved.joinToString(","))
-        assertEquals(out.indexOf("stats") + 1, out.indexOf("health"))
+        assertEquals(out.indexOf("stats") + 1, out.indexOf("week"))
     }
 
     @Test fun moving() {

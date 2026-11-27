@@ -30,6 +30,18 @@ data class YearRow(val categoryId: Long, val name: String, val colorArgb: Int, v
 class InsightsRepository(private val db: SproutDatabase, private val clock: Clock, private val zone: () -> ZoneId = { ZoneId.systemDefault() }) {
     private fun today(): LocalDate = LocalDate.now(clock.withZone(zone()))
 
+    /** This week's spending so far against what earlier weeks had spent by the same weekday. */
+    suspend fun weekPace(): com.emotionalleaves.sprout.domain.insights.WeekPace = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        val z = zone()
+        val today = today()
+        val from = today.minusWeeks(com.emotionalleaves.sprout.domain.insights.WeekPace.MAX_WEEKS.toLong() + 1)
+        val rows = db.budgets().statsRows(from.atStartOfDay(z).toEpochSecond(), today.plusDays(1).atStartOfDay(z).toEpochSecond())
+            .filter { it.kind == com.emotionalleaves.sprout.domain.categorize.CategoryKind.EXPENSE }
+            .map { java.time.Instant.ofEpochSecond(it.occurredAt).atZone(z).toLocalDate() to -it.amountMinor }
+        val first = db.budgets().firstOccurredAt()?.let { java.time.Instant.ofEpochSecond(it).atZone(z).toLocalDate() }
+        com.emotionalleaves.sprout.domain.insights.WeekPace.of(rows, today, first)
+    }
+
     /** Your merchant names, falling back to the cleaned-up bank text. */
     private suspend fun namer(): (String) -> String {
         val names = db.merchantNames().getAll().associate { it.merchantKey to it.displayName }

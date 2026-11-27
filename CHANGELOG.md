@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.83.0] - 2026-11-27
+
+Round 83: how this week is going.
+
+### Features
+- **This week** card on Home: what you've spent since Monday, whether that's under, over or about usual, and what a usual week looks like ("By Friday you usually spend $189 · $359 in a whole week"). It compares like for like, so on a Friday you're measured against earlier weeks' Fridays. You can move or hide it in Customize Home.
+
 ## [2.82.0] - 2026-11-27
 
 Round 82: empty Bills and Budgets.

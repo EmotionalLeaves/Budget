@@ -409,7 +409,7 @@ fun QuickLinks(navigate: (String) -> Unit) {
 
 /** The Home cards you can hide, in the order they appear. */
 val HomeCards = listOf(
-    "stats" to "Quick stats", "health" to "Money health", "challenge" to "Challenge", "age" to "Age of money", "watch" to "Watchlist",
+    "stats" to "Quick stats", "week" to "This week", "health" to "Money health", "challenge" to "Challenge", "age" to "Age of money", "watch" to "Watchlist",
     "links" to "Shortcuts", "insights" to "Insights", "payday" to "Until payday", "forecast" to "Month-end forecast", "where" to "Where it went", "months" to "Last 6 months",
     "calendar" to "Spending calendar", "bills" to "Coming up", "goals" to "Savings goals", "accounts" to "Accounts",
 )
@@ -645,5 +645,43 @@ private fun AccountMenu(a: com.emotionalleaves.sprout.data.db.AccountEntity, onH
             },
             dismissButton = { androidx.compose.material3.TextButton(onClick = { renaming = false }) { Text("Cancel") } },
         )
+    }
+}
+
+/** "This week": spent so far, against what a usual week had spent by today. */
+@Composable
+fun WeekPaceCard(w: com.emotionalleaves.sprout.domain.insights.WeekPace) {
+    val sc = com.emotionalleaves.sprout.ui.theme.LocalSproutColors.current
+    val day = java.time.LocalDate.now().dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.US)
+    com.emotionalleaves.sprout.ui.common.SoftCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("This week", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(money(w.soFarMinor, whole = true) + " spent", style = MaterialTheme.typography.titleLarge)
+            }
+            val usual = w.usualByNowMinor
+            if (usual != null && usual > 0) {
+                val diff = w.soFarMinor - usual
+                val near = kotlin.math.abs(diff) * 10 < usual // within 10%
+                Text(
+                    when { near -> "About usual"; diff < 0 -> money(-diff, whole = true) + " under"; else -> money(diff, whole = true) + " over" },
+                    style = MaterialTheme.typography.labelLarge,
+                    color = when { near -> MaterialTheme.colorScheme.onSurfaceVariant; diff < 0 -> sc.ok; else -> sc.warning },
+                )
+            }
+        }
+        val usual = w.usualByNowMinor
+        val whole = w.usualWeekMinor
+        if (usual != null && whole != null && whole > 0) {
+            Spacer(Modifier.height(8.dp))
+            com.emotionalleaves.sprout.ui.common.FatProgress((w.soFarMinor.toFloat() / whole).coerceIn(0f, 1f),
+                if (w.soFarMinor > usual * 11 / 10) sc.warning else MaterialTheme.colorScheme.primary, height = 8.dp)
+            Spacer(Modifier.height(6.dp))
+            Text("By $day you usually spend ${money(usual, whole = true)} · ${money(whole, whole = true)} in a whole week",
+                style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+            Text("After two full weeks, Sprout compares each week with your usual one.",
+                style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }

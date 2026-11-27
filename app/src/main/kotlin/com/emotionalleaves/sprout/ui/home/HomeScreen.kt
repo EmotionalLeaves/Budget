@@ -108,6 +108,7 @@ fun HomeScreen(
     val age by vm.ageOfMoney.collectAsStateWithLifecycle()
     val watch by vm.watch.collectAsStateWithLifecycle()
     val health by vm.health.collectAsStateWithLifecycle()
+    val weekPace by vm.weekPace.collectAsStateWithLifecycle()
     val challenges by vm.challenges.collectAsStateWithLifecycle()
     val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
     val hidden by vm.privacy.collectAsStateWithLifecycle()
@@ -200,6 +201,7 @@ fun HomeScreen(
                 if (!on(key)) return@forEach
                 when (key) {
                     "stats" -> item(key = "card-stats") { StatsRow(state.totals.totalMinor, outlook?.trend, outlook?.forecast?.endMinor, onNetWorth) }
+                    "week" -> weekPace?.takeIf { it.soFarMinor > 0 || it.usualByNowMinor != null }?.let { w -> item(key = "card-week") { WeekPaceCard(w) } }
                     "health" -> health?.let { h -> item(key = "card-health") { com.emotionalleaves.sprout.ui.challenge.HealthCard(h) } }
                     "challenge" -> challenges.firstOrNull { it.status == com.emotionalleaves.sprout.domain.challenge.ChallengeStatus.ON_TRACK }?.let { p ->
                         item(key = "card-challenge") { com.emotionalleaves.sprout.ui.challenge.ChallengeCard(p, onClick = { navigate("challenges") }) }
