@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.onboarding
 
+import com.emotionalleaves.sprout.domain.accounts.label
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
@@ -120,7 +121,7 @@ fun ConnectScreen(startAtToken: Boolean, onDone: () -> Unit, onSkip: () -> Unit,
                         Column(Modifier.weight(1f)) {
                             Text(a.label, style = MaterialTheme.typography.bodyLarge)
                             Text(
-                                a.type.name.lowercase().replaceFirstChar { it.uppercase() } + " · " +
+                                a.type.label + " · " +
                                     if (AccountTypes.isUsd(a.currency)) Money.format(a.balanceMinor) else AccountTypes.currencyLabel(a.currency),
                                 style = MaterialTheme.typography.bodySmall,
                             )

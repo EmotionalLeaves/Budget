@@ -2,6 +2,14 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.57.0] - 2026-11-27
+
+Round 57: plain words in Settings.
+
+### Polish
+- **Sync log** rows get a green check, amber warning or red error, and say how the sync started (Automatic, You asked, First sync, Full sync) instead of "periodic · success".
+- Account types read naturally everywhere: "Credit card", not "Credit".
+
 ## [2.56.0] - 2026-11-27
 
 Round 56: a tidier Accounts list in Settings.

@@ -40,3 +40,15 @@ object AccountTypes {
     /** Display code for a currency; URL-based custom currencies show as "?". */
     fun currencyLabel(currency: String) = if (currency.contains("://")) "?" else currency.uppercase()
 }
+
+/** The plain name shown to people ("Credit card", not "CREDIT"). */
+val AccountType.label: String
+    get() = when (this) {
+        AccountType.CHECKING -> "Checking"
+        AccountType.SAVINGS -> "Savings"
+        AccountType.CREDIT -> "Credit card"
+        AccountType.LOAN -> "Loan"
+        AccountType.INVESTMENT -> "Investment"
+        AccountType.CASH -> "Cash"
+        AccountType.OTHER -> "Other"
+    }

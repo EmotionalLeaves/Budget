@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.home
 
+import com.emotionalleaves.sprout.domain.accounts.label
 import kotlinx.coroutines.launch
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -289,7 +290,7 @@ fun AccountsCard(accounts: List<AccountEntity>, lastSuccess: Long?) {
                 Column(Modifier.weight(1f)) {
                     Text(a.label, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     val sub = buildString {
-                        append(a.type.name.lowercase().replaceFirstChar { it.uppercase() })
+                        append(a.type.label)
                         if (!a.includeInTotals) append(" · not in total")
                         if (a.source == AccountSource.SIMPLEFIN) a.lastSyncedAt?.let { append(" · ").append(Format.ago(it, System.currentTimeMillis() / 1000)) }
                     }
@@ -531,7 +532,7 @@ fun AccountHeader(id: String, onBack: () -> Unit) {
                 Text(a?.label ?: "Account", style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (a != null) {
                     Text(
-                        a.type.name.lowercase().replaceFirstChar { it.uppercase() } +
+                        a.type.label +
                             (a.lastSyncedAt?.let { " · updated " + Format.ago(it, System.currentTimeMillis() / 1000) } ?: ""),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

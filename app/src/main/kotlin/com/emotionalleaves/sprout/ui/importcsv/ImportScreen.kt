@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.importcsv
 
+import com.emotionalleaves.sprout.domain.accounts.label
 import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -320,11 +321,11 @@ private fun TypePicker(selected: AccountType, onPick: (AccountType) -> Unit) {
     Column {
         Text("Account type", style = MaterialTheme.typography.labelLarge)
         OutlinedButton(onClick = { open = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-            Text(selected.name.lowercase().replaceFirstChar { it.uppercase() })
+            Text(selected.label)
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             AccountType.entries.forEach { t ->
-                DropdownMenuItem(text = { Text(t.name.lowercase().replaceFirstChar { it.uppercase() }) }, onClick = { onPick(t); open = false })
+                DropdownMenuItem(text = { Text(t.label) }, onClick = { onPick(t); open = false })
             }
         }
     }

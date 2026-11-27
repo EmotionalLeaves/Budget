@@ -1,5 +1,12 @@
 package com.emotionalleaves.sprout.ui.settings
 
+import com.emotionalleaves.sprout.domain.accounts.label
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.material.icons.rounded.Error
+import androidx.compose.material.icons.rounded.Warning
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material3.Icon
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
@@ -304,11 +311,27 @@ fun SettingsScreen(
             item { SectionTitle("Sync log") }
             item {
                 SettingsGroup {
+                    val sc = com.emotionalleaves.sprout.ui.theme.LocalSproutColors.current
                     state.logs.take(8).forEach { log ->
-                        Column(Modifier.padding(vertical = 6.dp)) {
-                            Text("${Format.dateTime(log.startedAt)} · ${log.trigger.name.lowercase()} · ${log.result.name.lowercase()}",
-                                style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(log.message, style = MaterialTheme.typography.bodySmall)
+                        val (icon, tint) = when (log.result) {
+                            com.emotionalleaves.sprout.data.db.SyncResult.SUCCESS -> Icons.Rounded.CheckCircle to sc.ok
+                            com.emotionalleaves.sprout.data.db.SyncResult.PARTIAL -> Icons.Rounded.Warning to sc.warning
+                            com.emotionalleaves.sprout.data.db.SyncResult.FAILED -> Icons.Rounded.Error to MaterialTheme.colorScheme.error
+                        }
+                        val how = when (log.trigger) {
+                            com.emotionalleaves.sprout.data.db.SyncTrigger.PERIODIC -> "Automatic"
+                            com.emotionalleaves.sprout.data.db.SyncTrigger.MANUAL -> "You asked"
+                            com.emotionalleaves.sprout.data.db.SyncTrigger.ONBOARDING -> "First sync"
+                            com.emotionalleaves.sprout.data.db.SyncTrigger.FORCED -> "Full sync"
+                        }
+                        Row(Modifier.padding(vertical = 6.dp).semantics(mergeDescendants = true) {}, verticalAlignment = Alignment.Top) {
+                            Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.padding(top = 2.dp).size(18.dp))
+                            Spacer(Modifier.width(10.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text("${Format.dateTime(log.startedAt)} · $how", style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(log.message, style = MaterialTheme.typography.bodySmall)
+                            }
                         }
                     }
                 }
@@ -327,7 +350,7 @@ fun SettingsScreen(
                         ) {
                             Column(Modifier.weight(1f)) {
                                 Text(a.label, style = MaterialTheme.typography.titleSmall)
-                                Text(a.type.name.lowercase().replaceFirstChar { it.uppercase() } + " · " + Money.format(a.balanceMinor),
+                                Text(a.type.label + " · " + Money.format(a.balanceMinor),
                                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 val status = when {
                                     a.hidden -> "Hidden everywhere"
@@ -454,7 +477,7 @@ fun SettingsScreen(
                         Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).selectable(type == t, role = Role.RadioButton) { type = t },
                             verticalAlignment = Alignment.CenterVertically) {
                             RadioButton(selected = type == t, onClick = null)
-                            Text(t.name.lowercase().replaceFirstChar { it.uppercase() }, Modifier.padding(start = 8.dp))
+                            Text(t.label, Modifier.padding(start = 8.dp))
                         }
                     }
                     ToggleRow("Include in total balance", included, "Counts toward net worth and your balance") { included = it }
