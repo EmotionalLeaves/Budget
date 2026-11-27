@@ -51,7 +51,6 @@ import com.emotionalleaves.sprout.domain.money.Money
 import com.emotionalleaves.sprout.ui.common.DonutChart
 import com.emotionalleaves.sprout.ui.common.EmptyState
 import com.emotionalleaves.sprout.ui.common.FatProgress
-import com.emotionalleaves.sprout.ui.common.LegendRow
 import com.emotionalleaves.sprout.ui.common.SectionHeader
 import com.emotionalleaves.sprout.ui.common.Slice
 import com.emotionalleaves.sprout.ui.common.SoftCard
@@ -230,25 +229,20 @@ fun ReportsScreen(onBack: () -> Unit) {
             if (rep.categories.isNotEmpty()) {
                 item { SectionHeader("By category") }
                 item {
+                    // One card: the ring for the shape, the rows for the numbers (each row taps through), no legend repeating them.
                     SoftCard {
                         val top = rep.categories.take(6)
                         val rest = rep.categories.drop(6).sumOf { it.second }
                         val slices = top.mapIndexed { i, (n, v) -> Slice(n, v, sc.chart[i % sc.chart.size]) } +
                             (if (rest > 0) listOf(Slice("Other", rest, MaterialTheme.colorScheme.outline)) else emptyList())
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            DonutChart(slices, Modifier.size(136.dp)) {
+                        Box(Modifier.fillMaxWidth().padding(bottom = 8.dp), contentAlignment = Alignment.Center) {
+                            DonutChart(slices, Modifier.size(168.dp)) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(Money.formatWhole(totalOut), style = MaterialTheme.typography.titleSmall)
+                                    Text(Money.formatWhole(totalOut), style = MaterialTheme.typography.titleMedium)
                                     Text("spent", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
-                            Spacer(Modifier.width(16.dp))
-                            Column(Modifier.weight(1f)) { slices.forEach { LegendRow(it.color, it.label, Money.formatWhole(it.value)) } }
                         }
-                    }
-                }
-                item {
-                    SoftCard {
                         val other = MaterialTheme.colorScheme.outline
                         val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
                         rep.categories.forEachIndexed { i, (n, v) ->

@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.110.0] - 2026-11-27
+
+Round 110: one card per idea in Reports.
+
+### Polish
+- Reports' By category is now a single card: a larger ring with the total in the middle, then each category's amount, share and bar (tap one to open it). The legend that repeated the same numbers is gone.
+
 ## [2.109.0] - 2026-11-27
 
 Round 109: less stacking on Activity.
