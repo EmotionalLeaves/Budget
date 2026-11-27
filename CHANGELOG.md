@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.100.0] - 2026-11-27
+
+Round 100: money in next to money out.
+
+### Features
+- **Bills** lists the paychecks expected in the next 30 days ("Wed, Dec 9 · Acme Corp Payroll · +$2,125"), right above the bills coming up, so you can see what's coming in and going out together.
+
 ## [2.99.0] - 2026-11-27
 
 Round 99: Month end opens the projection.

@@ -153,6 +153,14 @@ class BillsViewModel(private val c: AppContainer) : ViewModel() {
         _calMonth.mapLatest { runCatching { c.forecastRepository.paydays(it) }.getOrDefault(emptyList()) }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    /** Paychecks expected in the next 30 days, for the list view. */
+    val nextPaychecks: StateFlow<List<com.emotionalleaves.sprout.domain.forecast.Expected>> = kotlinx.coroutines.flow.flow {
+        val today = java.time.LocalDate.now()
+        val ym = java.time.YearMonth.from(today)
+        val list = runCatching { c.forecastRepository.paydays(ym) + c.forecastRepository.paydays(ym.plusMonths(1)) }.getOrDefault(emptyList())
+        emit(list.filter { !it.date.isBefore(today) && !it.date.isAfter(today.plusDays(30)) }.sortedBy { it.date })
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val calendar: StateFlow<List<com.emotionalleaves.sprout.data.recurring.CalendarBill>> =
         _calMonth.flatMapLatest { c.recurringRepository.observeCalendar(it) }
@@ -183,6 +191,7 @@ fun BillsScreen() {
     var calendarView by com.emotionalleaves.sprout.ui.common.rememberViewPref("bills-calendar", false, { it.toString() }, { it.toBooleanStrictOrNull() })
     val context = androidx.compose.ui.platform.LocalContext.current
     val cancelIds by vm.cancelIds.collectAsStateWithLifecycle()
+    val paychecks by vm.nextPaychecks.collectAsStateWithLifecycle()
 
     com.emotionalleaves.sprout.ui.common.SyncPullBox {
         val list = upcoming
@@ -248,6 +257,22 @@ fun BillsScreen() {
                     }
                 }
                 item { com.emotionalleaves.sprout.ui.insights.SubscriptionsSummary() }
+                if (paychecks.isNotEmpty()) item {
+                    // Money coming in sits next to money going out, so the month makes sense at a glance.
+                    com.emotionalleaves.sprout.ui.common.SoftCard {
+                        Text("Paychecks in the next 30 days", style = MaterialTheme.typography.titleSmall)
+                        paychecks.take(4).forEach { p ->
+                            Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text(dueText(p.date.atStartOfDay(ZoneId.systemDefault()).toEpochSecond()), style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(96.dp))
+                                Text(p.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                Text("+" + com.emotionalleaves.sprout.ui.common.money(p.amountMinor, whole = true), style = MaterialTheme.typography.titleSmall,
+                                    color = com.emotionalleaves.sprout.ui.theme.LocalSproutColors.current.ok)
+                            }
+                        }
+                    }
+                }
                 item { SectionTitle("Upcoming") }
                 if (list.any { it.charge.status == RecurringStatus.DETECTED }) item {
                     com.emotionalleaves.sprout.ui.common.OneTimeTip("bills-suggested",
