@@ -1,5 +1,8 @@
 package com.emotionalleaves.sprout.ui.tags
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.navigationBarsPadding
+import com.emotionalleaves.sprout.ui.common.showUndoable
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.background
@@ -125,14 +128,14 @@ private fun AddTagDialog(existing: List<TagEntity>, onPick: (Long) -> Unit, onCr
 class TagsViewModel(private val c: AppContainer) : ViewModel() {
     val tags: StateFlow<List<TagSummary>> = c.db.tags().observeSummaries().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     fun rename(id: Long, name: String) = viewModelScope.launch { c.tagRepository.rename(id, name) }
-    fun delete(id: Long) = viewModelScope.launch { c.tagRepository.delete(id) }
+    suspend fun delete(id: Long): suspend () -> Unit = c.tagRepository.delete(id)
     val rules = c.tagRepository.observeRules().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val lastApplied = kotlinx.coroutines.flow.MutableStateFlow<Int?>(null)
     fun addRule(pattern: String, tagName: String) = viewModelScope.launch {
         val id = c.tagRepository.getOrCreate(tagName) ?: return@launch
         lastApplied.value = c.tagRepository.addRule(pattern, id)
     }
-    fun deleteRule(id: Long) = viewModelScope.launch { c.tagRepository.deleteRule(id) }
+    suspend fun deleteRule(id: Long): suspend () -> Unit = c.tagRepository.deleteRule(id)
 
     /** One tap: a ready-made tag with a handful of auto-tag words. Returns how many existing purchases got it. */
     fun addPack(pack: TagPack) = viewModelScope.launch {
@@ -167,6 +170,9 @@ fun TagsScreen(onBack: () -> Unit, onOpen: (Long) -> Unit) {
     val rules by vm.rules.collectAsStateWithLifecycle()
     val applied by vm.lastApplied.collectAsStateWithLifecycle()
     var addingRule by remember { mutableStateOf(false) }
+    val snackbar = remember { androidx.compose.material3.SnackbarHostState() }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    Box(Modifier.fillMaxSize()) {
     Column(Modifier.fillMaxSize()) {
         TopAppBar(windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0), 
             title = { Text("Tags") },
@@ -233,7 +239,9 @@ fun TagsScreen(onBack: () -> Unit, onOpen: (Long) -> Unit) {
                         rules.forEach { r ->
                             Row(Modifier.fillMaxWidth().heightIn(min = 44.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Text("Contains \"${r.pattern}\" → #${names[r.tagId] ?: "tag"}", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-                                TextButton(onClick = { vm.deleteRule(r.id) }) { Text("Remove") }
+                                TextButton(onClick = {
+                                    scope.launch { scope.showUndoable(snackbar, "Auto-tag word removed", vm.deleteRule(r.id)) }
+                                }) { Text("Remove") }
                             }
                         }
                         Text("New transactions get these tags after each sync or import.", style = MaterialTheme.typography.bodySmall,
@@ -264,6 +272,8 @@ fun TagsScreen(onBack: () -> Unit, onOpen: (Long) -> Unit) {
                 }
             }
         }
+    }
+    androidx.compose.material3.SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).navigationBarsPadding())
     }
     if (addingRule) {
         var word by remember { mutableStateOf("") }
@@ -307,7 +317,10 @@ fun TagsScreen(onBack: () -> Unit, onOpen: (Long) -> Unit) {
             text = { OutlinedTextField(name, { name = it.take(40) }, singleLine = true, label = { Text("Name") }, modifier = Modifier.fillMaxWidth()) },
             confirmButton = { TextButton(onClick = { vm.rename(t.id, name); editing = null }) { Text("Save") } },
             dismissButton = {
-                TextButton(onClick = { vm.delete(t.id); editing = null }) { Text("Delete tag", color = MaterialTheme.colorScheme.error) }
+                TextButton(onClick = {
+                    editing = null
+                    scope.launch { scope.showUndoable(snackbar, "Deleted #${t.name}", vm.delete(t.id)) }
+                }) { Text("Delete tag", color = MaterialTheme.colorScheme.error) }
             },
         )
     }

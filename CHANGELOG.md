@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.61.0] - 2026-11-27
+
+Round 61: more undo.
+
+### Features
+- **Undo for tags:** deleting a tag can be undone, bringing back the tag, every purchase it was on, and its auto-tag words. Removing an auto-tag word can be undone too.
+
 ## [2.60.0] - 2026-11-27
 
 Round 60: undo for deletes.

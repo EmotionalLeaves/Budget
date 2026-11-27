@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.data.tags
 
+import androidx.room.withTransaction
 import com.emotionalleaves.sprout.data.db.SproutDatabase
 import com.emotionalleaves.sprout.data.db.TagEntity
 import com.emotionalleaves.sprout.data.db.TransactionTagEntity
@@ -63,7 +64,13 @@ class TagRepository(private val db: SproutDatabase, private val clock: Clock) {
         db.tags().tagInputs(0).count { TagRules.match(rules, it.description, it.merchantKey).isNotEmpty() }
     }
 
-    suspend fun deleteRule(id: Long) = withContext(Dispatchers.IO) { db.tags().deleteRule(id) }
+    /** Removes an auto-tag word; the undo puts it back (tags it already added stay either way). */
+    suspend fun deleteRule(id: Long): suspend () -> Unit = withContext(Dispatchers.IO) {
+        val saved = db.tags().rules().firstOrNull { it.id == id }
+        db.tags().deleteRule(id)
+        val undo: suspend () -> Unit = { withContext(Dispatchers.IO) { saved?.let { db.tags().putRules(listOf(it)) } } }
+        undo
+    }
 
     /** After a sync or import: tag the transactions that changed since the last pass. Untagging by hand sticks. */
     suspend fun applyRulesToNew(): Int = withContext(Dispatchers.IO) {
@@ -84,7 +91,27 @@ class TagRepository(private val db: SproutDatabase, private val clock: Clock) {
     }
 
     /** Deletes the tag; the transactions stay, they just lose the label. */
-    suspend fun delete(id: Long) = withContext(Dispatchers.IO) { db.tags().delete(id) }
+    /** Deletes a tag (and its links and auto-tag words); the undo restores all three. */
+    suspend fun delete(id: Long): suspend () -> Unit = withContext(Dispatchers.IO) {
+        val tag = db.tags().getById(id)
+        val links = db.tags().transactionIdsFor(id)
+        val rules = db.tags().rules().filter { it.tagId == id }
+        db.tags().delete(id)
+        val undo: suspend () -> Unit = {
+            withContext(Dispatchers.IO) {
+                if (tag != null && db.tags().getById(tag.id) == null && db.tags().getByName(tag.name) == null) {
+                    db.withTransaction {
+                        db.tags().insert(tag)
+                        db.tags().putRules(rules)
+                        // Purchases deleted since then are skipped.
+                        val alive = links.chunked(500).flatMap { db.transactions().existingIds(it) }.toSet()
+                        links.filter { it in alive }.forEach { db.tags().attach(com.emotionalleaves.sprout.data.db.TransactionTagEntity(it, tag.id)) }
+                    }
+                }
+            }
+        }
+        undo
+    }
 
     companion object {
         const val MAX_NAME = 40

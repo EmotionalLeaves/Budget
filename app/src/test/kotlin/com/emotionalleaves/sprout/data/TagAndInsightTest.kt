@@ -213,6 +213,22 @@ class TagAndInsightTest {
         assertEquals(8_000L, flex.suggestedFlex())
     }
 
+    @Test fun deletingATagCanBeUndone() = runBlocking {
+        sync(Triple("1", "DELTA AIR 0061|-300.00", at(11, 6)), Triple("2", "KROGER|-10.00", at(11, 7)))
+        val tags = TagRepository(env.db, env.clock)
+        val trip = tags.getOrCreate("Trip")!!
+        tags.addRule("DELTA", trip)
+        val delta = env.db.backup().transactions().first { it.description == "DELTA AIR 0061" }.id
+        assertEquals(listOf(trip), env.db.tags().tagIdsFor(delta))
+        val undo = tags.delete(trip)
+        assertTrue(env.db.tags().tagIdsFor(delta).isEmpty())
+        assertTrue(env.db.tags().rules().isEmpty())
+        undo()
+        assertEquals(listOf(trip), env.db.tags().tagIdsFor(delta))
+        assertEquals("DELTA", env.db.tags().rules().single().pattern)
+        assertEquals("Trip", env.db.tags().getById(trip)!!.name)
+    }
+
     @Test fun manualCashTransactions() = runBlocking {
         val m = com.emotionalleaves.sprout.data.manual.ManualRepository(env.db, env.clock) { zone }
         env.repo().ensureSeeded()
