@@ -230,9 +230,9 @@ class ScreenTour {
             tap("Bills"); s("04-bills")
             runCatching { tap("Calendar"); s("04b-bill-calendar"); tap("List") }
             tap("More"); s("05-more")
-            for ((label, name) in listOf("Reports" to "06-reports", "Year in review" to "07-year", "Net worth over time" to "08-networth",
-                "Year view" to "09-yearview", "Tags" to "10-tags", "Savings goals" to "11-goals", "Challenges" to "12-challenges",
-                "Debt payoff plan" to "13-debt")) {
+            for ((label, name) in listOf("Reports" to "06-reports", "Year in review" to "07-year", "Net worth" to "08-networth",
+                "Year view" to "09-yearview", "Tags" to "10-tags", "Goals" to "11-goals", "Challenges" to "12-challenges",
+                "Debt plan" to "13-debt")) {
                 runCatching { tap(label); s(name); if (label == "Reports") { tap("Compare"); s("06b-compare"); back() }; back() }
             }
             }
@@ -271,13 +271,13 @@ class ScreenTour {
                     s("58-review"); back()
                 }
                 t("health") { tap("Home"); tap("Money health"); s("53-health"); back() }
-                t("networth") { tap("More"); tap("Net worth over time"); s("54-networth"); back() }
+                t("networth") { tap("More"); tap("Net worth"); s("54-networth"); back() }
                 t("challenge") { tap("More"); tap("Challenges"); tap("No eating out"); s("55-challenge"); back() }
                 return@use
             }
             if (only == "extras") {
                 fun t(n: String, block: () -> Unit) = runCatching(block).onFailure { System.err.println("TOUR $n: " + it.toString().take(200)) }
-                t("goals") { tap("More"); tap("Savings goals"); s("60-goals"); back() }
+                t("goals") { tap("More"); tap("Goals"); s("60-goals"); back() }
                 t("stats") {
                     tap("More"); tap("Stats"); s("64-stats")
                     tap("Patterns"); s("65-stats-patterns"); tap("Places"); s("66-stats-places"); tap("Trends"); s("67-stats-trends")
@@ -285,7 +285,7 @@ class ScreenTour {
                 }
                 t("challenges") { tap("More"); tap("Challenges"); s("61-challenges"); back() }
                 t("tags") { tap("More"); tap("Tags"); s("62-tags"); tap("#Gifts"); s("63-tag"); back(); back() }
-                t("debt") { tap("More"); tap("Debt payoff plan"); s("64-debt"); back() }
+                t("debt") { tap("More"); tap("Debt plan"); s("64-debt"); back() }
                 return@use
             }
             if (only == "settings") {

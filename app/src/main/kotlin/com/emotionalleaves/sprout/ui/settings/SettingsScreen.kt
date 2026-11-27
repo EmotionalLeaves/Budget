@@ -1,5 +1,10 @@
 package com.emotionalleaves.sprout.ui.settings
 
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.background
+import com.emotionalleaves.sprout.ui.common.readable
 import androidx.compose.material.icons.rounded.EmojiEvents
 import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.AutoAwesome
@@ -165,15 +170,7 @@ fun SettingsScreen(
 
     LazyColumn(Modifier.fillMaxSize()) {
         item { SectionTitle("Explore") }
-        item { NavRow(icon = Icons.Rounded.EmojiEvents, title = "Challenges", subtitle = "Small spending challenges, like no eating out for a week", onClick = { onRoute("challenges") }) }
-        item { NavRow(icon = Icons.Rounded.BarChart, title = "Reports", subtitle = "Cash flow, spending by category and by account, any range", onClick = { onRoute("reports") }) }
-        item { NavRow(icon = Icons.Rounded.ShowChart, title = "Stats", subtitle = "Patterns, top places, purchase sizes and 12-month trends", onClick = { onRoute("stats") }) }
-        item { NavRow(icon = Icons.Rounded.AutoAwesome, title = "Year in review", subtitle = "Your year's totals, top categories and places", onClick = { onRoute("year-review") }) }
-        item { NavRow(icon = Icons.Rounded.ShowChart, title = "Net worth over time", subtitle = "How your total has changed month by month", onClick = { onRoute("networth") }) }
-        item { NavRow(icon = Icons.Rounded.GridView, title = "Year view", subtitle = "Every category, every month, at a glance", onClick = { onRoute("year") }) }
-        item { NavRow(icon = Icons.Rounded.Tag, title = "Tags", subtitle = "Spending you've tagged, like a trip or a project", onClick = { onRoute("tags") }) }
-        item { NavRow(icon = Icons.Rounded.CreditCard, title = "Debt payoff plan", subtitle = "When you'll be debt-free, and the fastest or cheapest way there", onClick = { onRoute("debt") }) }
-        item { NavRow(icon = Icons.Rounded.Savings, title = "Savings goals", subtitle = "Track what you're saving for", onClick = { onRoute("goals") }) }
+        item { ExploreGrid(onRoute) }
         item { SectionTitle("Bank connections") }
         if (!state.connected) {
             item {
@@ -485,6 +482,55 @@ private fun ThresholdRow(currentMinor: Long, onSave: (Long) -> Unit) {
             confirmButton = { TextButton(onClick = { parsed?.let(onSave); editing = false }, enabled = parsed != null) { Text("Save") } },
             dismissButton = { TextButton(onClick = { editing = false }) { Text("Cancel") } },
         )
+    }
+}
+
+private data class ExploreTile(val title: String, val subtitle: String, val route: String, val icon: androidx.compose.ui.graphics.vector.ImageVector, val color: Long)
+
+private val EXPLORE = listOf(
+    ExploreTile("Stats", "Patterns and top places", "stats", Icons.Rounded.ShowChart, 0xFF00897B),
+    ExploreTile("Reports", "Cash flow, any range", "reports", Icons.Rounded.BarChart, 0xFF2E7D32),
+    ExploreTile("Goals", "What you're saving for", "goals", Icons.Rounded.Savings, 0xFFF9A825),
+    ExploreTile("Challenges", "Small spending dares", "challenges", Icons.Rounded.EmojiEvents, 0xFFEF6C00),
+    ExploreTile("Year in review", "Your year in numbers", "year-review", Icons.Rounded.AutoAwesome, 0xFF8E24AA),
+    ExploreTile("Net worth", "Month by month", "networth", Icons.Rounded.AccountBalance, 0xFF1565C0),
+    ExploreTile("Year view", "Every category, every month", "year", Icons.Rounded.GridView, 0xFF3949AB),
+    ExploreTile("Tags", "Trips and projects", "tags", Icons.Rounded.Tag, 0xFFD81B60),
+    ExploreTile("Debt plan", "Your way to debt-free", "debt", Icons.Rounded.CreditCard, 0xFFC62828),
+    ExploreTile("Sort purchases", "Uncategorized, one tap each", "review", Icons.Rounded.Category, 0xFF558B2F),
+)
+
+/** Explore: every tool as a coloured tile, two per row (one per row with large text). */
+@Composable
+private fun ExploreGrid(onRoute: (String) -> Unit) {
+    val perRow = if (androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.3f) 1 else 2
+    Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        EXPLORE.chunked(perRow).forEach { row ->
+            Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                row.forEach { t ->
+                    val c = androidx.compose.ui.graphics.Color(t.color).readable()
+                    androidx.compose.material3.Surface(
+                        onClick = { onRoute(t.route) },
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerLow,
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
+                    ) {
+                        Column(
+                            Modifier.background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(c.copy(alpha = 0.16f), c.copy(alpha = 0.03f))))
+                                .padding(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            com.emotionalleaves.sprout.ui.common.IconBadge(t.icon, c, 40.dp)
+                            Column {
+                                Text(t.title, style = MaterialTheme.typography.titleSmall)
+                                Text(t.subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                }
+                if (row.size < perRow) androidx.compose.foundation.layout.Spacer(Modifier.weight(1f))
+            }
+        }
     }
 }
 

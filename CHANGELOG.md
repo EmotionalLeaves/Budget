@@ -2,6 +2,14 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.30.0] - 2026-11-26
+
+Round 30: More and transaction details.
+
+### Polish
+- **More → Explore** is now a grid of coloured tiles (Stats, Reports, Goals, Challenges, Year in review, Net worth, Year view, Tags, Debt plan, and a new **Sort purchases** shortcut), so every tool is one glance and one tap away instead of a long list.
+- **Transaction details**: your note, tags, receipts and "leave out of budgets" sit together on one "Your details" card; the note has a hint, and Split has an icon.
+
 ## [2.29.0] - 2026-11-26
 
 Round 29: shared accounts and a calmer Activity list.

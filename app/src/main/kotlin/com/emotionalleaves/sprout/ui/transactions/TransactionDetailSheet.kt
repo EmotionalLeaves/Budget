@@ -1,5 +1,8 @@
 package com.emotionalleaves.sprout.ui.transactions
 
+import androidx.compose.material.icons.rounded.CallSplit
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
 import androidx.compose.material3.TextButton
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -225,7 +228,8 @@ fun TransactionDetailSheet(transactionId: String, onDismiss: () -> Unit, onMessa
                 Text("You can split this once it posts.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else if (d.amountMinor != 0L) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = { splitProblem = null; splitting = true }, modifier = Modifier.heightIn(min = 48.dp)) {
+                    androidx.compose.material3.FilledTonalButton(onClick = { splitProblem = null; splitting = true }, modifier = Modifier.heightIn(min = 48.dp)) {
+                        androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.CallSplit, contentDescription = null, modifier = Modifier.padding(end = 8.dp))
                         Text(if (splits.isEmpty()) "Split across categories" else "Edit split")
                     }
                     if (splits.isNotEmpty()) {
@@ -247,10 +251,19 @@ fun TransactionDetailSheet(transactionId: String, onDismiss: () -> Unit, onMessa
                 )
             }
 
+            // Everything you add yourself lives together on one card.
+            Column(
+                Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(24.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainer).padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+            Text("YOUR DETAILS", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             OutlinedTextField(
                 value = note,
                 onValueChange = { note = it.take(500) },
                 label = { Text("Note") },
+                placeholder = { Text("What was this for?") },
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth(),
             )
             LaunchedEffect(note) {
@@ -261,7 +274,8 @@ fun TransactionDetailSheet(transactionId: String, onDismiss: () -> Unit, onMessa
             }
             com.emotionalleaves.sprout.ui.tags.TransactionTags(vm.c, d.id)
             TransactionReceipts(vm.c, d.id)
-            SwitchRow("Exclude from budget", d.excludedFromBudget) { vm.setExcluded(it) }
+            SwitchRow("Leave out of budgets", d.excludedFromBudget) { vm.setExcluded(it) }
+            }
             if (com.emotionalleaves.sprout.data.manual.ManualRepository.isManual(d.id)) {
                 var editingManual by remember { mutableStateOf(false) }
                 TextButton(onClick = { editingManual = true }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Edit amount, name or date") }
