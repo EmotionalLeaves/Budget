@@ -640,7 +640,10 @@ private fun SearchUnderstood(query: String) {
         when {
             min != null && max != null && min == max -> add("exactly ${com.emotionalleaves.sprout.ui.common.money(min)}")
             min != null && max != null -> add("${com.emotionalleaves.sprout.ui.common.money(min)} to ${com.emotionalleaves.sprout.ui.common.money(max)}")
+            // ">50" is stored as "at least $50.01"; say it the way it was typed.
+            min != null && min % 100 == 1L -> add("over ${com.emotionalleaves.sprout.ui.common.money(min - 1)}")
             min != null -> add("at least ${com.emotionalleaves.sprout.ui.common.money(min)}")
+            max != null && max % 100 == 99L -> add("under ${com.emotionalleaves.sprout.ui.common.money(max + 1)}")
             max != null -> add("up to ${com.emotionalleaves.sprout.ui.common.money(max)}")
         }
         if (sq.text.isNotBlank() && (sq.hasDate || sq.isAmount)) add("\u201C${sq.text}\u201D")

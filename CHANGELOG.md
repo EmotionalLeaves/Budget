@@ -8,7 +8,7 @@ Round 51: search by time.
 
 ### Features
 - **Search understands dates:** add "today", "yesterday", "this week", "last month", "this year", a month ("october", "nov 2025") to any search. They mix with words and amounts: "hy-vee last month", ">50 october".
-- Under the search box Sprout says how it read your search ("Showing Last month · Oct 1 – Oct 31 · at least $50.01"), and a one-time tip mentions dates and amounts.
+- Under the search box Sprout says how it read your search ("Showing Last month · Oct 1 – Oct 31 · over $50"), and a one-time tip mentions dates and amounts.
 
 ## [2.50.0] - 2026-11-26
 
