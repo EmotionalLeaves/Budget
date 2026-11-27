@@ -2,6 +2,14 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.82.0] - 2026-11-27
+
+Round 82: empty Bills and Budgets.
+
+### Polish
+- **Bills** with nothing found yet offers Connect a bank, Import a CSV and **Add a bill** right there (it used to point at a "+ button" that's labelled Add bill).
+- **Budgets** no longer shows "Total spending this month: $0.00" when there's nothing to total.
+
 ## [2.81.0] - 2026-11-27
 
 Round 81: empty tools point the way.

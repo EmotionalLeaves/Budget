@@ -214,8 +214,14 @@ fun BillsScreen() {
                 item {
                     EmptyState(
                         "No bills found yet",
-                        "Sprout spots subscriptions and bills after a few months of history. You can also add one with the + button.",
-                    )
+                        "Sprout spots subscriptions and bills on its own once it sees a couple of months of history. You can add one yourself any time.",
+                    ) {
+                        androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            com.emotionalleaves.sprout.ui.common.GetDataActions()
+                            OutlinedButton(onClick = { adding = true }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Add a bill") }
+                        }
+                    }
                 }
             }
             if (list != null && list.isEmpty() && all.isNotEmpty()) {

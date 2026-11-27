@@ -251,7 +251,7 @@ fun BudgetsScreen(onQuickSetup: () -> Unit, onCategory: (Long) -> Unit, onGoals:
                     }
                 }
             }
-            item {
+            if (m.totalSpentMinor != 0L) item {
                 Text(
                     "Total spending this month: ${Money.format(m.totalSpentMinor)} (transfers and income never count)",
                     Modifier.padding(16.dp),
