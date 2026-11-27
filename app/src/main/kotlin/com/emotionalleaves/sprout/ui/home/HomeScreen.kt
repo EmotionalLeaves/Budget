@@ -201,7 +201,11 @@ fun HomeScreen(
                 }
                 if (!on(key)) return@forEach
                 when (key) {
-                    "stats" -> item(key = "card-stats") { StatsRow(state.totals.totalMinor, outlook?.trend, outlook?.forecast?.endMinor, onNetWorth) }
+                    "stats" -> item(key = "card-stats") {
+                        var forecastOpen by androidx.compose.runtime.remember { mutableStateOf(false) }
+                        StatsRow(state.totals.totalMinor, outlook?.trend, outlook?.forecast?.endMinor, onNetWorth, onMonthEnd = { forecastOpen = true })
+                        outlook?.forecast?.let { f -> if (forecastOpen) ForecastSheet(f) { forecastOpen = false } }
+                    }
                     "week" -> weekPace?.takeIf { it.soFarMinor > 0 || it.usualByNowMinor != null }?.let { w -> item(key = "card-week") { WeekPaceCard(w) } }
                     "health" -> health?.let { h -> item(key = "card-health") { com.emotionalleaves.sprout.ui.challenge.HealthCard(h) } }
                     "challenge" -> challenges.firstOrNull { it.status == com.emotionalleaves.sprout.domain.challenge.ChallengeStatus.ON_TRACK }?.let { p ->

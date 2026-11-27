@@ -186,7 +186,7 @@ fun HeroRow(ring: @Composable (ringSize: androidx.compose.ui.unit.Dp) -> Unit, c
 
 /** Three quick numbers: net worth, spent this month (vs last month), month-end cash. */
 @Composable
-fun StatsRow(netWorthMinor: Long, trend: CashFlow.Trend?, forecastEndMinor: Long?, onNetWorth: () -> Unit = {}) {
+fun StatsRow(netWorthMinor: Long, trend: CashFlow.Trend?, forecastEndMinor: Long?, onNetWorth: () -> Unit = {}, onMonthEnd: () -> Unit = {}) {
     val c = LocalSproutColors.current
     com.emotionalleaves.sprout.ui.common.TileRow(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
         StatTile("Net worth", money(netWorthMinor, whole = true), Modifier.tile().clickable(onClick = onNetWorth), note = "see trend ›")
@@ -198,7 +198,7 @@ fun StatsRow(netWorthMinor: Long, trend: CashFlow.Trend?, forecastEndMinor: Long
             noteColor = if ((p ?: 0) > 10) c.warning else if ((p ?: 0) < 0) c.ok else Color.Unspecified,
         )
         if (forecastEndMinor != null) {
-            StatTile("Month end", money(forecastEndMinor, whole = true), Modifier.tile(), note = "cash, estimated",
+            StatTile("Month end", money(forecastEndMinor, whole = true), Modifier.tile().clickable(onClick = onMonthEnd), note = "cash, estimated ›",
                 noteColor = if (forecastEndMinor < 0) c.danger else Color.Unspecified)
         }
     }

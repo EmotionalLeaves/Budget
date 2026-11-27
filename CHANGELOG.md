@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.99.0] - 2026-11-27
+
+Round 99: Month end opens the projection.
+
+### Polish
+- Home's **Month end** tile opens the day-by-day cash projection, the same one behind "Cash by Nov 30".
+
 ## [2.98.0] - 2026-11-27
 
 Round 98: fewer dead ends.
