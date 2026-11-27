@@ -217,6 +217,12 @@ class ScreenTour {
             tap("Budgets"); shot("x-03-budgets")
             tap("Bills"); shot("x-04-bills")
             tap("More"); shot("x-05-more")
+            runCatching { tap("Budgets"); tap("Quick setup"); shot("x-06-quick"); back() }
+            runCatching {
+                tap("More")
+                rule.onAllNodes(androidx.compose.ui.test.hasScrollAction())[0].performScrollToNode(androidx.compose.ui.test.hasText("Stats"))
+                tap("Stats"); shot("x-07-stats"); back()
+            }
         }
     }
 

@@ -357,7 +357,8 @@ private fun MainScaffold(deepLink: DeepLink?, onDeepLinkHandled: () -> Unit) {
                         androidx.compose.material3.IconButton(onClick = { nav.popBackStack() }) {
                             androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.AutoMirrored.Rounded.ArrowBack, "Back")
                         }
-                        androidx.compose.material3.Text("Purchases", style = androidx.compose.material3.MaterialTheme.typography.titleLarge)
+                        val title = androidx.compose.runtime.remember(q) { com.emotionalleaves.sprout.domain.search.SearchQuery.parse(q).dateLabel ?: "Purchases" }
+                        androidx.compose.material3.Text(title, style = androidx.compose.material3.MaterialTheme.typography.titleLarge)
                     }
                     TransactionsScreen(snackbar, onReview = { nav.navigate("review") }, initialQuery = q)
                 }

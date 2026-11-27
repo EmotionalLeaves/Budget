@@ -2,6 +2,14 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.76.0] - 2026-11-27
+
+Round 76: large text, checked again.
+
+### Polish
+- With large text, the Stats tabs become scrollable chips instead of being cut to "Ove · Patt · Plac", and Quick setup's two choices wrap neatly instead of squeezing "50/30/20 of income" into a column.
+- A day opened from a calendar shows the date as its title ("Tue, Nov 24").
+
 ## [2.75.0] - 2026-11-27
 
 Round 75: tap a day, see the day.

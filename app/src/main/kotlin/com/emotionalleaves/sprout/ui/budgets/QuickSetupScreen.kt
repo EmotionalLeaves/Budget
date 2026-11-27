@@ -101,7 +101,8 @@ fun QuickSetupScreen(onBack: () -> Unit) {
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(horizontal = 16.dp),
         )
-        Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+        androidx.compose.foundation.layout.FlowRow(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             androidx.compose.material3.FilterChip(!useTemplate, { useTemplate = false; edits.clear() }, label = { Text("From my spending") },
                 modifier = Modifier.heightIn(min = 48.dp))
             androidx.compose.material3.FilterChip(useTemplate, { useTemplate = true; edits.clear(); vm.loadTemplate() }, label = { Text("50/30/20 of income") },
