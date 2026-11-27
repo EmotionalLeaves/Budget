@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.insights
 
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material.icons.automirrored.rounded.TrendingDown
 import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.foundation.background
@@ -140,9 +141,21 @@ fun NetWorthScreen(onBack: () -> Unit) {
                         noteColor = if (c2 >= 0) LocalSproutColors.current.ok else LocalSproutColors.current.danger, note = if (c2 >= 0) "▲ in total" else "▼ in total")
                 }
             }
-            items(s.reversed(), key = { it.first.toString() }) { (d, v) ->
-                Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).padding(horizontal = 24.dp), verticalAlignment = Alignment.CenterVertically) {
+            item { com.emotionalleaves.sprout.ui.common.SectionTitle("Month by month") }
+            val rows = s.reversed()
+            items(rows.size, key = { rows[it].first.toString() }) { i ->
+                val (d, v) = rows[i]
+                // Each month's change against the month before it; the oldest month has nothing to compare to.
+                val change = rows.getOrNull(i + 1)?.let { v - it.second }
+                Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(horizontal = 24.dp)
+                    .semantics(mergeDescendants = true) {}, verticalAlignment = Alignment.CenterVertically) {
                     Text(if (d == s.last().first) "Today" else d.format(monthLabel), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                    if (change != null && change != 0L) {
+                        val up = change > 0
+                        Text((if (up) "▲ " else "▼ ") + money(kotlin.math.abs(change), whole = true),
+                            Modifier.padding(end = 16.dp), style = MaterialTheme.typography.labelMedium,
+                            color = if (up) LocalSproutColors.current.ok else LocalSproutColors.current.danger)
+                    }
                     Text(money(v), style = MaterialTheme.typography.titleSmall)
                 }
             }

@@ -117,7 +117,16 @@ fun GoalProgressRow(v: GoalView, onClick: (() -> Unit)? = null, footer: (@Compos
                     color = if (p.reached) com.emotionalleaves.sprout.ui.theme.LocalSproutColors.current.ok else MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        Text("${Money.format(p.savedMinor)} of ${Money.format(p.targetMinor)}" + (v.account?.let { " · from ${it.label}" } ?: ""),
+        // Past the target, "$6,420 of $1,200" reads like a mistake; say what actually happened instead.
+        val acct = v.account
+        val detail = when {
+            p.reached && p.savedMinor > p.targetMinor && acct != null ->
+                "${Money.format(p.targetMinor)} target · ${acct.label} holds ${Money.format(p.savedMinor)}"
+            p.reached && p.savedMinor > p.targetMinor ->
+                "${Money.format(p.savedMinor)} saved · ${Money.format(p.savedMinor - p.targetMinor)} past the ${Money.format(p.targetMinor)} target"
+            else -> "${Money.format(p.savedMinor)} of ${Money.format(p.targetMinor)}" + (acct?.let { " · from ${it.label}" } ?: "")
+        }
+        Text(detail,
             style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         when {
             p.overdue -> Text("Target date passed — ${Money.format(p.remainingMinor)} to go", style = MaterialTheme.typography.labelSmall,

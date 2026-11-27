@@ -2,6 +2,14 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.47.0] - 2026-11-26
+
+Round 47: clearer numbers on Goals and Net worth.
+
+### Polish
+- **Goals** past their target no longer say "$6,420 of $1,200": a linked account reads "$1,200 target · Savings holds $6,420", and a hand-funded one says how far past the target it is.
+- **Net worth** has a "Month by month" list showing each month's rise or drop next to its total.
+
 ## [2.46.0] - 2026-11-26
 
 Round 46: a Bills tab that reads top to bottom.
