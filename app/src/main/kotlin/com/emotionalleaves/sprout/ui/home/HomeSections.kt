@@ -1,5 +1,9 @@
 package com.emotionalleaves.sprout.ui.home
 
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import com.emotionalleaves.sprout.domain.accounts.label
 import kotlinx.coroutines.launch
 import androidx.compose.material.icons.rounded.MoreVert
@@ -410,19 +414,57 @@ val HomeCards = listOf(
     "calendar" to "Spending calendar", "bills" to "Coming up", "goals" to "Savings goals", "accounts" to "Accounts",
 )
 
-/** Show or hide Home cards; Safe to spend and Recent always stay. */
+/** Your saved card order, with any cards added in later versions slotted in at their default place. */
+fun orderedHomeCards(saved: String): List<String> {
+    val all = HomeCards.map { it.first }
+    val kept = saved.split(',').map { it.trim() }.filter { it in all }.distinct()
+    if (kept.isEmpty()) return all
+    val out = kept.toMutableList()
+    all.forEachIndexed { i, k ->
+        if (k !in out) {
+            // After the card that comes before it by default, or first if none.
+            val prev = all.take(i).lastOrNull { it in out }
+            out.add(prev?.let { out.indexOf(it) + 1 } ?: 0, k)
+        }
+    }
+    return out
+}
+
+/** The order with [key] moved one place up (-1) or down (+1). */
+fun moveCard(order: List<String>, key: String, delta: Int): List<String> {
+    val i = order.indexOf(key); val j = i + delta
+    if (i < 0 || j !in order.indices) return order
+    return order.toMutableList().also { java.util.Collections.swap(it, i, j) }
+}
+
+/** Show, hide and reorder Home cards; Safe to spend and Recent always stay. */
 @Composable
-fun CustomizeHomeDialog(hidden: Set<String>, onToggle: (String, Boolean) -> Unit, onDismiss: () -> Unit) {
+fun CustomizeHomeDialog(
+    hidden: Set<String>,
+    order: List<String>,
+    onToggle: (String, Boolean) -> Unit,
+    onMove: (String, Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val labels = HomeCards.toMap()
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Customize Home") },
         text = {
             Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
-                Text("Turn off what you don't need. Fewer cards, calmer Home.", style = MaterialTheme.typography.bodySmall)
-                HomeCards.forEach { (k, label) ->
-                    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable { onToggle(k, k in hidden) }, verticalAlignment = Alignment.CenterVertically) {
-                        Text(label, Modifier.weight(1f))
-                        androidx.compose.material3.Switch(checked = k !in hidden, onCheckedChange = null)
+                Text("Turn off what you don't need, and move what matters most to the top.", style = MaterialTheme.typography.bodySmall)
+                order.forEachIndexed { i, k ->
+                    val label = labels[k] ?: return@forEachIndexed
+                    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+                        androidx.compose.material3.Switch(checked = k !in hidden, onCheckedChange = { onToggle(k, k in hidden) },
+                            modifier = Modifier.semantics { contentDescription = "Show $label" })
+                        Text(label, Modifier.weight(1f).padding(start = 12.dp))
+                        androidx.compose.material3.IconButton(onClick = { onMove(k, -1) }, enabled = i > 0) {
+                            Icon(androidx.compose.material.icons.Icons.Rounded.KeyboardArrowUp, contentDescription = "Move $label up")
+                        }
+                        androidx.compose.material3.IconButton(onClick = { onMove(k, +1) }, enabled = i < order.lastIndex) {
+                            Icon(androidx.compose.material.icons.Icons.Rounded.KeyboardArrowDown, contentDescription = "Move $label down")
+                        }
                     }
                 }
             }

@@ -112,6 +112,8 @@ fun HomeScreen(
     val navigate = com.emotionalleaves.sprout.ui.common.LocalNavigate.current
     val hidden by vm.privacy.collectAsStateWithLifecycle()
     androidx.compose.runtime.CompositionLocalProvider(com.emotionalleaves.sprout.ui.common.LocalHideAmounts provides hidden) {
+    var homeOrderRaw by com.emotionalleaves.sprout.ui.common.rememberViewPref("home-order", "")
+    val homeOrder = androidx.compose.runtime.remember(homeOrderRaw) { orderedHomeCards(homeOrderRaw) }
     PullToRefreshBox(isRefreshing = syncing, onRefresh = vm::syncNow, modifier = Modifier.fillMaxSize()) {
         LazyColumn(Modifier.fillMaxSize()) {
             item { HomeHeader(hidden, vm::togglePrivacy) }
@@ -189,44 +191,49 @@ fun HomeScreen(
             recap?.let { r -> item { com.emotionalleaves.sprout.ui.insights.RecapCard(r, vm::dismissRecap) } }
             val off = state.settings.homeHidden
             fun on(k: String) = k !in off
-            if (on("stats")) item { StatsRow(state.totals.totalMinor, outlook?.trend, outlook?.forecast?.endMinor, onNetWorth) }
-            if (on("health")) health?.let { h -> item { com.emotionalleaves.sprout.ui.challenge.HealthCard(h) } }
-            if (on("challenge")) challenges.firstOrNull { it.status == com.emotionalleaves.sprout.domain.challenge.ChallengeStatus.ON_TRACK }?.let { p ->
-                item { com.emotionalleaves.sprout.ui.challenge.ChallengeCard(p, onClick = { navigate("challenges") }) }
-            }
-            if (on("age")) age?.let { a -> item { AgeOfMoneyRow(a) } }
-            if (on("watch") && watch.isNotEmpty()) {
-                item { com.emotionalleaves.sprout.ui.common.SectionHeader("Watching") }
-                item { WatchStrip(watch, navigate) }
-            }
-            if (on("links")) item { QuickLinks(navigate) }
-            if (on("insights") && insights.isNotEmpty()) {
-                item { com.emotionalleaves.sprout.ui.common.SectionHeader("Insights") }
-                item { com.emotionalleaves.sprout.ui.insights.InsightsStrip(insights, onCategory) }
-            }
-            if (on("payday")) outlook?.payday?.let { p -> item { PaydayCard(p, vm::setPaydaySource) } }
-            if (on("forecast")) outlook?.forecast?.let { f -> item { ForecastCard(f) } }
-            // Housekeeping goes below the money: it matters, but it's never the first thing to see.
-            if (state.backupDue) item {
-                BackupNudge(state.settings.lastBackupAt, onBackup = { navigate("backup") }, onLater = vm::snoozeBackup)
-            }
-            if (on("where") && m != null) item { WhereItWentCard(m, onCategory, onSeeBudgets) }
-            if (on("months")) item { MonthsCard(months) }
-            if (on("calendar")) calendar?.let { cal -> item { com.emotionalleaves.sprout.ui.insights.SpendCalendarCard(cal) } }
-
-            if (on("bills") && bills.isNotEmpty()) {
-                item { com.emotionalleaves.sprout.ui.common.SectionHeader("Coming up", "All bills", onSeeBills) }
-                item { BillsStrip(bills, onSeeBills) }
-            }
-
-            if (on("goals") && goals.isNotEmpty()) {
-                item { com.emotionalleaves.sprout.ui.common.SectionHeader("Savings goals", "All goals", onGoals) }
-                items(goals, key = { "goal-" + it.goal.id }) { g -> com.emotionalleaves.sprout.ui.goals.GoalProgressRow(g, onClick = onGoals) }
-            }
-
-            if (on("accounts") && state.accounts.isNotEmpty()) {
-                item { com.emotionalleaves.sprout.ui.common.SectionHeader("Accounts") }
-                item { AccountsCard(state.accounts, state.settings.lastSuccessfulSyncAt) }
+            // Cards in your order (Customize Home), skipping hidden ones.
+            homeOrder.forEach { key ->
+                // Housekeeping sits below the first money cards: it matters, but it's never the first thing to see.
+                if (key == "where" && state.backupDue) item(key = "card-backup") {
+                    BackupNudge(state.settings.lastBackupAt, onBackup = { navigate("backup") }, onLater = vm::snoozeBackup)
+                }
+                if (!on(key)) return@forEach
+                when (key) {
+                    "stats" -> item(key = "card-stats") { StatsRow(state.totals.totalMinor, outlook?.trend, outlook?.forecast?.endMinor, onNetWorth) }
+                    "health" -> health?.let { h -> item(key = "card-health") { com.emotionalleaves.sprout.ui.challenge.HealthCard(h) } }
+                    "challenge" -> challenges.firstOrNull { it.status == com.emotionalleaves.sprout.domain.challenge.ChallengeStatus.ON_TRACK }?.let { p ->
+                        item(key = "card-challenge") { com.emotionalleaves.sprout.ui.challenge.ChallengeCard(p, onClick = { navigate("challenges") }) }
+                    }
+                    "age" -> age?.let { a -> item(key = "card-age") { AgeOfMoneyRow(a) } }
+                    "watch" -> if (watch.isNotEmpty()) {
+                        item(key = "card-watch-h") { com.emotionalleaves.sprout.ui.common.SectionHeader("Watching") }
+                        item(key = "card-watch") { WatchStrip(watch, navigate) }
+                    }
+                    "links" -> item(key = "card-links") { QuickLinks(navigate) }
+                    "insights" -> if (insights.isNotEmpty()) {
+                        item(key = "card-insights-h") { com.emotionalleaves.sprout.ui.common.SectionHeader("Insights") }
+                        item(key = "card-insights") { com.emotionalleaves.sprout.ui.insights.InsightsStrip(insights, onCategory) }
+                    }
+                    "payday" -> outlook?.payday?.let { p -> item(key = "card-payday") { PaydayCard(p, vm::setPaydaySource) } }
+                    "forecast" -> outlook?.forecast?.let { f -> item(key = "card-forecast") { ForecastCard(f) } }
+                    "where" -> if (m != null) item(key = "card-where") { WhereItWentCard(m, onCategory, onSeeBudgets) }
+                    "months" -> item(key = "card-months") { MonthsCard(months) }
+                    "calendar" -> calendar?.let { cal -> item(key = "card-calendar") { com.emotionalleaves.sprout.ui.insights.SpendCalendarCard(cal) } }
+                    "bills" -> if (bills.isNotEmpty()) {
+                        item(key = "card-bills-h") { com.emotionalleaves.sprout.ui.common.SectionHeader("Coming up", "All bills", onSeeBills) }
+                        item(key = "card-bills") { BillsStrip(bills, onSeeBills) }
+                    }
+                    "goals" -> if (goals.isNotEmpty()) {
+                        item(key = "card-goals-h") { com.emotionalleaves.sprout.ui.common.SectionHeader("Savings goals", "All goals", onGoals) }
+                        items(goals, key = { "goal-" + it.goal.id }) { g -> com.emotionalleaves.sprout.ui.goals.GoalProgressRow(g, onClick = onGoals) }
+                    }
+                    "accounts" -> if (state.accounts.isNotEmpty()) {
+                        item(key = "card-accounts-h") { com.emotionalleaves.sprout.ui.common.SectionHeader("Accounts") }
+                        item(key = "card-accounts") { AccountsCard(state.accounts, state.settings.lastSuccessfulSyncAt) }
+                    }
+                    else -> {}
+                }
+                Unit
             }
 
             item { com.emotionalleaves.sprout.ui.common.SectionHeader("Recent", "See all", onSeeAllTransactions) }
@@ -236,7 +243,7 @@ fun HomeScreen(
             item {
                 var customizing by androidx.compose.runtime.remember { mutableStateOf(false) }
                 TextButton(onClick = { customizing = true }, modifier = Modifier.padding(horizontal = 12.dp).heightIn(min = 48.dp)) { Text("Customize Home") }
-                if (customizing) CustomizeHomeDialog(off, onToggle = vm::setHomeCard) { customizing = false }
+                if (customizing) CustomizeHomeDialog(off, homeOrder, onToggle = vm::setHomeCard, onMove = { k, d -> homeOrderRaw = moveCard(homeOrder, k, d).joinToString(",") }) { customizing = false }
             }
             item { BottomSpace() }
         }

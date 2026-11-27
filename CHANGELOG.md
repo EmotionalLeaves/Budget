@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.72.0] - 2026-11-27
+
+Round 72: your Home, your order.
+
+### Features
+- **Customize Home** can reorder cards as well as hide them. Use the up and down arrows to move what you check most (Until payday, Coming up, Accounts…) to the top. Cards added in future versions slot in at their usual place without disturbing your order.
+
 ## [2.71.0] - 2026-11-27
 
 Round 71: a clearer Quick budget setup.
