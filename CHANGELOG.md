@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.53.0] - 2026-11-27
+
+Round 53: pull to sync on Activity.
+
+### Features
+- **Activity** now syncs when you pull down on the list, same as Home. If Sprout synced a moment ago it tells you how fresh the data is; pull again to sync anyway.
+
 ## [2.52.0] - 2026-11-27
 
 Round 52: calm loading.

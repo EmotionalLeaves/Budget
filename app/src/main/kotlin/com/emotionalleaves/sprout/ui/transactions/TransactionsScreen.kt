@@ -121,6 +121,14 @@ private fun com.emotionalleaves.sprout.domain.search.SearchQuery.toSec(): Long? 
 class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
     // ---- Several at once (selection mode). Each returns a message and an undo. ----
 
+    /** True while a bank sync runs, for pull-to-refresh. */
+    val syncing: StateFlow<Boolean> = androidx.work.WorkManager.getInstance(c.appContext)
+        .getWorkInfosForUniqueWorkFlow(com.emotionalleaves.sprout.work.SyncScheduler.ONE_TIME_WORK)
+        .map { list -> list.any { it.state == androidx.work.WorkInfo.State.RUNNING } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    suspend fun requestSync(): String? = com.emotionalleaves.sprout.ui.common.SyncActions.requestSync(c)
+
     /** Everything the current search and filters match (up to 2,000). */
     suspend fun allMatchingIds(): Set<String> {
         val f = _filter.value
@@ -248,6 +256,7 @@ class TransactionsViewModel(private val c: AppContainer) : ViewModel() {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LocalDate.now(c.clock.withZone(ZoneId.systemDefault())))
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initialTagId: Long? = null, initialAccountId: String? = null) {
     val vm = sproutViewModel { TransactionsViewModel(it) }
@@ -510,7 +519,13 @@ fun TransactionsScreen(snackbar: SnackbarHostState, onReview: () -> Unit, initia
                 if (idx < items.itemCount) items.peek(idx)?.let { Format.localDate(it.occurredAt) } else null
             }
         }
-        Box(Modifier.fillMaxSize()) {
+        val syncing by vm.syncing.collectAsStateWithLifecycle()
+        // Pull down to sync, like Home.
+        androidx.compose.material3.pulltorefresh.PullToRefreshBox(
+            isRefreshing = syncing,
+            onRefresh = { scope.launch { vm.requestSync()?.let { snackbar.showSnackbar(it) } } },
+            modifier = Modifier.fillMaxSize(),
+        ) {
             LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
                 items(count = items.itemCount, key = items.itemKey { it.id }) { index ->
                     val row = items[index] ?: return@items
