@@ -223,6 +223,18 @@ class CategoryRepository(private val db: SproutDatabase, private val clock: Cloc
     }
 
     /** Re-runs categorization for every transaction whose category wasn't set by the user or an import. */
+    /**
+     * The category Sprout would pick for a purchase you're typing in by hand ("Hy-Vee", "farmers market"),
+     * using your rules, your habits and the built-in list. Null when it has no real idea (it never guesses Uncategorized).
+     */
+    suspend fun guessCategory(description: String, amountMinor: Long): Long? = withContext(Dispatchers.IO) {
+        if (description.isBlank()) return@withContext null
+        val idByKey = db.categories().getAll().mapNotNull { c -> c.key?.let { it to c.id } }.toMap()
+        val resolver = CategoryResolver(db.merchantRules().getAll().map { it.toUserRule() }, idByKey, learner())
+        val r = resolver.resolve(description, com.emotionalleaves.sprout.domain.categorize.MerchantNormalizer.normalize(description), amountMinor)
+        r.categoryId?.takeIf { r.source != CategorySource.NONE }
+    }
+
     suspend fun reapplyRules(): Int = withContext(Dispatchers.IO) { db.withTransaction { reapplyRulesLocked() } }
 
     private suspend fun reapplyRulesLocked(): Int {

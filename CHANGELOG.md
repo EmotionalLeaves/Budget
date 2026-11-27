@@ -2,6 +2,13 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.50.0] - 2026-11-26
+
+Round 50: adding a cash purchase takes fewer taps.
+
+### Features
+- **Add a transaction** fills in the category from the name as you type ("Hy-Vee" → Groceries, "Casey's" → Gas & Fuel), using your own rules and habits first. It says "Guessed from the name"; tap any category to override, and it stops guessing once you've picked.
+
 ## [2.49.0] - 2026-11-26
 
 Round 49: Year view that shows patterns, not just rent.

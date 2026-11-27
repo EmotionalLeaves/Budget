@@ -1,5 +1,6 @@
 package com.emotionalleaves.sprout.ui.transactions
 
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -69,6 +70,16 @@ fun AddTransactionSheet(onDismiss: () -> Unit, onAdded: (String) -> Unit) {
     LaunchedEffect(spending, categories) {
         if (categoryId == null || categories.none { it.id == categoryId }) categoryId = null
     }
+    // Fill in the category from what you type, until you pick one yourself.
+    var pickedByHand by remember { mutableStateOf(false) }
+    var guessed by remember { mutableStateOf(false) }
+    LaunchedEffect(what, spending) {
+        if (pickedByHand) return@LaunchedEffect
+        kotlinx.coroutines.delay(350)
+        val g = runCatching { c.categoryRepository.guessCategory(what, if (spending) -(amount ?: 1) else (amount ?: 1)) }.getOrNull()
+        val ok = g != null && categories.any { it.id == g && ((it.kind == CategoryKind.EXPENSE) == spending || it.kind == CategoryKind.TRANSFER) }
+        if (ok) { categoryId = g; guessed = true } else if (guessed) { categoryId = null; guessed = false }
+    }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(
             Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).navigationBarsPadding(),
@@ -83,8 +94,15 @@ fun AddTransactionSheet(onDismiss: () -> Unit, onAdded: (String) -> Unit) {
                 isError = amountText.isNotBlank() && amount == null, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 textStyle = MaterialTheme.typography.headlineSmall, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(what, { what = it.take(120) }, label = { Text("What was it? (\"Farmers market\")") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            Text("Category", style = MaterialTheme.typography.titleSmall)
-            CategoryGrid(categories.filter { (it.kind == CategoryKind.EXPENSE) == spending || it.kind == CategoryKind.TRANSFER }, categoryId) { categoryId = it.id }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Category", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                if (guessed && categoryId != null) {
+                    Text("Guessed from the name · tap to change", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                }
+            }
+            CategoryGrid(categories.filter { (it.kind == CategoryKind.EXPENSE) == spending || it.kind == CategoryKind.TRANSFER }, categoryId) {
+                categoryId = it.id; pickedByHand = true; guessed = false
+            }
             Text("Account", style = MaterialTheme.typography.titleSmall)
             // Wraps instead of running off the edge when there are several accounts.
             @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)

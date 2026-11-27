@@ -224,4 +224,16 @@ class CategoryRepositoryTest {
         repo.recategorize("sf:C:A:1", cat(DefaultCategories.EATING_OUT), alwaysForMerchant = true)
         assertEquals(cat(DefaultCategories.SHOPPING), get("2").categoryId)
     }
+
+    @Test fun guessesCategoryForTypedInPurchases() = runBlocking {
+        sync(tx("1", "CASEYS #3021 LINCOLN NE", "-40.00"))
+        assertEquals(cat(DefaultCategories.GROCERIES), repo.guessCategory("Hy-Vee", -2_500))
+        assertEquals(cat(DefaultCategories.GAS), repo.guessCategory("caseys", -2_000))
+        // No idea means no guess, never "Uncategorized".
+        assertEquals(null, repo.guessCategory("zxqv blorp", -100))
+        assertEquals(null, repo.guessCategory("  ", -100))
+        // Your own corrections win for places the built-in list doesn't know.
+        repo.addContainsRule("blorp", cat(DefaultCategories.GIFTS))
+        assertEquals(cat(DefaultCategories.GIFTS), repo.guessCategory("zxqv blorp", -100))
+    }
 }
