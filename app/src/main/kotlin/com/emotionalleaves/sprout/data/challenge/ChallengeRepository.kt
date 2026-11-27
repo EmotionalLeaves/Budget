@@ -44,10 +44,40 @@ class ChallengeRepository(context: Context, private val db: SproutDatabase, priv
     suspend fun add(type: ChallengeType, title: String, days: Int, categoryId: Long? = null, amountMinor: Long = 0, goal: Int = 0) {
         val ch = Challenge(UUID.randomUUID().toString(), type, title.take(60), LocalDate.now(zone()), days.coerceIn(1, 90), categoryId, amountMinor, goal,
             startedAt = System.currentTimeMillis() / 1000)
-        store.edit { it[key] = encode((decode(it[key]) + ch).takeLast(20)) }
+        store.edit {
+            val list = decode(it[key])
+            // Starting the same challenge twice (a double tap, or "Make your own" matching a running one) would only
+            // show two identical cards; keep the running one.
+            val today = ch.start
+            val running = list.any { c ->
+                c.type == ch.type && c.categoryId == ch.categoryId && c.amountMinor == ch.amountMinor && c.goal == ch.goal &&
+                    c.days == ch.days && c.start.plusDays(c.days.toLong()).isAfter(today)
+            }
+            if (!running) it[key] = encode((list + ch).takeLast(20))
+        }
     }
 
-    suspend fun remove(id: String) = store.edit { it[key] = encode(decode(it[key]).filter { c -> c.id != id }) }
+    /** Removes a challenge; the returned function puts it back exactly as it was (same start, same progress). */
+    suspend fun remove(id: String): suspend () -> Unit {
+        var gone: Challenge? = null
+        var at = 0
+        store.edit {
+            val list = decode(it[key])
+            at = list.indexOfFirst { c -> c.id == id }
+            gone = list.getOrNull(at)
+            it[key] = encode(list.filter { c -> c.id != id })
+        }
+        return undo@{
+            val g = gone ?: return@undo
+            store.edit {
+                val list = decode(it[key])
+                if (list.none { c -> c.id == g.id }) {
+                    val i = at.coerceIn(0, list.size)
+                    it[key] = encode((list.take(i) + g + list.drop(i)).takeLast(20))
+                }
+            }
+        }
+    }
 
     /** Progress for every challenge, newest first. */
     suspend fun progress(today: LocalDate = LocalDate.now(zone())): List<ChallengeProgress> = withContext(Dispatchers.IO) {

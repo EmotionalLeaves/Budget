@@ -2,6 +2,14 @@
 
 All notable changes to Sprout. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semver.
 
+## [2.108.0] - 2026-11-27
+
+Round 108: safer challenges.
+
+### Improved
+- Stopping or clearing a challenge now shows Undo, which puts it back with its streak intact.
+- Starting a challenge that's already running (a double tap, or a matching "Make your own") no longer adds a second identical card.
+
 ## [2.107.0] - 2026-11-27
 
 Round 107: quieter first look at the tools.

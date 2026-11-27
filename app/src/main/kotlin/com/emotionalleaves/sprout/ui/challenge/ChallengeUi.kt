@@ -55,6 +55,7 @@ import com.emotionalleaves.sprout.ui.common.IconBadge
 import com.emotionalleaves.sprout.ui.common.ProgressRing
 import com.emotionalleaves.sprout.ui.common.SoftCard
 import com.emotionalleaves.sprout.ui.common.appContainer
+import com.emotionalleaves.sprout.ui.common.showUndoable
 import com.emotionalleaves.sprout.ui.common.rememberLoaded
 import com.emotionalleaves.sprout.ui.theme.LocalSproutColors
 import kotlinx.coroutines.launch
@@ -93,9 +94,11 @@ fun ChallengesScreen(onBack: () -> Unit) {
     val progress = rememberLoaded(list) { c.challengeRepository.progress() } ?: emptyList()
     val cats by remember { c.db.categories().observeActive() }.collectAsStateWithLifecycle(emptyList())
     var custom by remember { mutableStateOf(false) }
+    val snackbar = remember { androidx.compose.material3.SnackbarHostState() }
     val eatingOut = cats.firstOrNull { it.key == DefaultCategories.EATING_OUT }
     val groceries = cats.firstOrNull { it.key == DefaultCategories.GROCERIES }
     val shopping = cats.firstOrNull { it.key == DefaultCategories.SHOPPING }
+    androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
     Column(Modifier.fillMaxSize()) {
         TopAppBar(windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0), title = { Text("Challenges") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } })
         LazyColumn {
@@ -115,7 +118,14 @@ fun ChallengesScreen(onBack: () -> Unit) {
                     )
                 }
             }
-            items(progress, key = { it.challenge.id }) { p -> ChallengeCard(p, onRemove = { scope.launch { c.challengeRepository.remove(p.challenge.id) } }) }
+            items(progress, key = { it.challenge.id }) { p -> ChallengeCard(p, onRemove = {
+                scope.launch {
+                    val undo = c.challengeRepository.remove(p.challenge.id)
+                    // A stopped streak can't be rebuilt by hand, so a mis-tap gets an Undo.
+                    val verb = if (p.status == ChallengeStatus.ON_TRACK) "Stopped" else "Cleared"
+                    scope.showUndoable(snackbar, "$verb \u201C${p.challenge.title}\u201D", undo)
+                }
+            }) }
             item { com.emotionalleaves.sprout.ui.common.SectionHeader("Start one") }
             val templates = listOfNotNull(
                 eatingOut?.let { Triple("No eating out for 7 days", ChallengeType.NO_SPEND_CATEGORY, it.id) },
@@ -154,6 +164,8 @@ fun ChallengesScreen(onBack: () -> Unit) {
             }
             item { TextButton(onClick = { custom = true }, modifier = Modifier.padding(horizontal = 16.dp).heightIn(min = 48.dp)) { Text("Make your own…") } }
         }
+    }
+    androidx.compose.material3.SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(16.dp))
     }
     if (custom) {
         var catId by remember { mutableStateOf<Long?>(null) }

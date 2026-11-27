@@ -327,6 +327,30 @@ class TagAndInsightTest {
         Unit
     }
 
+    @Test fun startingTheSameChallengeTwiceKeepsOne() = runBlocking {
+        val ch = com.emotionalleaves.sprout.data.challenge.ChallengeRepository(env.context, env.db) { zone }
+        val type = com.emotionalleaves.sprout.domain.challenge.ChallengeType.NO_SPEND_CATEGORY
+        ch.add(type, "Twice", 7, 42L)
+        ch.add(type, "Twice", 7, 42L)
+        ch.add(type, "Longer", 14, 42L) // a different length is a different challenge
+        val mine = ch.challenges.first().filter { it.categoryId == 42L }
+        assertEquals(listOf("Twice", "Longer"), mine.map { it.title })
+        mine.forEach { ch.remove(it.id) }
+    }
+
+    @Test fun stoppingAChallengeCanBeUndone() = runBlocking {
+        val ch = com.emotionalleaves.sprout.data.challenge.ChallengeRepository(env.context, env.db) { zone }
+        ch.add(com.emotionalleaves.sprout.domain.challenge.ChallengeType.NO_SPEND_DAYS, "Undo me", 7, goal = 3)
+        val before = ch.challenges.first().single { it.title == "Undo me" }
+        val undo = ch.remove(before.id)
+        assertTrue(ch.challenges.first().none { it.title == "Undo me" })
+        undo()
+        undo() // twice is harmless
+        assertEquals(listOf(before), ch.challenges.first().filter { it.title == "Undo me" }) // same id, same start
+        ch.remove(before.id)
+        Unit
+    }
+
     @Test fun accountHistoryAndMonthInOut() = runBlocking {
         sync(Triple("1", "PAYROLL|500.00", at(11, 3)), Triple("2", "RENT|-300.00", at(11, 4)), Triple("3", "GAS|-50.00", at(10, 10)))
         val id = env.db.accounts().getAll().single().id
